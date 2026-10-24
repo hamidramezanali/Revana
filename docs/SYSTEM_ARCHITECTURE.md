@@ -53,7 +53,7 @@ The AI is an untrusted proposal generator, never the authority for identity, aut
 
 ### Current prototype boundary
 
-- `src/app/page.tsx` is a single client-side flow for fast product review. It has a landing screen, four-step onboarding, selectable multi-focus categories, goal-specific follow-up prompts, reported/hypothesis/unknown analysis, dashboard tabs, expandable rationale, completion toggles, feedback-driven preview changes, and a deterministic demo coach.
+- `src/app/page.tsx` is a single client-side flow for fast product review. It has a landing screen with a category-neutral “Begin your journey” CTA, four-step onboarding, selectable multi-focus categories, sequential goal-specific follow-up prompts, reported/hypothesis/unknown analysis, dashboard tabs, expandable rationale, completion toggles, feedback-driven preview changes, and a deterministic demo coach.
 - Data is in React state only. Refreshing, closing the tab, or navigating away clears it. The sample journey is fictional; no account or persistence exists.
 - `src/config/brand.ts` centralizes the working name Revana and its brand story, “Renew your routines. Reveal your potential.” The story is original positioning, not a linguistic etymology claim. Trademark/domain screening and legal clearance have not been completed.
 - Skin, body/fitness, energy/lifestyle, and other can be selected to demonstrate discovery prompts and cautious exploratory summaries. They do not provide validated plans, clinical advice, treatment recommendations, or reviewed evidence. Treat those journeys as interaction prototypes only.
@@ -61,8 +61,9 @@ The AI is an untrusted proposal generator, never the authority for identity, aut
 
 ### Frontend
 
-- Mobile-first onboarding, progress, save/resume, and explicit answer-state controls.
+- Mobile-first, multi-focus onboarding, progress, save/resume, and explicit answer-state controls.
 - Progressive question rendering from server-provided/application-defined relevance rules; hide unrelated categories.
+- Begin the journey with a category-neutral CTA. Let users select one or more goals; present concise, goal-specific follow-ups for each in sequence. Keep detailed routine questions category-specific (hair detail only when Hair is selected).
 - On small screens, use one focused question group at a time, collapsed optional detail sections, concise labels/help, sticky but non-obstructing primary actions, and safe-area-aware bottom navigation. Avoid making users scroll through irrelevant or optional content; do not hide required safety information merely to shorten a page.
 - When navigation changes the visible screen, onboarding step, or dashboard tab, return the viewport to the top with smooth scrolling unless the user requests reduced motion. Keep focus management accessible and avoid scrolling behind fixed headers.
 - Establish a consistent type scale: comfortable body text, legible labels and secondary text, and restrained display headings. Avoid both microcopy that is too small and oversized headings that push primary actions below the fold. Use concise copy and progressive disclosure rather than compressing text to fit.

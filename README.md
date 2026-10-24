@@ -4,7 +4,7 @@ Planning workspace for **Revana**, a personalized beauty and lifestyle coaching 
 
 ## Current repository state
 
-The folder initially contained planning documents only; it had no Figma export or existing application to preserve. A frontend-only interactive prototype is now present. It has a responsive landing page, four-step dry-hair onboarding, fact/hypothesis/unknown analysis, and a local dashboard with action tracking, plan rationale, feedback adjustments, and a deterministic coach demo. This visual direction can be refined or replaced with a Figma import.
+The folder initially contained planning documents only; it had no Figma export or existing application to preserve. A frontend-only interactive prototype is now present. It has a responsive landing page, multi-focus goal selection, per-focus follow-up questions, fact/hypothesis/unknown analysis, and a local dashboard with action tracking, plan rationale, feedback adjustments, and a deterministic coach demo. Hair has the most detailed routine questions; other focus areas currently demonstrate discovery and do not provide validated plans or health advice. This visual direction can be refined or replaced with a Figma import.
 
 The prototype has no backend, authentication, AI provider, persistence, reviewed evidence store, or production safety validation. State exists only in React memory and resets on refresh. All sample recommendations are illustrative. Other categories are disabled previews. No real user or health data should be entered.
 
@@ -17,7 +17,7 @@ The prototype has no backend, authentication, AI provider, persistence, reviewed
 
 ## Product approach
 
-Start with one complete, personalized dry-hair journey that demonstrates the product principle: understand the person, investigate their routine and constraints, explain uncertainties/opportunities, and provide a practical, reviewable plan. Expand into other categories only after the safety model and evidence approach are validated.
+Start by understanding any of the user's selected goals, then ask relevant questions for each selected focus. Validate the cross-category discovery experience with synthetic users; keep the first evidence-backed recommendation journey narrow (dry hair) until reviewed evidence and safety rules exist for more categories.
 
 ## Proposed technical direction
 
@@ -25,7 +25,7 @@ A single Next.js App Router + TypeScript application, modular server endpoints, 
 
 ## Naming and visual assets
 
-The app name and Figma assets have not been supplied in this folder. Names in the specification are unsearched creative candidates, not availability findings or legal clearance. Do not imply a name is available until the documented preliminary checks and professional clearance are complete.
+Revana is the configurable working name. Its brand story is “Renew your routines. Reveal your potential.” This is brand positioning, not an ancient-language meaning. Trademark/domain clearance is pending. Figma assets have not been supplied in this folder. Do not claim visual fidelity to an absent design or name availability before documented preliminary checks and professional clearance.
 
 ## Next step
 
@@ -34,3 +34,5 @@ Run the local prototype with `npm install` and `npm run dev`, then review the vi
 The current interface uses a compact mobile-first flow: optional onboarding details are collapsed, primary onboarding actions stay reachable, dashboard navigation sits at the bottom on phones, and text/state labels do not rely on color alone. It has been checked for horizontal overflow at common phone CSS widths, but still needs real-device, keyboard, landscape, and formal contrast/accessibility testing.
 
 The onboarding lets users select one or several focus areas and shows a relevant follow-up panel for each. Hair has the most detailed routine questions; other categories demonstrate discovery only and do not provide validated plans or health advice. On navigation, views return to the top with reduced-motion support.
+
+The frontend journey starts with a category-neutral **Begin your journey** action. Users can select one or multiple focus areas and answer a relevant follow-up for each. Hair has additional routine questions; other categories demonstrate discovery only and do not generate validated plans or health advice.

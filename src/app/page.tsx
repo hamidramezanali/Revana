@@ -682,10 +682,10 @@ export default function Home() {
     {screen === "home" && <>
       <main className="page-wrap">
         <section className="home-hero">
-          <div className="hero-copy"><span className="eyebrow"><i className="eyebrow-dot" />A MORE PERSONAL KIND OF CARE</span><h1 className="display">Care that<br />starts with <em>you.</em></h1><p className="lede">Your routines, your real life, your next best step. Thoughtful guidance for feeling more like yourself.</p><div className="hero-actions"><button className="button" onClick={start}>Begin your hair journey <span className="arrow">↗</span></button><button className="button-text" onClick={trySample}>See a sample plan <span className="arrow">↗</span></button></div><div className="micro-trust"><span>Made around you</span><span>No pressure</span><span>Private preview</span></div></div>
+          <div className="hero-copy"><span className="eyebrow"><i className="eyebrow-dot" />A MORE PERSONAL KIND OF CARE</span><h1 className="display">Care that<br />starts with <em>you.</em></h1><p className="lede">Your routines, your real life, your next best step. Thoughtful guidance for feeling more like yourself.</p><div className="hero-actions"><button className="button" onClick={start}>Begin your journey <span className="arrow">↗</span></button><button className="button-text" onClick={trySample}>See a sample plan <span className="arrow">↗</span></button></div><div className="micro-trust"><span>Made around you</span><span>No pressure</span><span>Private preview</span></div></div>
           <ArtCard />
         </section>
-        <div className="home-note"><span className="note-spark">✳</span><span><strong>Dry-hair journey preview.</strong> Your answers stay in this browser and clear when you leave.</span><span className="note-name">{brand.name} · working name</span></div>
+        <div className="home-note"><span className="note-spark">✳</span><span><strong>Personal journey preview.</strong> Choose what matters to you. Your answers stay in this browser and clear when you leave.</span><span className="note-name">{brand.name} · working name</span></div>
       </main>
     </>}
     {screen === "onboarding" && <Onboarding profile={profile} setProfile={setProfile} onExit={() => setScreen("home")} onFinish={() => setScreen("analysis")} />}

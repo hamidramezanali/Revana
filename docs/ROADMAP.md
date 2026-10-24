@@ -2,11 +2,11 @@
 
 All milestones are proposals. The RenevaAI folder was empty at inspection; source code, design exports, dependencies, cloud accounts and deployments are not present. Do not skip milestones or mark work done from visual mocks alone. Requirement IDs refer to `PRODUCT_SPEC.md`.
 
-**Progress note (2026-10-24):** A new frontend-only prototype was created in `src/app/page.tsx` and styling in `src/app/globals.css`. It demonstrates the onboarding-to-dashboard journey with in-memory state and synthetic content. This is a review artifact, not a completed MVP, evidence-reviewed plan, or production-ready app. See architecture prototype boundary.
+**Progress note (2026-10-24):** A frontend-only prototype is in `src/app/page.tsx` with styling in `src/app/globals.css`. The landing CTA is category-neutral (“Begin your journey”); onboarding supports multiple focus areas and relevant follow-ups, and navigation returns to the top. Data is in-memory and example recommendation logic is local/demo only. This is a review artifact, not a completed MVP, evidence-reviewed plan, or production-ready app. See architecture prototype boundary.
 
 ## Milestone 0 — Requirements and design alignment (visual exploration is underway)
 
-**Scope:** Add the Figma/export assets; confirm dry-hair MVP, adult-only assumption, launch language/region and safety boundaries. Review name candidates but do not commit to a brand.
+**Scope:** Add Figma/export assets if available; review the current Revana visual direction; confirm multi-focus discovery plus dry-hair as the first evidence-backed recommendation journey; confirm adult-only assumption, launch language/region and safety boundaries.
 
 **Acceptance criteria:**
 - Design assets are in the project or a documented source link is supplied; screens and reusable visual tokens are inventoried.
@@ -14,7 +14,7 @@ All milestones are proposals. The RenevaAI folder was empty at inspection; sourc
 - Confirmed product decisions and unresolved risks are recorded in `PRODUCT_SPEC.md`.
 - No application code, dependencies, or real personal data are required for this milestone.
 
-**Current state:** A coded visual direction exists for the user to review, but no Figma assets have been supplied and the product/visual choices are not approved. The criteria are not complete.
+**Current state:** The user has approved continuing with the prototype design and selected Revana as the working name. The name is not legally cleared. Figma assets remain absent; milestone acceptance and user/device validation are still open.
 
 ## Milestone 1 — Foundation and secure identity
 
@@ -26,16 +26,26 @@ All milestones are proposals. The RenevaAI folder was empty at inspection; sourc
 - Database user A cannot read/write/reassign user B data; RLS tests cover grants and all operations.
 - Secrets are not in source/client bundle; `.env.example` contains placeholders only.
 
-## Milestone 2 — Resumable dry-hair onboarding
+## Milestone 2 — Resumable multi-focus onboarding
 
-**Scope:** Goal/free text, exact/range/no deadline, relevant dry-hair problem/routine/products/preferences/safety fields, skip/resume and answer provenance states.
+**Scope:** Goal/free text, exact/range/no deadline, selected focus categories with per-goal relevant follow-ups, answer/skip state and resume. Hair receives detailed routine/products questions. Other categories collect discovery context only until their evidence and safety policies are reviewed.
 
 **Acceptance criteria:**
 - A signed-in user can pause, reload, and resume their onboarding.
 - Confirmed, skipped, and unanswered are separate values and drive distinct logic.
-- Hair-only flow asks no unrelated skin/fitness sections; no duplicate preference questions.
+- Users can select one or several focus areas; each selected focus gets its own concise question, and Continue routes to the next unanswered focus.
+- Follow-ups are relevant to the chosen category, do not duplicate the initial free-text description, and permit skip/return.
+- Hair selection shows its additional hair routine questions; other goals do not receive irrelevant hair questions.
 - Exact deadline can be changed; timeline explains dates without promising outcomes.
 - E2E tests cover relevant branches and ownership.
+
+## Immediate next steps before expanding features
+
+1. Review the updated neutral “Begin your journey” entry point and category-specific question order on a phone and desktop.
+2. Refine per-category question logic and test mixed goals, skipped/answered distinction, and returning to each focus.
+3. Keep the generated plan explicitly exploratory for non-hair goals; do not present unsupported medical, treatment, nutrition, or supplement recommendations.
+4. Add a reviewed evidence set and deterministic safety/business rules for the dry-hair plan before calling it personalized advice.
+5. Decide whether to import Figma now or keep refining the prototype direction; then add behavioral/E2E and accessibility tests before backend persistence.
 
 ## Milestone 3 — Deterministic analysis and reviewed dry-hair plan
 
