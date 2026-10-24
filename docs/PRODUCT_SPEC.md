@@ -1,6 +1,6 @@
 # Product Specification & Implementation Tracker
 
-**Product name:** Reneva is the selected working name for the prototype; configurable and not legally cleared.  
+**Product name:** Revana is the selected working name for the prototype; configurable and not legally cleared. Brand story: “Renew your routines. Reveal your potential.” This is original brand positioning, not an ancient-language etymology.  
 **Audience:** Adults seeking individualized appearance and lifestyle improvements. Adult-only scope is an assumption to confirm before launch.  
 **Specification state:** Planning baseline, updated 2026-10-24. A frontend-only prototype now demonstrates part of the dry-hair journey. Figma/export assets, backend, authentication, persistence, reviewed evidence integration, and production validation are still absent. A visual control alone does not satisfy a requirement's full acceptance criteria.
 
@@ -20,7 +20,7 @@ Update the status and evidence note in the same change that completes work. If a
 | P-002 | Recommendations must explain personal relevance, evidence, uncertainty, risks, effort, cost, expectations, and review timing. | Not started | Every saved recommendation has the required fields and links to answer/evidence IDs. |
 | P-003 | Personalization before recommendations; evidence before marketing; practical interventions before complexity; user choice before sales pressure; safety before optimization; progress over perfection. | Not started | Product copy, rules, and tests reflect these principles; no shame or coercive language. |
 | P-004 | Clearly differentiate reported facts, AI hypotheses, confirmed inferences, and missing/skipped information. Never imply passive monitoring without an authorized data source. | Not started | Analysis labels provenance and never invents activity/sleep/nutrition observations. |
-| P-005 | Keep Reneva branding configurable and avoid representing the name as legally cleared. | In progress | Name is centralized in `src/config/brand.ts`; legal and domain clearance is not complete. |
+| P-005 | Keep Revana branding configurable and avoid representing the name as legally cleared. | In progress | Name and brand story are centralized in `src/config/brand.ts`; legal and domain clearance is not complete. |
 
 ## B. Naming and brand discovery
 
@@ -43,7 +43,7 @@ Update the status and evidence note in the same change that completes work. If a
 | Velora | Invented, intended to evoke vitality and radiance | veh-LOR-ah | Easy to say, polished, broad | Similar-sounding wellness/beauty brand or product risk unknown; all databases unsearched. |
 | Eloria | Invented, intended to evoke a personal journey and luminous well-being | eh-LOR-ee-ah | Soft, editorial, broad | Similarity to existing names and domain/social availability unknown; all databases unsearched. |
 
-**Naming update:** The user selected **Reneva** as the working product name, replacing the earlier provisional Aretia concept. The candidate list and shortlist above are historical brainstorming only; Aretia is no longer the favored name. Reneva has not been screened. Complete N-003 searches and professional clearance before public commercial use; do not imply availability.
+**Naming update:** The user selected **Revana** as the working product name, replacing Reneva and the earlier Aretia concept. Brand story: **“Renew your routines. Reveal your potential.”** This is a brand narrative, not a claim about the word's historical or ancient-language origin. The candidate list and shortlist above are historical brainstorming, not endorsements. Revana has not been screened. Complete N-003 searches and professional clearance before public commercial use; do not imply availability.
 
 ## C. Experience and responsive design
 
@@ -151,7 +151,7 @@ Update the status and evidence note in the same change that completes work. If a
 
 | Decision | Current default | Status / impact |
 |---|---|---|
-| App name | Reneva; configurable working name | Selected for prototype; trademark/domain screening and clearance remain open. |
+| App name | Revana; configurable working name | Selected for prototype; brand story is “Renew your routines. Reveal your potential.” Trademark/domain screening and clearance remain open. |
 | First experience | Dry-hair only | Proposed MVP; confirm with product owner. |
 | Audience age | Adults only | Assumption to confirm; affects onboarding, safety, consent and legal review. |
 | Language/launch region | English first, region TBD | Open; affects evidence sources, localization, data residency and provider selection. |

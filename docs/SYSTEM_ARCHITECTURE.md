@@ -55,7 +55,7 @@ The AI is an untrusted proposal generator, never the authority for identity, aut
 
 - `src/app/page.tsx` is a single client-side flow for fast product review. It has a landing screen, four-step onboarding, selectable multi-focus categories, goal-specific follow-up prompts, reported/hypothesis/unknown analysis, dashboard tabs, expandable rationale, completion toggles, feedback-driven preview changes, and a deterministic demo coach.
 - Data is in React state only. Refreshing, closing the tab, or navigating away clears it. The sample journey is fictional; no account or persistence exists.
-- `src/config/brand.ts` centralizes the working name Reneva. The user selected the name for the prototype; it has not been trademark/domain screened or legally cleared.
+- `src/config/brand.ts` centralizes the working name Revana and its brand story, “Renew your routines. Reveal your potential.” The story is original positioning, not a linguistic etymology claim. Trademark/domain screening and legal clearance have not been completed.
 - Skin, body/fitness, energy/lifestyle, and other can be selected to demonstrate discovery prompts and cautious exploratory summaries. They do not provide validated plans, clinical advice, treatment recommendations, or reviewed evidence. Treat those journeys as interaction prototypes only.
 - No backend or cloud integration is part of this visual prototype. Do not add Supabase/OpenAI until a production milestone is approved and privacy/auth decisions are reviewed.
 

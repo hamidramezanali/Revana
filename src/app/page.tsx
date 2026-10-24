@@ -231,9 +231,9 @@ function ArtCard() {
       </svg>
       <span className="art-caption">A considered kind of change</span>
       <div className="hero-card">
-        <span className="hero-card-label">RENEVA · YOUR FIRST JOURNEY</span>
+        <span className="hero-card-label">REVANA · YOUR FIRST JOURNEY</span>
         <strong>Start with what’s real.</strong>
-        <p>Your routine. Your pace. One thoughtful next step.</p>
+        <p>Renew your routines. Reveal your potential.</p>
       </div>
     </div>
   );

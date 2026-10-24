@@ -1,6 +1,6 @@
 # Personalized Beauty & Lifestyle Coach
 
-Planning workspace for **Reneva**, a personalized beauty and lifestyle coaching app. Reneva is the user's chosen working name; keep it configurable and do not imply trademark or domain clearance.
+Planning workspace for **Revana**, a personalized beauty and lifestyle coaching app. Brand story: “Renew your routines. Reveal your potential.” This is brand positioning, not an ancient-language meaning. Keep the name configurable; trademark/domain clearance is pending.
 
 ## Current repository state
 
