@@ -53,10 +53,10 @@ The AI is an untrusted proposal generator, never the authority for identity, aut
 
 ### Current prototype boundary
 
-- `src/app/page.tsx` is a single client-side flow for fast product review. It has a landing screen, 4-step dry-hair onboarding, reported/hypothesis/unknown analysis, dashboard tabs, expandable rationale, completion toggles, feedback-driven preview changes, and a deterministic demo coach.
+- `src/app/page.tsx` is a single client-side flow for fast product review. It has a landing screen, four-step onboarding, selectable multi-focus categories, goal-specific follow-up prompts, reported/hypothesis/unknown analysis, dashboard tabs, expandable rationale, completion toggles, feedback-driven preview changes, and a deterministic demo coach.
 - Data is in React state only. Refreshing, closing the tab, or navigating away clears it. The sample journey is fictional; no account or persistence exists.
 - `src/config/brand.ts` centralizes the working name Reneva. The user selected the name for the prototype; it has not been trademark/domain screened or legally cleared.
-- Disabled goal cards are previews only. There is no real skin, fitness, nutrition, treatment, photo, or medical workflow. Current demo conditions must not be represented as evidence-based product recommendations.
+- Skin, body/fitness, energy/lifestyle, and other can be selected to demonstrate discovery prompts and cautious exploratory summaries. They do not provide validated plans, clinical advice, treatment recommendations, or reviewed evidence. Treat those journeys as interaction prototypes only.
 - No backend or cloud integration is part of this visual prototype. Do not add Supabase/OpenAI until a production milestone is approved and privacy/auth decisions are reviewed.
 
 ### Frontend
@@ -64,6 +64,8 @@ The AI is an untrusted proposal generator, never the authority for identity, aut
 - Mobile-first onboarding, progress, save/resume, and explicit answer-state controls.
 - Progressive question rendering from server-provided/application-defined relevance rules; hide unrelated categories.
 - On small screens, use one focused question group at a time, collapsed optional detail sections, concise labels/help, sticky but non-obstructing primary actions, and safe-area-aware bottom navigation. Avoid making users scroll through irrelevant or optional content; do not hide required safety information merely to shorten a page.
+- When navigation changes the visible screen, onboarding step, or dashboard tab, return the viewport to the top with smooth scrolling unless the user requests reduced motion. Keep focus management accessible and avoid scrolling behind fixed headers.
+- Establish a consistent type scale: comfortable body text, legible labels and secondary text, and restrained display headings. Avoid both microcopy that is too small and oversized headings that push primary actions below the fold. Use concise copy and progressive disclosure rather than compressing text to fit.
 - Test narrow phone widths (320–430 CSS px), landscape where supported, and desktop. Prevent horizontal overflow; maintain touch targets around 44×44 CSS px and ensure fixed navigation does not cover content or keyboard-focused inputs.
 - Keep meaning independent of color: pair color with visible text labels/icons/patterns and selected states; verify contrast, focus and reduced-motion preferences.
 - Prototype implementation note: onboarding uses a fixed, safe-area-aware action footer on mobile, with optional product/treatment and budget fields collapsed by default. Dashboard navigation moves to a persistent bottom bar. Verify on actual devices with the software keyboard open before treating as complete.

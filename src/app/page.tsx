@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { brand } from "@/config/brand";
 
 type Screen = "home" | "onboarding" | "analysis" | "app";
@@ -26,6 +26,8 @@ type Profile = {
   timeAvailable: string;
   budget: string;
   approach: string;
+  focusNotes: Partial<Record<Goal, string>>;
+  focusContexts: Partial<Record<Goal, string>>;
 };
 type Recommendation = {
   id: string;
@@ -38,6 +40,11 @@ type Recommendation = {
   priority: string;
 };
 type ChatMessage = { role: "user" | "coach"; text: string };
+
+function scrollToTop() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+}
 
 const initialProfile: Profile = {
   timeline: "",
@@ -58,87 +65,113 @@ const initialProfile: Profile = {
   timeAvailable: "",
   budget: "",
   approach: "",
+  focusNotes: {},
+  focusContexts: {},
 };
 
-const goalChoices: Array<{ id: Goal; icon: string; title: string; description: string; enabled: boolean }> = [
-  { id: "hair", icon: "⌁", title: "My hair", description: "Dryness, shine, breakage or routine", enabled: true },
-  { id: "skin", icon: "◌", title: "My face & skin", description: "A future guided journey", enabled: false },
-  { id: "body", icon: "↗", title: "My body & fitness", description: "A future guided journey", enabled: false },
-  { id: "energy", icon: "✳", title: "Energy & lifestyle", description: "A future guided journey", enabled: false },
+const goalChoices: Array<{ id: Goal; icon: string; title: string; description: string }> = [
+  { id: "skin", icon: "◌", title: "Face & skin", description: "How your skin looks or feels" },
+  { id: "hair", icon: "⌁", title: "Hair", description: "Dryness, shine, breakage or routine" },
+  { id: "body", icon: "↗", title: "Body & fitness", description: "Strength, movement or how you feel" },
+  { id: "energy", icon: "✳", title: "Energy & lifestyle", description: "Daily energy or routines" },
+  { id: "other", icon: "+", title: "Something else", description: "Describe your own focus" },
 ];
 
+const focusQuestions: Record<Goal, { title: string; prompt: string; context: string }> = {
+  hair: { title: "Let’s understand your hair", prompt: "When do you notice dryness most: after washing, between washes, or after styling?", context: "What have you tried, or what seems to make it feel better or worse?" },
+  skin: { title: "Let’s understand your skin concern", prompt: "When do you notice it most, and has anything changed recently?", context: "What is your current routine, or what have you already tried?" },
+  body: { title: "Let’s understand what matters to you", prompt: "Which matters most right now: strength, endurance, energy, or how movement feels?", context: "What kinds of movement do you enjoy, and what tends to get in the way?" },
+  energy: { title: "Let’s understand your day", prompt: "When do you notice your energy changing most?", context: "What does a typical day look like around rest, meals or activity? Share only what feels comfortable." },
+  other: { title: "Tell us what matters", prompt: "When does this concern affect you most?", context: "What have you already tried, or what would a helpful change look like?" },
+};
+
 function buildRecommendations(profile: Profile, simplified: boolean): Recommendation[] {
-  const items: Recommendation[] = [
-    {
-      id: "inventory",
-      category: "Start here",
+  const selectedGoals: Goal[] = profile.goals.length > 0 ? profile.goals : ["other"];
+  const itemsByGoal = new Map<Goal, Recommendation[]>();
+
+  if (selectedGoals.includes("hair")) {
+    const hairItems: Recommendation[] = [{
+      id: "hair-inventory",
+      category: "Hair · starting point",
       title: profile.currentProducts.trim() ? "Review what you already use" : "Note what you use on wash day",
       detail: profile.currentProducts.trim()
-        ? "Look at the products you listed and when you use them. Keep the routine as it is for now; there is no need to add or replace anything."
-        : "If you feel comfortable, note the shampoo, conditioner or leave-in products you use and when. It is fine to leave this blank; no purchase is suggested.",
+        ? "Review when you use the products you listed. Keep the routine as it is for now; there is no need to add or replace anything."
+        : "If you feel comfortable, note the products you use and when. This is an observation, not a suggestion to buy anything.",
       why: profile.currentProducts.trim()
-        ? `You mentioned “${profile.currentProducts.trim().slice(0, 90)}${profile.currentProducts.trim().length > 90 ? "…" : ""}”. Reviewing when you use these is a useful first step before considering anything new.`
-        : "You have not listed your current products yet, so we are starting with observation rather than guessing or recommending a brand.",
+        ? `You mentioned “${profile.currentProducts.trim().slice(0, 80)}${profile.currentProducts.trim().length > 80 ? "…" : ""}”.`
+        : "You have not listed products yet, so this starts with observation rather than guessing.",
       cadence: "Once · 3 minutes",
       review: "Today",
       priority: "First step",
-    },
-  ];
-
-  if (profile.heat === "Often" || profile.heat === "Most wash days") {
-    items.push({
-      id: "heat",
-      category: "Routine review",
-      title: "Make one heat-styling session gentler",
-      detail: "For one wash day, try air-drying for part of the time or using a lower comfortable setting. Follow the instructions for any styling product you already own.",
-      why: `You said you use heat ${profile.heat.toLowerCase()}. That makes heat exposure worth reviewing as one possible contributor; it does not establish the cause of dryness.` ,
-      cadence: "Try once this week",
-      review: "At your next wash",
-      priority: "High relevance",
-    });
-  } else {
-    items.push({
-      id: "wash-day",
-      category: "Gentle experiment",
-      title: profile.washFrequency ? "Notice how your hair feels after washing" : "Notice when the dryness appears",
-      detail: "On your next wash, notice whether the dryness is present right away or develops later. Keep the rest of your routine familiar so the observation is easier to interpret.",
-      why: profile.washFrequency
-        ? `You wash about ${profile.washFrequency.toLowerCase()}. The timing of the dry feeling can help make the next conversation more specific, without assuming a cause.`
-        : "You have not shared your wash frequency yet. The plan avoids assuming a routine and starts with a simple observation.",
-      cadence: profile.washFrequency ? "Next wash day" : "When you next notice it",
-      review: "After it dries",
+    }];
+    hairItems.push(profile.heat === "Often" || profile.heat === "Most wash days" ? {
+      id: "hair-heat",
+      category: "Hair · routine to review",
+      title: "Notice how heat styling fits your routine",
+      detail: "Next time you style, notice when and how you use heat. You can choose whether you want to change anything; this preview does not assume heat is the cause.",
+      why: `You said you use heat ${profile.heat.toLowerCase()}. That makes it a possible factor to explore, not an established cause.`,
+      cadence: "Next styling day",
+      review: "At your next check-in",
+      priority: "Worth exploring",
+    } : {
+      id: "hair-observe",
+      category: "Hair · observation",
+      title: "Notice when the dryness appears",
+      detail: "When you next notice dryness, make a brief note of what was happening. Keep the rest of your routine familiar for now.",
+      why: profile.washFrequency ? `You wash about ${profile.washFrequency.toLowerCase()}; the timing may help guide a useful follow-up.` : "Your wash frequency is not known, so we are not assuming a routine.",
+      cadence: "When you next notice it",
+      review: "At your next check-in",
       priority: "Low effort",
     });
-  }
-
-  const explicitlyLacksConditioner = /(?:\b(?:no|not|without|never|don't|do not)\b.{0,40}\bcondition(?:er|ing)\b|\bcondition(?:er|ing)\b.{0,30}\b(?:not|never|rarely|seldom)\b)/i.test(profile.currentProducts);
-  const mentionsConditioner = /condition(er|ing)/i.test(profile.currentProducts) && !explicitlyLacksConditioner;
-  if (!mentionsConditioner) {
-    items.push({
-      id: "conditioner",
-      category: "Explore what you own",
-      title: "Check whether you already have a conditioner",
-      detail: "If one is already in your bathroom, review its label and how you use it before deciding whether anything needs to change. This plan does not ask you to buy a product.",
-      why: profile.currentProducts.trim()
-        ? "Your product notes did not clearly mention conditioner. We do not know whether you use one, so this is a question to check—not a conclusion that your routine is missing something."
-        : "You have not listed products yet. We do not know whether you use conditioner, so this is a question to check—not a conclusion that your routine is missing something.",
-      cadence: "Once · 2 minutes",
-      review: "This week",
-      priority: "Worth checking",
-    });
-  } else {
-    items.push({
-      id: "observe",
-      category: "Progress note",
+    const explicitlyLacksConditioner = /(?:\b(?:no|not|without|never|don't|do not)\b.{0,40}\bcondition(?:er|ing)\b|\bcondition(?:er|ing)\b.{0,30}\b(?:not|never|rarely|seldom)\b)/i.test(profile.currentProducts);
+    const mentionsConditioner = /condition(er|ing)/i.test(profile.currentProducts) && !explicitlyLacksConditioner;
+    hairItems.push(mentionsConditioner ? {
+      id: "hair-observe-response",
+      category: "Hair · progress note",
       title: "Keep a simple softness note",
-      detail: "After your usual wash, note softness and manageability in your own words. One observation is enough; no score or photo is needed.",
-      why: `You listed a conditioning product (${profile.currentProducts.trim().slice(0, 70)}${profile.currentProducts.trim().length > 70 ? "…" : ""}). First notice how your current routine feels before adding another step.`,
+      detail: "After your usual wash, note softness or manageability in your own words. No score or photo is needed.",
+      why: "You listed a conditioning product; first notice how your existing routine feels before adding another step.",
       cadence: "Once this week",
       review: "At the weekly check-in",
       priority: "Easy to track",
+    } : {
+      id: "hair-conditioner-check",
+      category: "Hair · explore what you own",
+      title: "Check what conditioning products you already have",
+      detail: "If you wish, check whether you already own a conditioner or leave-in and how you use it. No purchase is suggested.",
+      why: profile.currentProducts.trim() ? "Your product notes do not clearly mention a conditioner; we do not know whether you use one." : "You have not listed products yet, so we do not know what you use.",
+      cadence: "Once · 2 minutes",
+      review: "This week",
+      priority: "Optional check",
     });
+    itemsByGoal.set("hair", hairItems);
   }
 
+  const nonHairMeta: Record<Exclude<Goal, "hair">, { label: string; title: string; detail: string }> = {
+    skin: { label: "Face & skin", title: "Clarify what you notice most", detail: "Note when you notice this and what you already do. This preview does not assess skin conditions or suggest treatments." },
+    body: { label: "Body & fitness", title: "Define what progress means to you", detail: "Write down a practical change you would notice. This preview does not set a weight target or prescribe exercise." },
+    energy: { label: "Energy & lifestyle", title: "Notice the pattern you described", detail: "Reflect on when this tends to happen. This preview does not monitor your health or infer a medical cause." },
+    other: { label: "Your focus", title: "Clarify what a helpful change looks like", detail: "Capture one detail that matters to you. Your own description can guide a relevant follow-up." },
+  };
+  for (const goal of selectedGoals) {
+    if (goal === "hair") continue;
+    const meta = nonHairMeta[goal];
+    const note = profile.focusNotes[goal]?.trim();
+    itemsByGoal.set(goal, [{
+      id: `explore-${goal}`,
+      category: `${meta.label} · discovery`,
+      title: meta.title,
+      detail: meta.detail,
+      why: note ? `You told us: “${note.slice(0, 140)}${note.length > 140 ? "…" : ""}”.` : "You selected this focus but have not added details yet. We will not guess what is causing it.",
+      cadence: "Once · 2 minutes",
+      review: "Before considering next steps",
+      priority: "Your chosen focus",
+    }]);
+  }
+
+  const items = selectedGoals.length > 1
+    ? selectedGoals.map((goal) => itemsByGoal.get(goal)?.[0]).filter((item): item is Recommendation => Boolean(item))
+    : itemsByGoal.get(selectedGoals[0]) ?? [];
   return simplified ? items.slice(0, 2) : items;
 }
 
@@ -149,6 +182,23 @@ function dateLabel(profile: Profile) {
   if (!profile.targetDate) return "Target date not specified";
   const formattedDate = new Date(`${profile.targetDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
   return `${formattedDate}${profile.timelinePurpose ? ` · ${profile.timelinePurpose === "event" ? "event" : profile.timelinePurpose === "long-term" ? "long-term goal" : "personal date"}` : ""}`;
+}
+
+function focusSummary(profile: Profile) {
+  const focuses: Goal[] = profile.goals.length ? profile.goals : ["other"];
+  return focuses.map((goal) => {
+    const title = goalChoices.find((item) => item.id === goal)?.title ?? "Your focus";
+    const note = profile.focusNotes[goal]?.trim();
+    if (goal === "hair") {
+      const details = [
+        profile.dryness ? `dryness around ${profile.dryness.toLowerCase()}` : "",
+        profile.heat ? `heat styling ${profile.heat.toLowerCase()}` : "",
+        profile.washFrequency ? `washing ${profile.washFrequency.toLowerCase()}` : "",
+      ].filter(Boolean);
+      return details.length ? `${title}: ${details.join(", ")}.` : `${title}: some routine details are still open.`;
+    }
+    return note ? `${title}: “${note.slice(0, 100)}${note.length > 100 ? "…" : ""}”.` : `${title}: details are still open.`;
+  }).join(" ");
 }
 
 function AppHeader({ onHome, onReset, showReset }: { onHome: () => void; onReset: () => void; showReset: boolean }) {
@@ -202,7 +252,22 @@ function Onboarding({
 }) {
   const [step, setStep] = useState(0);
   const [message, setMessage] = useState("");
+  const [activeFocus, setActiveFocus] = useState<Goal>(profile.goals[0] ?? "other");
+  const selectedFocuses: Goal[] = profile.goals.length > 0 ? profile.goals : ["other"];
+  const activeGoal = selectedFocuses.includes(activeFocus) ? activeFocus : selectedFocuses[0];
+  const activeQuestions = focusQuestions[activeGoal];
+  const nextUnansweredFocus = (after: Goal) => {
+    const currentIndex = selectedFocuses.indexOf(after);
+    return selectedFocuses.slice(currentIndex + 1).find((goal) =>
+      !profile.focusNotes[goal]?.trim()
+      && !profile.focusContexts[goal]?.trim()
+      && !profile.skipped.includes(`focus-${goal}`),
+    );
+  };
   const labels = ["Your timeline", "Your focus", "Your routine", "Your preferences"];
+  useEffect(() => {
+    scrollToTop();
+  }, [step]);
   const update = <K extends keyof Profile>(key: K, value: Profile[K]) => setProfile((current) => ({
     ...current,
     [key]: value,
@@ -218,6 +283,20 @@ function Onboarding({
       setMessage("Choose the hair journey or describe what you would like help with.");
       return;
     }
+    if (step === 2) {
+      const hasFocusNote = Boolean(profile.focusNotes[activeGoal]?.trim() || profile.focusContexts[activeGoal]?.trim());
+      if (!hasFocusNote && !profile.skipped.includes(`focus-${activeGoal}`)) {
+        setMessage("Add a short note, share optional context, or skip this focus to continue.");
+        return;
+      }
+      const nextFocus = nextUnansweredFocus(activeGoal);
+      if (nextFocus) {
+        setActiveFocus(nextFocus);
+        setMessage("");
+        scrollToTop();
+        return;
+      }
+    }
     if (step < 3) setStep((current) => current + 1);
     else onFinish();
   };
@@ -227,24 +306,35 @@ function Onboarding({
     else setStep((current) => current - 1);
   };
   const toggleGoal = (goal: Goal) => {
-    if (goal !== "hair") return;
-    update("goals", profile.goals.includes(goal) ? profile.goals.filter((item) => item !== goal) : [...profile.goals, goal]);
+    const nextGoals = profile.goals.includes(goal) ? profile.goals.filter((item) => item !== goal) : [...profile.goals, goal];
+    update("goals", nextGoals);
+    if (nextGoals.length > 0 && !nextGoals.includes(activeFocus)) setActiveFocus(nextGoals[0]);
   };
   const skipCurrentStep = () => {
     const stepFields = [
       ["timeline", "targetDate", "timeframe"],
       ["goals", "concern"],
       ["dryness", "washFrequency", "currentProducts", "heat", "color", "hairChange"],
-      ["sensitivity", "timeAvailable", "budget", "approach"],
+      ["timeAvailable", "budget", "approach"],
     ];
     setProfile((current) => {
       const unanswered = (stepFields[step] ?? []).filter((field) => {
         const value = current[field as keyof Profile];
         return Array.isArray(value) ? value.length === 0 : !value;
       });
+      if (step === 2 && !current.focusNotes[activeGoal] && !current.focusContexts[activeGoal]) unanswered.push(`focus-${activeGoal}`);
+      if (step === 3 && current.goals.some((goal) => goal === "hair" || goal === "skin") && !current.sensitivity) unanswered.push("sensitivity");
       return { ...current, skipped: [...new Set([...current.skipped, ...unanswered])] };
     });
     setMessage("");
+    if (step === 2) {
+      const nextFocus = nextUnansweredFocus(activeGoal);
+      if (nextFocus) {
+        setActiveFocus(nextFocus);
+        scrollToTop();
+        return;
+      }
+    }
     if (step < 3) setStep((current) => current + 1);
     else onFinish();
   };
@@ -275,21 +365,30 @@ function Onboarding({
         {step === 1 && <>
           <span className="eyebrow">START WITH WHAT MATTERS TO YOU</span>
           <h1 className="step-title">What feels worth focusing on?</h1>
-          <p className="step-copy">Choose hair for this preview, or tell us in your own words.</p>
-          <div className="choice-grid">
-            {goalChoices.map((goal) => <button key={goal.id} disabled={!goal.enabled} className={`choice-card ${profile.goals.includes(goal.id) ? "selected" : ""} ${!goal.enabled ? "disabled" : ""}`} onClick={() => toggleGoal(goal.id)} aria-pressed={profile.goals.includes(goal.id)}>
-              <span className="choice-icon">{goal.icon}</span><span><strong>{goal.title}</strong><small>{goal.enabled ? goal.description : "Coming later"}</small></span>
+          <p className="step-copy">Choose one or more. We’ll ask about each focus next.</p>
+          <div className="choice-grid focus-grid">
+            {goalChoices.map((goal) => <button key={goal.id} className={`choice-card ${profile.goals.includes(goal.id) ? "selected" : ""}`} onClick={() => toggleGoal(goal.id)} aria-pressed={profile.goals.includes(goal.id)}>
+              <span className="choice-icon">{goal.icon}</span><span><strong>{goal.title}</strong><small>{goal.description}</small></span>
             </button>)}
           </div>
-          <label><span className="form-label">In your own words, what have you noticed?</span><textarea className="textarea" value={profile.concern} onChange={(event) => update("concern", event.target.value)} placeholder="For example: My hair feels dry and looks dull, especially at the ends…" maxLength={600} /></label>
-          <p className="field-hint">Your words guide the next questions. Nothing is sent anywhere in this local preview.</p>
+          <label><span className="form-label">Anything else you’d like us to know? <span className="optional-inline">Optional</span></span><textarea className="textarea focus-note" value={profile.concern} onChange={(event) => update("concern", event.target.value)} placeholder="Tell us in your own words…" maxLength={600} /></label>
         </>}
 
         {step === 2 && <>
-          <span className="eyebrow">LET’S UNDERSTAND THE ROUTINE</span>
-          <h1 className="step-title">What is your hair routine like?</h1>
-          <p className="step-copy">A few details help us avoid guessing. Skip anything.</p>
-          <div className="question-block">
+          <span className="eyebrow">A FEW QUESTIONS ABOUT YOU</span>
+          <h1 className="step-title">Let’s understand your focus.</h1>
+          <p className="step-copy">One focus at a time. Your answers shape what comes next.</p>
+          {selectedFocuses.length > 1 && <div className="focus-tabs" role="tablist" aria-label="Selected focus areas">{selectedFocuses.map((goal) => <button key={goal} role="tab" aria-selected={activeGoal === goal} className={`focus-tab ${activeGoal === goal ? "active" : ""}`} onClick={() => { setActiveFocus(goal); scrollToTop(); }}>{goalChoices.find((item) => item.id === goal)?.title ?? "Your focus"}</button>)}</div>}
+          <div className="focus-panel" key={activeGoal}>
+            <h2 className="question-title">{activeQuestions.title}</h2>
+            <label><span className="form-label">{activeQuestions.prompt}</span><textarea className="textarea focus-note" value={profile.focusNotes[activeGoal] ?? ""} onChange={(event) => setProfile((current) => ({ ...current, focusNotes: { ...current.focusNotes, [activeGoal]: event.target.value }, skipped: current.skipped.filter((item) => item !== `focus-${activeGoal}`) }))} placeholder="A short note is enough…" maxLength={500} /></label>
+            <details className="optional-details focus-context">
+              <summary>A little more context <span>Optional</span></summary>
+              <label><span className="form-label">{activeQuestions.context}</span><textarea className="textarea focus-note" value={profile.focusContexts[activeGoal] ?? ""} onChange={(event) => setProfile((current) => ({ ...current, focusContexts: { ...current.focusContexts, [activeGoal]: event.target.value } }))} placeholder="Share only what feels useful…" maxLength={500} /></label>
+            </details>
+          </div>
+          {activeGoal === "hair" && <>
+          <div className="question-block hair-questions">
             <h2 className="question-title">Where does your hair feel driest?</h2><p className="question-caption">Choose the closest fit; you can select more than one.</p>
             <div className="segmented">{["Roots", "Lengths", "Ends", "All over", "Not sure"].map((value) => {
               const selected = profile.dryness.split(", ").includes(value);
@@ -312,17 +411,18 @@ function Onboarding({
               <label><span className="form-label">Recent routine change?</span><select className="select" value={profile.hairChange} onChange={(event) => update("hairChange", event.target.value)}><option value="">Not answered</option><option>No recent change</option><option>Changed products</option><option>Changed styling or wash routine</option><option>Not sure</option></select></label>
             </div>
           </details>
+          </>}
         </>}
 
         {step === 3 && <>
           <span className="eyebrow">A PLAN THAT FITS YOUR LIFE</span>
           <h1 className="step-title">What feels doable?</h1>
           <p className="step-copy">Tell us what fits your time and comfort. Skip any question.</p>
-          <div className="question-block">
+          {profile.goals.some((goal) => goal === "hair" || goal === "skin") && <div className="question-block">
             <h2 className="question-title">Any sensitivity or reaction we should know about?</h2>
             <p className="question-caption">This is optional. We will not assume an ingredient is suitable for you.</p>
             <div className="segmented">{["No known sensitivity", "I have had reactions", "Not sure", "Prefer to skip"].map((value) => <button key={value} className={`segment ${profile.sensitivity === value ? "selected" : ""}`} onClick={() => update("sensitivity", value)} aria-pressed={profile.sensitivity === value}>{value}</button>)}</div>
-          </div>
+          </div>}
           <div className="form-grid">
             <label><span className="form-label">How much time feels manageable?</span><select className="select" value={profile.timeAvailable} onChange={(event) => update("timeAvailable", event.target.value)}><option value="">Choose if you wish</option><option>Under 5 minutes</option><option>5–10 minutes</option><option>10–20 minutes</option><option>It depends on the day</option></select></label>
             <label><span className="form-label">What would you like to prioritize?</span><select className="select" value={profile.approach} onChange={(event) => update("approach", event.target.value)}><option value="">Choose if you wish</option><option>At-home routine first</option><option>Use what I already own</option><option>Open to professional advice</option><option>A balanced mix</option></select></label>
@@ -331,7 +431,7 @@ function Onboarding({
             <summary>Budget preference <span>Optional</span></summary>
             <label><span className="form-label">What budget feels comfortable?</span><select className="select" value={profile.budget} onChange={(event) => update("budget", event.target.value)}><option value="">Not answered</option><option>Prefer to use what I own</option><option>Keep any changes low-cost</option><option>Open to a considered purchase</option><option>I would rather not say</option></select></label>
           </details>
-          <div className="demo-banner"><span aria-hidden="true">✳</span><span><strong>Optional safety context.</strong> We will not provide supplement or medical recommendations in this prototype. You have not been asked for health details that are not relevant to this hair-care preview.</span></div>
+          <div className="demo-banner"><span aria-hidden="true">✳</span><span><strong>Optional context only.</strong> This preview does not diagnose, prescribe, or recommend supplements. Share only what feels relevant to your selected focus.</span></div>
         </>}
       </section>
 
@@ -348,34 +448,48 @@ function Onboarding({
 }
 
 function Analysis({ profile, onContinue, onEdit }: { profile: Profile; onContinue: () => void; onEdit: () => void }) {
-  const hypothesis = profile.heat === "Often" || profile.heat === "Most wash days"
-    ? "Heat styling may be one factor worth reviewing. Your answers suggest a possibility, not a confirmed cause."
-    : !profile.heat
-      ? "You have not shared how often you use heat yet, so we are not treating it as a contributor. Observing when dryness appears is a low-effort place to begin."
-      : "We do not yet have enough detail to identify a likely contributor. Observing when dryness appears is a low-effort place to begin.";
+  const focuses: Goal[] = profile.goals.length ? profile.goals : ["other"];
+  const opportunities: Record<Goal, string> = {
+    hair: profile.heat === "Often" || profile.heat === "Most wash days"
+      ? "You mentioned frequent heat styling. It may be worth reviewing, but your answers do not establish it as the cause."
+      : "We do not yet have enough detail to identify a likely contributor. Notice when dryness appears before changing several things.",
+    skin: "We do not yet know what is contributing to your skin concern. Your description can guide a relevant follow-up; this preview does not assess skin conditions or treatments.",
+    body: "We do not yet know which movement or routine changes would fit your situation. Start from the goal and barriers you described, without assuming a target.",
+    energy: "We do not yet know what is behind the energy pattern you described. This preview does not infer a health cause or monitor your routine.",
+    other: "Your focus is personal to you. A little more context would help shape a useful next question; we will not guess the cause.",
+  };
   const facts = [
     profile.concern.trim() ? `You described: “${profile.concern.trim().slice(0, 160)}${profile.concern.trim().length > 160 ? "…" : ""}”` : "",
-    profile.dryness ? `You notice dryness around your ${profile.dryness.toLowerCase()}.` : "",
-    profile.washFrequency ? `You wash your hair ${profile.washFrequency.toLowerCase()}.` : "",
-    profile.heat ? `You use heat styling ${profile.heat.toLowerCase()}.` : "",
-    profile.currentProducts.trim() ? `You listed: ${profile.currentProducts.trim().slice(0, 120)}${profile.currentProducts.trim().length > 120 ? "…" : ""}` : "",
+    ...focuses.flatMap((goal) => [profile.focusNotes[goal] ? `${goalChoices.find((item) => item.id === goal)?.title}: ${profile.focusNotes[goal]}` : "", profile.focusContexts[goal] ? `More context (${goalChoices.find((item) => item.id === goal)?.title}): ${profile.focusContexts[goal]}` : ""]),
+    ...(focuses.includes("hair") ? [
+      profile.dryness ? `Dryness: ${profile.dryness.toLowerCase()}.` : "",
+      profile.washFrequency ? `Wash frequency: ${profile.washFrequency.toLowerCase()}.` : "",
+      profile.heat ? `Heat styling: ${profile.heat.toLowerCase()}.` : "",
+      profile.currentProducts.trim() ? `Products: ${profile.currentProducts.trim().slice(0, 100)}${profile.currentProducts.trim().length > 100 ? "…" : ""}` : "",
+    ] : []),
   ].filter(Boolean);
-  const missingFacts = [
+  const hairMissing = focuses.includes("hair") ? [
     ["dryness", "where you notice dryness"],
     ["washFrequency", "how often you wash your hair"],
     ["heat", "how often you use heat styling"],
     ["currentProducts", "the products you currently use"],
-    ["sensitivity", "sensitivity or past reactions"],
-  ].filter(([key]) => !profile[key as keyof Profile])
-    .map(([key, label]) => `${profile.skipped.includes(key) ? "Skipped for now" : "Not answered"}: ${label}`);
+  ] : [];
+  const focusMissing = focuses.map((goal) => [`focus-${goal}`, `more about ${goalChoices.find((item) => item.id === goal)?.title.toLowerCase()}`]);
+  const missingFacts = [...hairMissing, ...focusMissing]
+    .filter(([key]) => {
+      const goal = key.startsWith("focus-") ? key.replace("focus-", "") as Goal : null;
+      return !(profile[key as keyof Profile] || (goal ? profile.focusNotes[goal] || profile.focusContexts[goal] : ""));
+    })
+    .map(([key, label]) => `${profile.skipped.includes(key) ? "Skipped" : "Not answered"}: ${label}`);
+  const opportunityList = focuses.map((goal) => ({ goal, text: opportunities[goal] }));
 
   return (
     <main className="analysis-shell">
-      <div className="analysis-heading"><span className="eyebrow">YOUR PERSONALIZED READOUT · PREVIEW</span><h1 className="display" style={{ fontSize: "clamp(43px,6vw,66px)" }}>Let’s connect<br /><em>the dots.</em></h1><p className="lede">A first look at what you shared, what might be worth exploring, and what we still do not know.</p></div>
+      <div className="analysis-heading"><span className="eyebrow">YOUR PERSONAL READOUT · PREVIEW</span><h1 className="display" style={{ fontSize: "clamp(40px,6vw,62px)" }}>A clearer<br /><em>starting point.</em></h1><p className="lede">Your answers, possible opportunities, and what remains unknown.</p></div>
       <div className="analysis-grid">
         <article className="analysis-card"><div className="card-kicker"><span className="kicker-mark">◎</span>Reported by you <span className="kind-tag">Your answers</span></div><h3>Your starting point</h3>{facts.length > 0 ? <ul>{facts.map((fact) => <li key={fact}><span className="bullet">·</span><span>{fact}</span></li>)}</ul> : <p>You have not shared details yet. You can review the questions or continue with a general preview.</p>}</article>
-        <article className="analysis-card"><div className="card-kicker"><span className="kicker-mark">↗</span>Worth exploring <span className="kind-tag hypothesis">Hypothesis</span></div><h3>A possible opportunity</h3><p>{hypothesis} We can start with your existing routine before adding products or cost.</p></article>
-        <article className="analysis-card wide"><div className="card-kicker"><span className="kicker-mark">…</span>Still uncertain <span className="kind-tag missing">Not yet known</span></div><h3>What we have not established</h3><p>We have not established the cause of dryness, assessed a scalp or hair condition, or reviewed product ingredients. {missingFacts.join(" · ") || "A few details remain unknown."} This preview does not monitor your routine or health data. The plan starts with observation and simple routine review.</p></article>
+        {opportunityList.map(({ goal, text }) => <article className="analysis-card" key={goal}><div className="card-kicker"><span className="kicker-mark">↗</span>{goalChoices.find((item) => item.id === goal)?.title} <span className="kind-tag hypothesis">To explore</span></div><h3>A useful next question</h3><p>{text}</p></article>)}
+        <article className="analysis-card wide"><div className="card-kicker"><span className="kicker-mark">…</span>Not yet known <span className="kind-tag missing">Open questions</span></div><h3>What remains uncertain</h3><p>{missingFacts.length ? missingFacts.join(" · ") : "Some context may still be missing."} We have not established a cause or assessed a health condition. Nothing is passively monitored; this preview uses only what you chose to share.</p></article>
       </div>
       <div className="form-footer"><button className="button-text" onClick={onEdit}>← Review my answers</button><button className="button" onClick={onContinue}>View my first plan <span className="arrow">→</span></button></div>
     </main>
@@ -412,11 +526,17 @@ function Dashboard({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { role: "coach", text: "I’m a local prototype coach, not a live AI. I can help you explore this demo plan. What would you like to make easier?" },
   ]);
+  useEffect(() => {
+    scrollToTop();
+  }, [tab]);
   const recommendations = useMemo(() => buildRecommendations(profile, simplified), [profile, simplified]);
   const activeRecommendations = safetyPause ? recommendations.filter((item) => item.id === "inventory") : recommendations;
   const toggleDone = (id: string) => setDone((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const toggleExpanded = (id: string) => setExpanded((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
-  const selectTab = (value: AppTab) => setTab(value);
+  const selectTab = (value: AppTab) => {
+    setTab(value);
+    scrollToTop();
+  };
 
   const applyFeedback = () => {
     if (feedback === "less-time") {
@@ -439,11 +559,13 @@ function Dashboard({
     const question = chatInput.trim();
     if (!question) return;
     const lower = question.toLowerCase();
-    let answer = "This is a local demo, so I can only refer to the answers and sample plan shown here. A useful next step is to review what you already use and decide what feels manageable.";
+    const currentGoal = profile.goals[0] ?? "other";
+    const goalName = goalChoices.find((item) => item.id === currentGoal)?.title.toLowerCase() ?? "your focus";
+    let answer = `This is a local demo, so I can only refer to what you shared about ${goalName} and the sample plan. We do not yet know the cause. A useful next step is to clarify what you notice and what feels manageable.`;
     if (/cheap|budget|cost|expensive/i.test(lower)) answer = `You chose “${profile.budget}”. The current plan starts with reviewing what you already own, so it does not require a purchase. We can compare product options in a later, evidence-reviewed version.`;
     else if (/miss|forgot|busy|time|simpl/i.test(lower)) answer = "Missing a day is not a failure. Your plan is a guide, not a streak. We can keep just the first low-effort action this week; use “Adjust plan” to see the simplified preview.";
     else if (/irrit|reaction|itch|burn|rash/i.test(lower)) answer = "This prototype cannot assess a reaction. Avoid adding another new product based on this chat. For a concerning or persistent reaction, stop the product and seek advice from a qualified professional.";
-    else if (/why|heat|dry/i.test(lower)) answer = profile.heat === "Often" || profile.heat === "Most wash days"
+    else if (currentGoal === "hair" && /why|heat|dry/i.test(lower)) answer = profile.heat === "Often" || profile.heat === "Most wash days"
       ? `You reported heat use ${profile.heat.toLowerCase()}, so the plan treats it as a possible factor worth reviewing—not a proven cause. The first step is a small observation, not a promise.`
       : "Your answers do not establish why your hair feels dry. We start by noticing when it happens and reviewing your existing routine rather than guessing.";
     setChatMessages((current) => [...current, { role: "user", text: question }, { role: "coach", text: answer }]);
@@ -474,7 +596,7 @@ function Dashboard({
         {safetyPause && <div className="personal-note" role="alert"><span className="spark">!</span><p><strong>Routine suggestions paused.</strong><br />Only a neutral product-list review is shown while you consider what feels right.</p></div>}
 
         {tab === "today" && <div className="tab-panel">
-          <div className="personal-note"><span className="spark">✳</span><p><strong>Why this plan starts here</strong><br />{profile.heat === "Often" || profile.heat === "Most wash days" ? `You mentioned frequent heat styling${profile.dryness ? ` and dryness around your ${profile.dryness.toLowerCase()}` : ""}. We’ll explore routine factors first, without assuming they are the cause.` : profile.washFrequency ? `You notice dryness${profile.dryness ? ` around your ${profile.dryness.toLowerCase()}` : ""} and wash ${profile.washFrequency.toLowerCase()}. We’ll start by observing your routine rather than adding products.` : "Some routine details are still unanswered or skipped. We’ll begin with observation rather than assuming a cause or adding products."}</p></div>
+          <div className="personal-note"><span className="spark">✳</span><p><strong>Why this plan starts here</strong><br />{focusSummary(profile)}</p></div>
           <section className="today-card">
             <div className="section-head"><div><h2>Today’s gentle starts</h2><small>A few useful actions · no streaks</small></div><span className="kind-tag">{done.length}/{activeRecommendations.length} complete</span></div>
             {activeRecommendations.length === 0 ? <p className="empty-actions">No active actions. Your plan is paused while you review your feedback.</p> : <div className="action-list">{activeRecommendations.map((item, index) => <div className="action-row" key={item.id}>
@@ -519,6 +641,9 @@ export default function Home() {
   const [simplified, setSimplified] = useState(false);
   const [safetyPause, setSafetyPause] = useState(false);
   const [reviewNote, setReviewNote] = useState("");
+  useEffect(() => {
+    scrollToTop();
+  }, [screen]);
 
   const reset = () => {
     setProfile(initialProfile);
@@ -526,6 +651,7 @@ export default function Home() {
     setSafetyPause(false);
     setReviewNote("");
     setScreen("home");
+    scrollToTop();
   };
   const start = () => {
     setProfile(initialProfile);
@@ -552,7 +678,7 @@ export default function Home() {
   };
 
   return <div className="app-frame">
-    <AppHeader onHome={() => setScreen("home")} onReset={reset} showReset={screen !== "home"} />
+    <AppHeader onHome={() => { setScreen("home"); scrollToTop(); }} onReset={reset} showReset={screen !== "home"} />
     {screen === "home" && <>
       <main className="page-wrap">
         <section className="home-hero">

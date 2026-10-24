@@ -70,7 +70,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .hero-card { position: absolute; z-index: 4; right: 18px; bottom: 23px; width: min(270px, 72%); padding: 21px 22px; border: 1px solid rgba(58,57,45,.08); border-radius: 18px; background: rgba(255,254,250,.94); box-shadow: 0 15px 45px rgba(44,43,33,.15); backdrop-filter: blur(12px); }
 .hero-card-label { color: #55574c; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .hero-card strong { display: block; margin-top: 9px; font-family: var(--serif); font-size: 21px; font-weight: 400; }
-.hero-card p { margin: 7px 0 0; color: #797970; font-size: 10px; line-height: 1.6; }
+.hero-card p { margin: 7px 0 0; color: #51544a; font-size: 12px; line-height: 1.55; }
 .home-note { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 18px 0 34px; color: #55584f; font-size: 11px; line-height: 1.6; }
 .home-note strong { color: #67685f; }
 .note-spark { color: var(--clay); font-size: 17px; }
@@ -124,7 +124,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .optional-details > label { display: block; padding-bottom: 12px; }
 .optional-details .form-label { margin-top: 5px; }
 .optional-fields { padding-bottom: 15px; }
-
+.focus-tabs { display: flex; gap: 8px; margin: 17px 0 21px; padding: 2px 1px 7px; overflow-x: auto; scrollbar-width: thin; }
+.focus-tab { min-height: 44px; flex: 0 0 auto; padding: 0 17px; border: 1px solid #c9c8bd; border-radius: 999px; background: #fffefa; color: #45483f; font-size: 12px; font-weight: 650; cursor: pointer; }
+.focus-tab.active { border-color: var(--olive-dark); background: var(--olive-dark); color: #fff; }
+.focus-panel { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: #fffefa; animation: appear .2s ease both; }
+.focus-panel .question-title { font-size: 23px; }
+.focus-note { min-height: 78px; }
+.hair-questions { margin-bottom: 8px; padding-bottom: 3px; }
+.optional-details.focus-context { margin-top: 14px; }
+.optional-inline { margin-left: 5px; color: #55584f; font-size: 11px; font-weight: 500; }
 .analysis-shell { width: min(960px, calc(100% - 38px)); margin: 0 auto; padding: 65px 0 80px; }
 .analysis-heading { max-width: 680px; margin-bottom: 35px; }
 .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -203,7 +211,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .chat-message.user { justify-self: end; background: #e6eadc; color: #515844; }
 .chat-form { display: flex; gap: 8px; }
 .chat-form .input { flex: 1; }
-.chat-disclaimer { margin-top: 10px !important; font-size: 9px !important; }
+  .chat-disclaimer { margin-top: 10px !important; color: #4d5047 !important; font-size: 11px !important; }
 .empty-actions { padding: 20px 0 4px; color: #797970; font-size: 11px; }
 .demo-banner { display: flex; align-items: flex-start; gap: 11px; margin-top: 18px; padding: 12px 14px; border: 1px solid #d6cdb9; border-radius: 14px; background: #f5f1e7; color: #514b3e; font-size: 11px; line-height: 1.55; }
 .demo-banner strong { color: #423c31; }
@@ -250,6 +258,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .step-content { padding-top: 27px; }
   .step-title { margin-top: 10px; margin-bottom: 9px; font-size: clamp(32px, 9.4vw, 39px); }
   .step-copy { margin-bottom: 17px; font-size: 13px; }
+  .focus-panel { padding: 16px; }
+  .focus-panel .question-title { font-size: 21px; }
+  .focus-tabs { margin: 13px 0 16px; }
+  .focus-tab { min-height: 44px; padding-inline: 14px; }
+  .focus-note { min-height: 68px; }
   .choice-grid { gap: 8px; margin: 15px 0; }
   .choice-grid, .form-grid { grid-template-columns: 1fr; }
   .choice-card { min-height: 58px; padding: 12px 14px; }
