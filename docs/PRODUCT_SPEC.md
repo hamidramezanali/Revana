@@ -1,6 +1,6 @@
 # Product Specification & Implementation Tracker
 
-**Product name:** Provisional “Luma” reference only; configurable and not approved.  
+**Product name:** Reneva is the selected working name for the prototype; configurable and not legally cleared.  
 **Audience:** Adults seeking individualized appearance and lifestyle improvements. Adult-only scope is an assumption to confirm before launch.  
 **Specification state:** Planning baseline, updated 2026-10-24. A frontend-only prototype now demonstrates part of the dry-hair journey. Figma/export assets, backend, authentication, persistence, reviewed evidence integration, and production validation are still absent. A visual control alone does not satisfy a requirement's full acceptance criteria.
 
@@ -20,7 +20,7 @@ Update the status and evidence note in the same change that completes work. If a
 | P-002 | Recommendations must explain personal relevance, evidence, uncertainty, risks, effort, cost, expectations, and review timing. | Not started | Every saved recommendation has the required fields and links to answer/evidence IDs. |
 | P-003 | Personalization before recommendations; evidence before marketing; practical interventions before complexity; user choice before sales pressure; safety before optimization; progress over perfection. | Not started | Product copy, rules, and tests reflect these principles; no shame or coercive language. |
 | P-004 | Clearly differentiate reported facts, AI hypotheses, confirmed inferences, and missing/skipped information. Never imply passive monitoring without an authorized data source. | Not started | Analysis labels provenance and never invents activity/sleep/nutrition observations. |
-| P-005 | Keep app branding configurable and replace “Luma” only after naming review. | Not started | Brand text/config is centralized; name is not coupled to business logic. |
+| P-005 | Keep Reneva branding configurable and avoid representing the name as legally cleared. | In progress | Name is centralized in `src/config/brand.ts`; legal and domain clearance is not complete. |
 
 ## B. Naming and brand discovery
 
@@ -43,17 +43,19 @@ Update the status and evidence note in the same change that completes work. If a
 | Velora | Invented, intended to evoke vitality and radiance | veh-LOR-ah | Easy to say, polished, broad | Similar-sounding wellness/beauty brand or product risk unknown; all databases unsearched. |
 | Eloria | Invented, intended to evoke a personal journey and luminous well-being | eh-LOR-ee-ah | Soft, editorial, broad | Similarity to existing names and domain/social availability unknown; all databases unsearched. |
 
-**Provisional creative favorite:** Aretia, because it reflects the user's preferred excellence/potential theme while extending beyond beauty. This is a naming hypothesis only—not a search result, trademark opinion, domain availability claim, or approved brand. The next naming task must search each shortlisted candidate in Apple App Store, Google Play, general beauty/wellness/fitness/personal-development brand sources, PRV, EUIPO/TMview and relevant WIPO databases, domains, and social handles. Record dated query/results and confusingly similar marks. Seek professional clearance before public use. If searches identify material conflicts, remove/re-rank candidates and update this section.
+**Naming update:** The user selected **Reneva** as the working product name, replacing the earlier provisional Aretia concept. The candidate list and shortlist above are historical brainstorming only; Aretia is no longer the favored name. Reneva has not been screened. Complete N-003 searches and professional clearance before public commercial use; do not imply availability.
 
 ## C. Experience and responsive design
 
 | ID | Requirement | Status | Acceptance / verification |
 |---|---|---|---|
-| UX-001 | Premium, contemporary, mobile-first app with polished desktop support and accessible controls. Warm neutrals, refined type hierarchy, restrained accents, whitespace, clear grouping, subtle motion. | In progress | Prototype design tokens and responsive styling are present in `src/app/globals.css`; browser/device and accessibility verification remain. |
+| UX-001 | Premium, contemporary, mobile-first app with polished desktop support and accessible controls. Warm neutrals, refined type hierarchy, restrained accents, whitespace, clear grouping, subtle motion. | In progress | Prototype tokens/responsive styling in `src/app/globals.css`; complete device and accessibility verification remains. |
 | UX-002 | Avoid excessive pink, childish wellness tropes, generic stock imagery, clinical look, arbitrary precision scores, visual clutter, and shame. | Not started | Design review against these constraints and copy review. |
 | UX-003 | Complete journey from welcome through personalized first plan and dashboard; controls must perform distinct useful actions. | In progress | A local journey exists in `src/app/page.tsx`; no automated E2E verification and several production capabilities are absent. |
 | UX-004 | Provide “why this recommendation?”, alternatives, effort-vs-impact explanation, review/adjust, and non-punitive missed-action handling. | In progress | Prototype shows rationale, simplified action set, and feedback adjustments; effort-vs-impact comparisons and validated alternative plans remain. |
 | UX-005 | Use realistic synthetic examples and clearly label demonstration mode when AI is simulated. | In progress | The UI labels local prototype/demo behavior and uses fictional example content; coverage/copy review remains. |
+| UX-006 | Mobile-first use on 320–430px phone viewports: avoid horizontal scrolling, keep primary actions reachable, use comfortable touch targets, respect safe areas, and minimize unnecessary page length. | In progress | Implemented safe-area-aware fixed onboarding actions and bottom navigation, collapsed optional questions, and compact mobile rules. Browser checks at 320/360/390/430 CSS px show no horizontal overflow; onboarding CTA is fixed and 44–46px high; dashboard uses a 48px bottom nav and hides secondary summary cards from Today. Verify actual viewport/orientation, keyboard overlap and device behavior before completion. |
+| UX-007 | Readable, accessible information that never depends on color alone. Text and controls maintain sufficient contrast; category, status, selection, and safety meanings also use clear text, shape, icon, or patterns. | In progress | Increased contrast/type sizes, 16px controls, “Coming later” labels, selected checkmarks and selected chip checks. Still requires a formal WCAG contrast audit and keyboard/screen-reader verification. |
 
 ## D. Onboarding and adaptive questions
 
@@ -147,7 +149,7 @@ Update the status and evidence note in the same change that completes work. If a
 
 | Decision | Current default | Status / impact |
 |---|---|---|
-| App name | Configurable; Luma is temporary reference | Open; complete naming screen before brand lock. |
+| App name | Reneva; configurable working name | Selected for prototype; trademark/domain screening and clearance remain open. |
 | First experience | Dry-hair only | Proposed MVP; confirm with product owner. |
 | Audience age | Adults only | Assumption to confirm; affects onboarding, safety, consent and legal review. |
 | Language/launch region | English first, region TBD | Open; affects evidence sources, localization, data residency and provider selection. |

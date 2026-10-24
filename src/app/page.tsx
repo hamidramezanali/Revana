@@ -54,7 +54,7 @@ const initialProfile: Profile = {
   color: "",
   hairChange: "",
   sensitivity: "",
-  shedding: "No unusual shedding",
+  shedding: "",
   timeAvailable: "",
   budget: "",
   approach: "",
@@ -155,8 +155,8 @@ function AppHeader({ onHome, onReset, showReset }: { onHome: () => void; onReset
   return (
     <header className="topbar">
       <button className="brand" onClick={onHome} aria-label={`${brand.name} home`}>
-        <span className="brand-mark" aria-hidden="true">a</span>
-        <span><span className="brand-name">{brand.name}</span><span className="brand-subtitle">personal care studio</span></span>
+        <span className="brand-mark" aria-hidden="true">R</span>
+        <span><span className="brand-name">{brand.name}</span><span className="brand-subtitle">{brand.descriptor}</span></span>
       </button>
       <div className="topbar-right">
         <span className="local-label" title="This prototype runs in your browser only"><i className="local-dot" />Local preview</span>
@@ -168,16 +168,22 @@ function AppHeader({ onHome, onReset, showReset }: { onHome: () => void; onReset
 
 function ArtCard() {
   return (
-    <div className="hero-art" aria-label="Abstract landscape illustration in warm stone and olive tones" role="img">
-      <div className="art-sun" />
-      <div className="art-hill-back" />
-      <div className="art-hill" />
-      <div className="art-stem"><i className="art-leaf one" /><i className="art-leaf two" /></div>
-      <span className="art-caption">Small steps, thoughtfully chosen.</span>
+    <div className="hero-art" aria-label="Sculptural illustration of flowing hair-like strands" role="img">
+      <div className="art-glow" />
+      <div className="art-orbit orbit-one" />
+      <div className="art-orbit orbit-two" />
+      <div className="art-orbit orbit-three" />
+      <svg className="strand-art" viewBox="0 0 600 620" fill="none" aria-hidden="true">
+        <path d="M70 566C191 452 155 286 286 176C369 107 479 91 555 44" stroke="#454E3A" strokeWidth="30" strokeLinecap="round" />
+        <path d="M123 594C244 470 206 323 336 214C408 154 492 139 569 94" stroke="#7D846B" strokeWidth="19" strokeLinecap="round" />
+        <path d="M172 612C292 499 259 368 376 271C436 222 502 205 583 159" stroke="#B8795F" strokeWidth="10" strokeLinecap="round" />
+        <path d="M212 615C326 517 302 411 414 326C462 290 515 274 594 232" stroke="#D0B58C" strokeWidth="5" strokeLinecap="round" />
+      </svg>
+      <span className="art-caption">A considered kind of change</span>
       <div className="hero-card">
-        <span className="hero-card-label">A more personal approach</span>
-        <strong>Understand first.</strong>
-        <p>Your routines, your constraints, your next best step.</p>
+        <span className="hero-card-label">RENEVA · YOUR FIRST JOURNEY</span>
+        <strong>Start with what’s real.</strong>
+        <p>Your routine. Your pace. One thoughtful next step.</p>
       </div>
     </div>
   );
@@ -231,7 +237,13 @@ function Onboarding({
       ["dryness", "washFrequency", "currentProducts", "heat", "color", "hairChange"],
       ["sensitivity", "timeAvailable", "budget", "approach"],
     ];
-    setProfile((current) => ({ ...current, skipped: [...new Set([...current.skipped, ...(stepFields[step] ?? [])])] }));
+    setProfile((current) => {
+      const unanswered = (stepFields[step] ?? []).filter((field) => {
+        const value = current[field as keyof Profile];
+        return Array.isArray(value) ? value.length === 0 : !value;
+      });
+      return { ...current, skipped: [...new Set([...current.skipped, ...unanswered])] };
+    });
     setMessage("");
     if (step < 3) setStep((current) => current + 1);
     else onFinish();
@@ -245,8 +257,8 @@ function Onboarding({
       <section className="step-content" key={step}>
         {step === 0 && <>
           <span className="eyebrow">A LITTLE CONTEXT FIRST</span>
-          <h1 className="step-title">Is there a date you’d especially like to feel your best?</h1>
-          <p className="step-copy">A date can help us set a realistic pace. It is completely fine if this is an ongoing journey with no deadline.</p>
+          <h1 className="step-title">A date you want to work toward?</h1>
+          <p className="step-copy">Choose a target—or keep it open. We’ll plan at a realistic pace.</p>
           <div className="choice-grid">
             <button className={`choice-card ${profile.timeline === "date" ? "selected" : ""}`} onClick={() => setProfile((current) => ({ ...current, timeline: "date", timelinePurpose: "", skipped: current.skipped.filter((item) => item !== "timeline") }))}><span className="choice-icon">⌑</span><span><strong>I have a date in mind</strong><small>An event, trip or personal milestone</small></span></button>
             <button className={`choice-card ${profile.timeline === "range" ? "selected" : ""}`} onClick={() => setProfile((current) => ({ ...current, timeline: "range", timelinePurpose: "", skipped: current.skipped.filter((item) => item !== "timeline") }))}><span className="choice-icon">↗</span><span><strong>A rough timeframe</strong><small>For example, over the next few months</small></span></button>
@@ -262,11 +274,11 @@ function Onboarding({
 
         {step === 1 && <>
           <span className="eyebrow">START WITH WHAT MATTERS TO YOU</span>
-          <h1 className="step-title">What would you like to work on?</h1>
-          <p className="step-copy">Choose a starting point, or describe it in your own words. This preview is currently built around a dry-hair journey; other guided journeys are planned.</p>
+          <h1 className="step-title">What feels worth focusing on?</h1>
+          <p className="step-copy">Choose hair for this preview, or tell us in your own words.</p>
           <div className="choice-grid">
             {goalChoices.map((goal) => <button key={goal.id} disabled={!goal.enabled} className={`choice-card ${profile.goals.includes(goal.id) ? "selected" : ""} ${!goal.enabled ? "disabled" : ""}`} onClick={() => toggleGoal(goal.id)} aria-pressed={profile.goals.includes(goal.id)}>
-              <span className="choice-icon">{goal.icon}</span><span><strong>{goal.title}</strong><small>{goal.description}</small></span>
+              <span className="choice-icon">{goal.icon}</span><span><strong>{goal.title}</strong><small>{goal.enabled ? goal.description : "Coming later"}</small></span>
             </button>)}
           </div>
           <label><span className="form-label">In your own words, what have you noticed?</span><textarea className="textarea" value={profile.concern} onChange={(event) => update("concern", event.target.value)} placeholder="For example: My hair feels dry and looks dull, especially at the ends…" maxLength={600} /></label>
@@ -275,8 +287,8 @@ function Onboarding({
 
         {step === 2 && <>
           <span className="eyebrow">LET’S UNDERSTAND THE ROUTINE</span>
-          <h1 className="step-title">What does hair care look like for you today?</h1>
-          <p className="step-copy">A few useful details help us explore possibilities before suggesting changes. Skip anything you would rather not answer.</p>
+          <h1 className="step-title">What is your hair routine like?</h1>
+          <p className="step-copy">A few details help us avoid guessing. Skip anything.</p>
           <div className="question-block">
             <h2 className="question-title">Where does your hair feel driest?</h2><p className="question-caption">Choose the closest fit; you can select more than one.</p>
             <div className="segmented">{["Roots", "Lengths", "Ends", "All over", "Not sure"].map((value) => {
@@ -292,17 +304,20 @@ function Onboarding({
             <label><span className="form-label">How often do you wash it?</span><select className="select" value={profile.washFrequency} onChange={(event) => update("washFrequency", event.target.value)}><option value="">Choose if you wish</option><option>Daily</option><option>2–3 times a week</option><option>Once a week</option><option>Less than once a week</option><option>It varies</option></select></label>
             <label><span className="form-label">How often do you use heat?</span><select className="select" value={profile.heat} onChange={(event) => update("heat", event.target.value)}><option value="">Choose if you wish</option><option>Never</option><option>Sometimes</option><option>Often</option><option>Most wash days</option></select></label>
           </div>
-          <label><span className="form-label">What shampoo, conditioner or treatments do you use?</span><textarea className="textarea" style={{ minHeight: 82 }} value={profile.currentProducts} onChange={(event) => update("currentProducts", event.target.value)} placeholder="Product names or types are fine—or skip this for now." maxLength={500} /></label>
-          <div className="form-grid" style={{ marginTop: 22 }}>
-            <label><span className="form-label">Colour, bleach or chemical treatments?</span><select className="select" value={profile.color} onChange={(event) => update("color", event.target.value)}><option value="">Choose if you wish</option><option>No</option><option>Colour or dye</option><option>Bleach/lightening</option><option>Other treatment</option><option>Prefer not to say</option></select></label>
-            <label><span className="form-label">Any recent routine change?</span><select className="select" value={profile.hairChange} onChange={(event) => update("hairChange", event.target.value)}><option value="">Choose if you wish</option><option>No recent change</option><option>Changed products</option><option>Changed styling or wash routine</option><option>Not sure</option></select></label>
-          </div>
+          <details className="optional-details">
+            <summary>Products &amp; treatments <span>Optional</span></summary>
+            <label><span className="form-label">What products do you use?</span><textarea className="textarea" style={{ minHeight: 70 }} value={profile.currentProducts} onChange={(event) => update("currentProducts", event.target.value)} placeholder="Names or types—or leave blank." maxLength={500} /></label>
+            <div className="form-grid optional-fields">
+              <label><span className="form-label">Colour or chemical treatments?</span><select className="select" value={profile.color} onChange={(event) => update("color", event.target.value)}><option value="">Not answered</option><option>No</option><option>Colour or dye</option><option>Bleach/lightening</option><option>Other</option><option>Prefer not to say</option></select></label>
+              <label><span className="form-label">Recent routine change?</span><select className="select" value={profile.hairChange} onChange={(event) => update("hairChange", event.target.value)}><option value="">Not answered</option><option>No recent change</option><option>Changed products</option><option>Changed styling or wash routine</option><option>Not sure</option></select></label>
+            </div>
+          </details>
         </>}
 
         {step === 3 && <>
           <span className="eyebrow">A PLAN THAT FITS YOUR LIFE</span>
-          <h1 className="step-title">Let’s keep it realistic.</h1>
-          <p className="step-copy">A little about your comfort and preferences helps us avoid piling on steps. You can skip any question; missing safety details may limit how specific a future suggestion can be.</p>
+          <h1 className="step-title">What feels doable?</h1>
+          <p className="step-copy">Tell us what fits your time and comfort. Skip any question.</p>
           <div className="question-block">
             <h2 className="question-title">Any sensitivity or reaction we should know about?</h2>
             <p className="question-caption">This is optional. We will not assume an ingredient is suitable for you.</p>
@@ -312,7 +327,10 @@ function Onboarding({
             <label><span className="form-label">How much time feels manageable?</span><select className="select" value={profile.timeAvailable} onChange={(event) => update("timeAvailable", event.target.value)}><option value="">Choose if you wish</option><option>Under 5 minutes</option><option>5–10 minutes</option><option>10–20 minutes</option><option>It depends on the day</option></select></label>
             <label><span className="form-label">What would you like to prioritize?</span><select className="select" value={profile.approach} onChange={(event) => update("approach", event.target.value)}><option value="">Choose if you wish</option><option>At-home routine first</option><option>Use what I already own</option><option>Open to professional advice</option><option>A balanced mix</option></select></label>
           </div>
-          <label style={{ display: "block", marginTop: 22 }}><span className="form-label">What budget feels comfortable?</span><select className="select" value={profile.budget} onChange={(event) => update("budget", event.target.value)}><option value="">Choose if you wish</option><option>Prefer to use what I own</option><option>Keep any changes low-cost</option><option>Open to a considered purchase</option><option>I would rather not say</option></select></label>
+          <details className="optional-details preference-details">
+            <summary>Budget preference <span>Optional</span></summary>
+            <label><span className="form-label">What budget feels comfortable?</span><select className="select" value={profile.budget} onChange={(event) => update("budget", event.target.value)}><option value="">Not answered</option><option>Prefer to use what I own</option><option>Keep any changes low-cost</option><option>Open to a considered purchase</option><option>I would rather not say</option></select></label>
+          </details>
           <div className="demo-banner"><span aria-hidden="true">✳</span><span><strong>Optional safety context.</strong> We will not provide supplement or medical recommendations in this prototype. You have not been asked for health details that are not relevant to this hair-care preview.</span></div>
         </>}
       </section>
@@ -448,7 +466,7 @@ function Dashboard({
 
       <section className="dashboard-main">
         <header className="dashboard-head">
-          <div><span className="eyebrow">YOUR PERSONAL CARE PLAN</span><h1>{tab === "today" ? "A thoughtful place to start." : tab === "plan" ? "Your first priorities." : tab === "progress" ? "Notice what changes." : "A little guidance, when you need it."}</h1><p>{tab === "today" ? "Built from the routine and preferences you shared—not a one-size-fits-all checklist." : tab === "plan" ? "A small, editable plan. Each step has a reason and a review point." : tab === "progress" ? "Your observations matter more than an arbitrary score." : "This coach preview uses only the answers and plan on this screen."}</p></div>
+          <div><span className="eyebrow">YOUR PERSONAL CARE PLAN</span><h1>{tab === "today" ? "A thoughtful place to start." : tab === "plan" ? "Your first priorities." : tab === "progress" ? "Notice what changes." : "A little guidance, when you need it."}</h1><p>{tab === "today" ? "A few actions, shaped around your answers." : tab === "plan" ? "A small plan, with a reason for each step." : tab === "progress" ? "Your observations, not a score." : "A local preview using this session’s answers."}</p></div>
           <span className="date-chip">{dateLabel(profile)}</span>
         </header>
 
@@ -538,10 +556,10 @@ export default function Home() {
     {screen === "home" && <>
       <main className="page-wrap">
         <section className="home-hero">
-          <div className="hero-copy"><span className="eyebrow">A PERSONAL CARE PREVIEW</span><h1 className="display">Your goals.<br />Your life.<br /><em>Your next step.</em></h1><p className="lede">A more considered kind of beauty and lifestyle coaching. We start by understanding your routines and what matters to you—before suggesting what to change.</p><div className="hero-actions"><button className="button" onClick={start}>Begin your hair journey <span className="arrow">→</span></button><button className="button-text" onClick={trySample}>Explore a sample plan <span className="arrow">↗</span></button></div><div className="micro-trust"><span>Personal, not prescriptive</span><span>Small steps over pressure</span><span>Nothing sent in this preview</span></div></div>
+          <div className="hero-copy"><span className="eyebrow"><i className="eyebrow-dot" />A MORE PERSONAL KIND OF CARE</span><h1 className="display">Care that<br />starts with <em>you.</em></h1><p className="lede">Your routines, your real life, your next best step. Thoughtful guidance for feeling more like yourself.</p><div className="hero-actions"><button className="button" onClick={start}>Begin your hair journey <span className="arrow">↗</span></button><button className="button-text" onClick={trySample}>See a sample plan <span className="arrow">↗</span></button></div><div className="micro-trust"><span>Made around you</span><span>No pressure</span><span>Private preview</span></div></div>
           <ArtCard />
         </section>
-        <div className="home-note"><strong>Prototype note.</strong> {brand.name} is a provisional concept name, not legally screened. This is an interactive dry-hair demo; other coaching journeys are not implemented yet. Your answers remain in browser memory and are not stored or sent.</div>
+        <div className="home-note"><span className="note-spark">✳</span><span><strong>Dry-hair journey preview.</strong> Your answers stay in this browser and clear when you leave.</span><span className="note-name">{brand.name} · working name</span></div>
       </main>
     </>}
     {screen === "onboarding" && <Onboarding profile={profile} setProfile={setProfile} onExit={() => setScreen("home")} onFinish={() => setScreen("analysis")} />}

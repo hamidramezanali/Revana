@@ -1,5 +1,5 @@
 export const brand = {
-  name: "Aretia",
-  descriptor: "A personal care studio",
-  status: "Provisional concept · name not cleared",
+  name: "Reneva",
+  descriptor: "Personal care, considered",
+  status: "Working name · clearance pending",
 } as const;
