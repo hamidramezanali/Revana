@@ -4,9 +4,9 @@ Planning workspace for **Revana**, a personalized beauty and lifestyle coaching 
 
 ## Current repository state
 
-The folder initially contained planning documents only; it had no Figma export or existing application to preserve. A frontend-only interactive prototype is now present. It has a responsive landing page, multi-focus goal selection, per-focus follow-up questions, fact/hypothesis/unknown analysis, and a local dashboard with action tracking, plan rationale, feedback adjustments, and a deterministic coach demo. Hair has the most detailed routine questions; other focus areas currently demonstrate discovery and do not provide validated plans or health advice. This visual direction can be refined or replaced with a Figma import.
+The folder initially contained planning documents only; it had no Figma export or existing application to preserve. A frontend-only interactive prototype is now present. Its minimal landing page uses “Your goals. Your lifestyle. Your transformation.” and one primary CTA, followed by multi-focus goal selection, per-focus follow-up questions, fact/hypothesis/unknown analysis, and a local dashboard with action tracking, plan rationale, feedback adjustments, and a deterministic coach demo. Hair has the most detailed routine questions; other categories currently demonstrate discovery and do not provide validated plans or health advice. This visual direction can be refined or replaced with a Figma import.
 
-The prototype has no backend, authentication, AI provider, persistence, reviewed evidence store, or production safety validation. State exists only in React memory and resets on refresh. All sample recommendations are illustrative. Other categories are disabled previews. No real user or health data should be entered.
+The prototype has no backend, authentication, AI provider, persistence, reviewed evidence store, or production safety validation. State exists only in React memory and resets on refresh. All sample recommendations are illustrative. Non-hair categories currently demonstrate discovery only; they are not validated advice plans. No real user or health data should be entered.
 
 ## Documents
 
@@ -29,7 +29,7 @@ Revana is the configurable working name. Its brand story is “Renew your routin
 
 ## Next step
 
-Run the local prototype with `npm install` and `npm run dev`, then review the visual direction and user journey. If approved, decide whether to refine this prototype or replace its presentation layer with the Figma import. Add reviewed evidence, safety/business rules, authentication, persistence, tests, and server endpoints only through approved roadmap milestones. No deployment has been configured.
+The user-approved entry direction is a minimal welcome page: “Your goals. Your lifestyle. Your transformation.” and one “Begin your journey” CTA, without a hero graphic, sample-plan action, or extra intro copy. Next, validate the multi-focus question sequence and mobile accessibility; then decide whether to keep refining this UI or import Figma. Add reviewed evidence, safety/business rules, authentication, persistence, tests, and server endpoints only through approved roadmap milestones. No deployment has been configured.
 
 The current interface uses a compact mobile-first flow: optional onboarding details are collapsed, primary onboarding actions stay reachable, dashboard navigation sits at the bottom on phones, and text/state labels do not rely on color alone. It has been checked for horizontal overflow at common phone CSS widths, but still needs real-device, keyboard, landscape, and formal contrast/accessibility testing.
 

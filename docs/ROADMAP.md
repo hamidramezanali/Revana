@@ -2,11 +2,11 @@
 
 All milestones are proposals. The RenevaAI folder was empty at inspection; source code, design exports, dependencies, cloud accounts and deployments are not present. Do not skip milestones or mark work done from visual mocks alone. Requirement IDs refer to `PRODUCT_SPEC.md`.
 
-**Progress note (2026-10-24):** A frontend-only prototype is in `src/app/page.tsx` with styling in `src/app/globals.css`. The landing CTA is category-neutral (“Begin your journey”); onboarding supports multiple focus areas and relevant follow-ups, and navigation returns to the top. Data is in-memory and example recommendation logic is local/demo only. This is a review artifact, not a completed MVP, evidence-reviewed plan, or production-ready app. See architecture prototype boundary.
+**Progress note (2026-10-26):** A frontend-only prototype is in `src/app/page.tsx` with styling in `src/app/globals.css`. The entry page has the requested headline and one category-neutral CTA; the illustration, sample-plan CTA, and extra introductory copy were removed. Onboarding supports multi-focus selection and sequential relevant follow-ups; navigation returns to the top. Data is in-memory and recommendation logic is local/demo only. This is a review artifact, not a completed MVP, evidence-reviewed plan, or production-ready app. See architecture prototype boundary.
 
 ## Milestone 0 — Requirements and design alignment (visual exploration is underway)
 
-**Scope:** Add Figma/export assets if available; review the current Revana visual direction; confirm multi-focus discovery plus dry-hair as the first evidence-backed recommendation journey; confirm adult-only assumption, launch language/region and safety boundaries.
+**Scope:** Add Figma/export assets if available; review the current Revana visual direction and minimal welcome screen; confirm multi-focus discovery plus dry-hair as the first evidence-backed recommendation journey; confirm adult-only assumption, launch language/region and safety boundaries.
 
 **Acceptance criteria:**
 - Design assets are in the project or a documented source link is supplied; screens and reusable visual tokens are inventoried.
@@ -14,7 +14,7 @@ All milestones are proposals. The RenevaAI folder was empty at inspection; sourc
 - Confirmed product decisions and unresolved risks are recorded in `PRODUCT_SPEC.md`.
 - No application code, dependencies, or real personal data are required for this milestone.
 
-**Current state:** The user has approved continuing with the prototype design and selected Revana as the working name. The name is not legally cleared. Figma assets remain absent; milestone acceptance and user/device validation are still open.
+**Current state:** The user approved the prototype direction, selected Revana as the working name, and specified a minimal entry screen (“Your goals. Your lifestyle. Your transformation.” with one “Begin your journey” CTA). The name is not legally cleared. Figma assets remain absent; milestone acceptance and user/device validation are still open.
 
 ## Milestone 1 — Foundation and secure identity
 

@@ -54,8 +54,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .button-small { min-height: 37px; padding: 0 13px; font-size: 11px; }
 .arrow { font-size: 16px; font-weight: 400; }
 
-.home-hero { display: grid; grid-template-columns: 1.02fr .98fr; align-items: center; gap: clamp(35px, 7vw, 100px); padding: clamp(65px, 9vw, 112px) 0 73px; }
-.hero-copy { padding: 10px 0 20px; }
+.home-hero { min-height: calc(100svh - 76px); display: grid; grid-template-columns: 1fr; place-items: center; padding: 32px 0 48px; }
+.hero-copy { width: 100%; display: flex; flex-direction: column; align-items: center; padding: 10px 0 20px; text-align: center; }
+.home-hero .display { max-width: 900px; margin: 0 0 38px; font-size: clamp(48px, 8vw, 96px); line-height: 1.02; letter-spacing: -.055em; }
+.home-hero .display em { color: var(--olive-dark); }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 21px; margin-top: 29px; }
 .micro-trust { display: flex; flex-wrap: wrap; gap: 21px; margin-top: 34px; color: #55584f; font-size: 11px; }
 .micro-trust span::before { content: "✳"; color: var(--olive); margin-right: 8px; }
@@ -225,8 +227,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 21px; }
 
 @media (max-width: 840px) {
-  .home-hero { grid-template-columns: 1fr .8fr; gap: 32px; }
-  .hero-art { min-height: 405px; }
+  .home-hero { min-height: calc(100svh - 76px); }
   .dashboard-layout { grid-template-columns: 1fr; gap: 24px; padding-top: 25px; }
   .sidebar { position: static; }
   .sidebar-intro, .sidebar-bottom { display: none; }
@@ -246,13 +247,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .local-dot { width: 8px; height: 8px; }
   .top-link { font-size: 10px; }
   .page-wrap { width: calc(100% - 36px); }
-  .home-hero { grid-template-columns: 1fr; padding: 55px 0 52px; gap: 35px; }
-  .display { font-size: clamp(45px, 13vw, 65px); }
-  .lede { font-size: 13px; }
-  .hero-art { min-height: 370px; margin-right: 16px; }
-  .hero-card { right: -15px; }
-  .hero-actions { align-items: flex-start; }
-  .micro-trust { gap: 10px 17px; }
+  .home-hero { min-height: calc(100svh - 62px); padding: 22px 0 38px; }
+  .home-hero .display { margin-bottom: 29px; font-size: clamp(43px, 11vw, 66px); line-height: 1.04; }
   .onboarding-shell { width: calc(100% - 32px); padding-top: 21px; padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
   .step-meta { margin-bottom: 9px; font-size: 9px; }
   .step-content { padding-top: 27px; }

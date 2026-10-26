@@ -206,36 +206,13 @@ function AppHeader({ onHome, onReset, showReset }: { onHome: () => void; onReset
     <header className="topbar">
       <button className="brand" onClick={onHome} aria-label={`${brand.name} home`}>
         <span className="brand-mark" aria-hidden="true">R</span>
-        <span><span className="brand-name">{brand.name}</span><span className="brand-subtitle">{brand.descriptor}</span></span>
+        <span className="brand-name">{brand.name}</span>
       </button>
       <div className="topbar-right">
         <span className="local-label" title="This prototype runs in your browser only"><i className="local-dot" />Local preview</span>
         {showReset && <button className="top-link" onClick={onReset}>Start over</button>}
       </div>
     </header>
-  );
-}
-
-function ArtCard() {
-  return (
-    <div className="hero-art" aria-label="Sculptural illustration of flowing hair-like strands" role="img">
-      <div className="art-glow" />
-      <div className="art-orbit orbit-one" />
-      <div className="art-orbit orbit-two" />
-      <div className="art-orbit orbit-three" />
-      <svg className="strand-art" viewBox="0 0 600 620" fill="none" aria-hidden="true">
-        <path d="M70 566C191 452 155 286 286 176C369 107 479 91 555 44" stroke="#454E3A" strokeWidth="30" strokeLinecap="round" />
-        <path d="M123 594C244 470 206 323 336 214C408 154 492 139 569 94" stroke="#7D846B" strokeWidth="19" strokeLinecap="round" />
-        <path d="M172 612C292 499 259 368 376 271C436 222 502 205 583 159" stroke="#B8795F" strokeWidth="10" strokeLinecap="round" />
-        <path d="M212 615C326 517 302 411 414 326C462 290 515 274 594 232" stroke="#D0B58C" strokeWidth="5" strokeLinecap="round" />
-      </svg>
-      <span className="art-caption">A considered kind of change</span>
-      <div className="hero-card">
-        <span className="hero-card-label">REVANA · YOUR FIRST JOURNEY</span>
-        <strong>Start with what’s real.</strong>
-        <p>Renew your routines. Reveal your potential.</p>
-      </div>
-    </div>
   );
 }
 
@@ -657,37 +634,15 @@ export default function Home() {
     setProfile(initialProfile);
     setScreen("onboarding");
   };
-  const trySample = () => {
-    setProfile({
-      ...initialProfile,
-      timeline: "range",
-      timeframe: "About 1–3 months",
-      goals: ["hair"],
-      concern: "My hair feels dry and looks dull, especially at the ends.",
-      dryness: "Lengths, Ends",
-      washFrequency: "2–3 times a week",
-      currentProducts: "Clarifying shampoo, no regular conditioner",
-      heat: "Often",
-      color: "No",
-      sensitivity: "Not sure",
-      timeAvailable: "5–10 minutes",
-      budget: "Prefer to use what I own",
-      approach: "At-home routine first",
-    });
-    setScreen("app");
-  };
-
   return <div className="app-frame">
     <AppHeader onHome={() => { setScreen("home"); scrollToTop(); }} onReset={reset} showReset={screen !== "home"} />
-    {screen === "home" && <>
+    {screen === "home" &&
       <main className="page-wrap">
         <section className="home-hero">
-          <div className="hero-copy"><span className="eyebrow"><i className="eyebrow-dot" />A MORE PERSONAL KIND OF CARE</span><h1 className="display">Care that<br />starts with <em>you.</em></h1><p className="lede">Your routines, your real life, your next best step. Thoughtful guidance for feeling more like yourself.</p><div className="hero-actions"><button className="button" onClick={start}>Begin your journey <span className="arrow">↗</span></button><button className="button-text" onClick={trySample}>See a sample plan <span className="arrow">↗</span></button></div><div className="micro-trust"><span>Made around you</span><span>No pressure</span><span>Private preview</span></div></div>
-          <ArtCard />
+          <div className="hero-copy"><h1 className="display">Your goals.<br />Your lifestyle.<br /><em>Your transformation.</em></h1><button className="button" onClick={start}>Begin your journey <span className="arrow">↗</span></button></div>
         </section>
-        <div className="home-note"><span className="note-spark">✳</span><span><strong>Personal journey preview.</strong> Choose what matters to you. Your answers stay in this browser and clear when you leave.</span><span className="note-name">{brand.name} · working name</span></div>
       </main>
-    </>}
+    }
     {screen === "onboarding" && <Onboarding profile={profile} setProfile={setProfile} onExit={() => setScreen("home")} onFinish={() => setScreen("analysis")} />}
     {screen === "analysis" && <Analysis profile={profile} onContinue={() => setScreen("app")} onEdit={() => setScreen("onboarding")} />}
     {screen === "app" && <Dashboard profile={profile} simplified={simplified} setSimplified={setSimplified} safetyPause={safetyPause} setSafetyPause={setSafetyPause} reviewNote={reviewNote} setReviewNote={setReviewNote} />}

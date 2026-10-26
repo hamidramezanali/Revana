@@ -3,7 +3,7 @@
 ## Project mission
 Build a premium, mobile-first, personalized beauty and lifestyle coaching product. Understand the person and their actual routines before proposing changes. Every recommendation must explain why it fits this user, what is uncertain, and how progress will be reviewed.
 
-The product name is not final. Treat “Luma” as a temporary design reference only; do not hard-code product branding.
+The current working name is “Revana”; keep branding configurable and do not imply trademark/domain clearance. Its brand story is “Renew your routines. Reveal your potential.” This is brand positioning, not an ancient-language etymology.
 
 ## Before making changes
 1. Read `README.md`, `docs/PRODUCT_SPEC.md`, `docs/SYSTEM_ARCHITECTURE.md`, and `docs/ROADMAP.md`.
@@ -34,6 +34,8 @@ The product name is not final. Treat “Luma” as a temporary design reference 
 - Keep frontend presentation, backend/domain logic, persistence, AI provider integration, and reviewed knowledge modular. Avoid unnecessary services and agent frameworks.
 - Validate client input and external/AI output with shared Zod schemas where appropriate. Do not trust model schema compliance as a replacement for domain validation.
 - Keep the app name configurable. Use accessible, responsive components and preserve the design reference when it is supplied.
+- Keep the entry page deliberately minimal: headline “Your goals. Your lifestyle. Your transformation.”, one primary “Begin your journey” action, and no decorative hero graphic, sample-plan CTA, or filler marketing copy unless the product owner requests otherwise.
+- Support user-selected focus categories and relevant follow-up questions. Do not describe or route the whole product as a hair-only journey; hair is simply the first detailed recommendation prototype.
 - Add unit/integration/E2E tests for behavior and access control. Use synthetic fixtures only.
 - Do not add customer records, real health data, API keys, production secrets, or unreviewed medical claims.
 
