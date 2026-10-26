@@ -1,0 +1,11 @@
+{
+  "title": "Revana — a more personal kind of care",
+  "description": "A personalized beauty and lifestyle planning prototype.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
