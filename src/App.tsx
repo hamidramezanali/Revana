@@ -9,7 +9,7 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
 }
 
-function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+function Icon({ name, size = 20, className = "" }: { name: IconName; size?: number; className?: string }) {
   const paths: Record<IconName, React.ReactNode> = {
     arrow: <><path d="M5 12h14M14 7l5 5-5 5" /></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></>,
@@ -28,7 +28,7 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
     star: <path d="m12 3 2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9L12 3Z" />,
     user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c.7-5 3.4-7 8-7s7.3 2 8 7" /></>,
   };
-  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size}><g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7">{paths[name]}</g></svg>;
+  return <svg aria-hidden="true" className={className} fill="none" height={size} viewBox="0 0 24 24" width={size}><g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7">{paths[name]}</g></svg>;
 }
 
 function Button({ children, className = "", disabled, onClick }: { children: React.ReactNode; className?: string; disabled?: boolean; onClick?: () => void }) {
@@ -110,8 +110,7 @@ type Profile = {
   energyDrop: string;
   products: string;
   sensitivities: string[];
-  budget: string;
-  effort: string;
+  limitations: string;
 };
 
 const initialProfile: Profile = {
@@ -127,8 +126,7 @@ const initialProfile: Profile = {
   energyDrop: "Around 3pm on workdays",
   products: "",
   sensitivities: [],
-  budget: "Under $100 / month",
-  effort: "Three high-impact actions",
+  limitations: "",
 };
 
 const order: Screen[] = ["welcome", "timeline", "goals", "details", "routine", "safety", "analysis", "dashboard"];
@@ -257,18 +255,33 @@ function Routine({ profile, setProfile, next, discovery }: { profile: Profile; s
 }
 
 function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (p: Profile) => void; next: () => void }) {
-  const options = ["No known allergies or reactions", "Food allergies or dietary restrictions", "Sensitive skin or scalp", "Ingredient reactions", "Medication or ongoing medical care", "Pregnant or breastfeeding"];
+  const options: { label: string; icon: IconName }[] = [
+    { label: "No known allergies or reactions", icon: "check" },
+    { label: "Food allergies or dietary restrictions", icon: "heart" },
+    { label: "Sensitive skin or scalp", icon: "skin" },
+    { label: "Ingredient reactions", icon: "info" },
+    { label: "Medication or ongoing medical care", icon: "heart" },
+    { label: "Pregnant or breastfeeding", icon: "user" },
+  ];
   const toggle = (item: string) => setProfile({ ...profile, sensitivities: profile.sensitivities.includes(item) ? profile.sensitivities.filter((x) => x !== item) : [...profile.sensitivities, item] });
   return (
     <div className="question-page wide-question">
-      <span className="eyebrow">FIT & SAFETY · 5 OF 5</span>
-      <h2>Shape the plan around your boundaries.</h2>
-      <p>These answers control how specific we can safely be. You can skip sensitive questions and add them later.</p>
-      <div className="safety-layout">
-        <section><h3>Anything we should account for?</h3><div className="check-list">{options.map((item) => <button className={profile.sensitivities.includes(item) ? "selected" : ""} key={item} onClick={() => toggle(item)} type="button"><i>{profile.sensitivities.includes(item) && <Icon name="check" size={14} />}</i>{item}</button>)}</div><small>We won’t recommend supplements based only on appearance goals.</small></section>
-        <section><h3>Plan preferences</h3><label>Monthly budget<select onChange={(e) => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={(e) => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
+      <span className="eyebrow">YOUR BOUNDARIES · 5 OF 5</span>
+      <h2>Anything we should keep in mind?</h2>
+      <div className="safety-sections">
+        <section className="safety-card">
+          <h3>Anything we should account for?</h3>
+          <div className="goal-grid safety-options">{options.map(({ label, icon }) => {
+            const selected = profile.sensitivities.includes(label);
+            return <button aria-pressed={selected} className={selected ? "selected" : ""} key={label} onClick={() => toggle(label)} type="button"><span className="goal-icon"><Icon name={icon} size={17} /></span><strong>{label}</strong><i>{selected && <Icon name="check" size={15} />}</i></button>;
+          })}</div>
+        </section>
+        <section className="safety-card">
+          <h3>Any other limitations or allergies?</h3>
+          <label className="safety-notes-label" htmlFor="safety-limitations">Share anything else you’d like your plan to take into account</label>
+          <textarea id="safety-limitations" maxLength={800} onChange={(event) => setProfile({ ...profile, limitations: event.target.value })} placeholder="For example, ingredients you avoid, movement limitations, or anything you’d rather leave out…" value={profile.limitations} />
+        </section>
       </div>
-      <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Sensitive answers and appearance photos require explicit consent. This prototype does not upload or store files.</span></div>
       <Button className="primary continue" onClick={next}>Connect the dots <Icon name="arrow" /></Button>
     </div>
   );
@@ -282,8 +295,8 @@ function Analysis({ profile, onPlan }: { profile: Profile; onPlan: () => void })
     <div className="analysis-page">
       <div className="analysis-intro"><span className="assistant-mark"><Icon name="sparkle" /></span><span className="eyebrow">PERSONAL ANALYSIS</span><h1>Let’s connect the dots.</h1><p>Here’s how your own answers translate into a small number of useful starting points. Nothing here is a diagnosis.</p></div>
       <div className="analysis-grid">
-        <section><span className="analysis-type reported">REPORTED BY YOU</span><h3>Your goal</h3><p>{profile.ownWords || `You want to improve ${goalNames.toLowerCase()} with a realistic plan that fits your life.`}</p><ul>{profile.goals.map((g) => <li key={g}><Icon name="check" size={14} />{profile.concerns[g].slice(0, 2).join(" and ") || goalData.find((x) => x.id === g)?.title}</li>)}{profile.goals.filter((goal) => profile.routineNotes[goal].trim()).map((goal) => <li key={`routine-${goal}`}><Icon name="check" size={14} />Current routine ({goalData.find((item) => item.id === goal)?.title}): {profile.routineNotes[goal].trim()}</li>)}</ul></section>
-        <section><span className="analysis-type inferred">OUR WORKING HYPOTHESES</span><h3>Promising opportunities</h3><p>These are possibilities suggested by your answers—not established causes.</p><ul>{hasHair && <li><Icon name="sparkle" size={14} />Your {profile.hairHeat.toLowerCase()} heat use may contribute to dryness; protection and technique are sensible first tests.</li>}{hasSkin && <li><Icon name="sparkle" size={14} />Inconsistent SPF and a minimal moisture routine may limit visible improvement in texture and glow.</li>}<li><Icon name="sparkle" size={14} />Your preference for “{profile.effort.toLowerCase()}” favors a focused plan over adding many products.</li></ul></section>
+        <section><span className="analysis-type reported">REPORTED BY YOU</span><h3>Your goal</h3><p>{profile.ownWords || `You want to improve ${goalNames.toLowerCase()} with a realistic plan that fits your life.`}</p><ul>{profile.goals.map((g) => <li key={g}><Icon name="check" size={14} />{profile.concerns[g].slice(0, 2).join(" and ") || goalData.find((x) => x.id === g)?.title}</li>)}{profile.goals.filter((goal) => profile.routineNotes[goal].trim()).map((goal) => <li key={`routine-${goal}`}><Icon name="check" size={14} />Current routine ({goalData.find((item) => item.id === goal)?.title}): {profile.routineNotes[goal].trim()}</li>)}{profile.sensitivities.map((item) => <li key={`sensitivity-${item}`}><Icon name="info" size={14} />To account for: {item}</li>)}{profile.limitations.trim() && <li><Icon name="info" size={14} />Additional boundaries: {profile.limitations.trim()}</li>}</ul></section>
+        <section><span className="analysis-type inferred">OUR WORKING HYPOTHESES</span><h3>Promising opportunities</h3><p>These are possibilities suggested by your answers—not established causes.</p><ul>{hasHair && <li><Icon name="sparkle" size={14} />Your {profile.hairHeat.toLowerCase()} heat use may contribute to dryness; protection and technique are sensible first tests.</li>}{hasSkin && <li><Icon name="sparkle" size={14} />Inconsistent SPF and a minimal moisture routine may limit visible improvement in texture and glow.</li>}<li><Icon name="sparkle" size={14} />A focused starting point makes it easier to notice what helps before adding more changes.</li></ul></section>
         <section><span className="analysis-type unknown">STILL UNCERTAIN</span><h3>What we won’t assume</h3><p>We don’t have clinical assessment, lab data, or passive health tracking.</p><ul><li><Icon name="info" size={14} />We cannot infer nutrient deficiency, hormonal causes, or a skin condition from this questionnaire.</li><li><Icon name="info" size={14} />If shedding, fatigue, or irritation is persistent or worsening, professional assessment comes before optimization.</li></ul></section>
       </div>
       <div className="opportunity"><div><span>HIGHEST-VALUE START</span><strong>Adjust what you already do before buying more.</strong><p>It is low cost, easy to evaluate, and directly connected to the routines you reported.</p></div><div className="impact-meter"><span>Expected value</span><i><b /></i><strong>High</strong></div></div>
@@ -337,15 +350,156 @@ function Dashboard({ profile, onRestart }: { profile: Profile; onRestart: () => 
             <section className="starting-point"><span className="eyebrow">YOUR STARTING POINT</span><h3>Why these actions</h3><p>Your first plan prioritizes changes to existing routines because they are safer, lower cost, and easier to evaluate than introducing several products or supplements.</p><button onClick={() => setTab("Insights")} type="button">Review the analysis <Icon name="arrow" size={14} /></button></section>
           </aside>
         </div>}
-        {tab === "My plan" && <PlanView profile={profile} />}
+        <div hidden={tab !== "My plan"}><PlanView profile={profile} /></div>
         {tab === "Insights" && <Insights profile={profile} onRestart={onRestart} />}
       </main>
     </div>
   );
 }
 
+type PlanIdea = { id: string; title: string; preview: string; suggestion: string; why: string; research: string };
+type PlanWeek = { title: string; ideas: PlanIdea[] };
+
+function buildWeeklyPlan(profile: Profile): PlanWeek[] {
+  const concerns = profile.goals.flatMap((goal) => profile.concerns[goal]).map((concern) => concern.toLowerCase());
+  const hasConcern = (...terms: string[]) => concerns.some((concern) => terms.some((term) => concern.includes(term)));
+  const hairSelected = profile.goals.includes("hair");
+  const skinSelected = profile.goals.includes("skin");
+  const energySelected = profile.goals.includes("energy") || profile.goals.includes("body");
+  const general = profile.goals.length === 0 || profile.goals.includes("other");
+  const weeks: PlanWeek[] = [
+    {
+      title: "Softer mornings",
+      ideas: [
+        { id: "gentle-rinse", title: "Lukewarm rinse", preview: "Try a comfortably warm rinse as part of your morning routine.", suggestion: "If it feels comfortable, try water that is warm rather than very hot during your morning routine.", why: "A small, easy-to-adjust change can be a gentle place to start while keeping the rest of your routine familiar.", research: "General skin-care guidance · review with a qualified professional if irritation persists." },
+        { id: "pat-dont-rub", title: "Pat, don't rub", preview: "A softer touch after washing may feel more comfortable.", suggestion: "After washing, gently pat your skin or hair dry instead of rubbing.", why: hasConcern("dry", "break", "sensitive") ? "You mentioned dryness, breakage, or sensitivity, so a gentler handling habit may be a relevant low-effort experiment." : "This is an optional, low-effort way to keep your routine gentle.", research: "General care suggestion · individual results vary." },
+        { id: "daylight-break", title: "A little daylight", preview: "Step outside for a few minutes when it suits your day.", suggestion: "If practical, take a short daylight break at a time that works for you.", why: "You selected lifestyle-related goals; this is one flexible idea that does not require special equipment.", research: "General wellbeing suggestion · not a treatment recommendation." },
+      ],
+    },
+    {
+      title: "Water and wind-down",
+      ideas: [
+        { id: "glass-nearby", title: "A glass nearby", preview: "Keep water within reach during a part of your day.", suggestion: "You could keep a glass of water nearby during the part of the day when it is easiest to forget.", why: "A visible cue can make a routine easier to remember without turning it into a target or rule.", research: "General habit-design idea · needs vary with health, climate, and activity." },
+        { id: "phone-aside", title: "Phone aside, earlier", preview: "Try setting your phone aside a little earlier on one evening.", suggestion: "On an evening that suits you, try putting your phone aside a little earlier than usual.", why: "You can explore whether a small change to your evening routine feels restful; there is no need to do this every night.", research: "General sleep-habit suggestion · individual needs and circumstances vary." },
+        { id: "evening-moisturiser", title: "Evening moisturiser", preview: "Consider a simple moisturiser before bed, if it suits you.", suggestion: "If you already use a moisturiser and it suits your skin, consider making it part of a comfortable evening routine.", why: hasConcern("dry", "tight", "sensitive") ? "You mentioned dryness, tightness, or sensitivity. Keeping to a product you already tolerate avoids adding several new variables." : "Keeping a familiar routine steady can make it easier to notice how your skin feels.", research: "General skin-care guidance · check ingredients and stop if a product causes irritation." },
+      ],
+    },
+    {
+      title: "Noticing what you love",
+      ideas: [
+        { id: "favorite-routine", title: "One familiar favorite", preview: "Make a little room for something you already enjoy.", suggestion: "Choose one small part of your existing routine that feels pleasant and give it room to stay.", why: "A plan is more likely to feel personal when it builds on things you already enjoy rather than adding pressure.", research: "Personal preference matters · this is a reflection prompt, not a clinical intervention." },
+        { id: "gentle-movement", title: "A daylight walk", preview: "If it feels right, take a short walk at a comfortable pace.", suggestion: "If it fits your day and abilities, consider a short, comfortable walk outdoors.", why: "You selected lifestyle or movement goals. This is only an optional idea; choose movement that feels appropriate for you.", research: "General activity suggestion · adapt to your abilities and seek professional guidance when needed." },
+        { id: "notice-comfort", title: "Notice what feels good", preview: "Pay attention to one change you liked, if any.", suggestion: "At the end of the week, notice one thing that felt comfortable or enjoyable—or note that nothing stood out.", why: "Your own experience can help decide what is worth keeping, without requiring scores or a perfect streak.", research: "A personal check-in · your observation is not proof of cause and effect." },
+      ],
+    },
+  ];
+  return weeks.map((week) => ({
+    ...week,
+    ideas: week.ideas.filter((idea) => {
+      if (idea.id === "gentle-rinse" || idea.id === "pat-dont-rub") return skinSelected || hairSelected || general;
+      if (idea.id === "evening-moisturiser") return skinSelected || general;
+      if (idea.id === "daylight-break" || idea.id === "gentle-movement") return energySelected || general;
+      return true;
+    }),
+  }));
+}
+
+function formatWeekRange(start: Date) {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const startText = new Intl.DateTimeFormat(undefined, options).format(start);
+  const endText = new Intl.DateTimeFormat(undefined, options).format(end);
+  return `${startText} – ${endText}`;
+}
+
 function PlanView({ profile }: { profile: Profile }) {
-  return <div className="plan-view"><div className="section-title"><div><span className="eyebrow">WEEK 1 · FOUNDATION</span><h2>Your personal rhythm</h2><p>Introduce one variable at a time so you can tell what helps.</p></div></div><div className="week-grid"><section><span>TODAY</span><h3>Reset one routine</h3><p>Start the highest-priority change and note your baseline.</p></section><section><span>THIS WEEK</span><h3>Repeat, don’t expand</h3><p>Follow the core routine. Avoid stacking new actives or supplements.</p></section><section><span>DAY 14</span><h3>First adaptive review</h3><p>Compare the specific outcomes tied to {profile.goals[0] || "your goal"} and adjust.</p></section></div><div className="optional-layer"><div><span className="eyebrow">OPTIONAL PROFESSIONAL LAYER</span><h2>Explore only if the foundation isn’t enough.</h2><p>A consultation can clarify persistent concerns, but it is not required to start making progress.</p></div><article><span className="service-icon"><Icon name="user" /></span><div><strong>Qualified consultation</strong><p>Useful for persistent irritation, shedding, sudden changes, or when you want to discuss procedures and contraindications.</p><small>What it won’t do: replace consistent daily care.</small></div><button type="button">Explore options</button></article></div></div>;
+  const [view, setView] = useState<"summary" | "weekly">("summary");
+  const [selectedWeek, setSelectedWeek] = useState(0);
+  const [dismissedIdeas, setDismissedIdeas] = useState<string[]>([]);
+  const [expandedIdea, setExpandedIdea] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [savedNote, setSavedNote] = useState("");
+  const weeklyPlan = useMemo(() => buildWeeklyPlan(profile), [profile]);
+  const planStart = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }, []);
+  const weekStart = new Date(planStart);
+  weekStart.setDate(planStart.getDate() + selectedWeek * 7);
+  const currentWeek = weeklyPlan[selectedWeek];
+  const goalNames = profile.goals.map((goal) => goalData.find((item) => item.id === goal)?.title.toLowerCase()).filter(Boolean).join(" and ");
+  const selectedConcerns = profile.goals.flatMap((goal) => profile.concerns[goal]).slice(0, 2);
+  const summaryTopics = [...new Set([...selectedConcerns, ...profile.goals.map((goal) => goalData.find((item) => item.id === goal)?.title || goal)])];
+  const reasons = [
+    selectedConcerns.length ? `You mentioned ${selectedConcerns.join(" and ").toLowerCase()}, so the suggestions start with gentle, optional ideas.` : `You chose to focus on ${goalNames || "your wellbeing"}, so the suggestions offer small ways to explore that area.`,
+    Object.values(profile.routineNotes).some((routine) => routine.trim()) ? "Your current routine is part of the context; the ideas are designed to fit around what you already do." : "The suggestions are intentionally small, so you can decide what fits your existing routine.",
+    "Nothing is required. Keep the ideas that feel useful and leave out anything that does not.",
+  ];
+  const activeIdeaCount = weeklyPlan.reduce((count, week) => count + week.ideas.filter((idea) => !dismissedIdeas.includes(idea.id)).length, 0);
+  const dismissIdea = (ideaId: string) => setDismissedIdeas((ideas) => ideas.includes(ideaId) ? ideas : [...ideas, ideaId]);
+
+  return <div className="plan-view">
+    {view === "summary" ? <>
+      <header className="plan-page-heading"><span className="eyebrow">REVANA</span><h2>Your plan</h2></header>
+      <section className="plan-summary-card">
+        <span className="plan-card-label"><Icon name="sparkle" size={16} /> WHAT WE THINK MAY WORK</span>
+        <h3>{selectedConcerns.length ? "Small shifts for a gentler routine" : "A calmer rhythm, shaped around you"}</h3>
+        <p>Over the next few weeks, these ideas may help you explore {goalNames || "your goals"} at a pace that feels right. Nothing here is required—keep what fits and leave the rest.</p>
+        <div className="plan-topic-tags">{(summaryTopics.length ? summaryTopics : ["Gentle routines", "Personal pace"]).slice(0, 4).map((topic) => <span key={topic}>{topic}</span>)}</div>
+      </section>
+      <section className="plan-reasons"><h3>Why this plan, for you</h3>{reasons.map((reason) => <p key={reason}>{reason}</p>)}</section>
+      <section className="plan-upcoming">
+        <div className="plan-upcoming-heading"><div><h3>The weeks ahead</h3><p>Leave out anything that isn't for you—your weekly plans will follow.</p></div><span>{activeIdeaCount} ideas</span></div>
+        <div className="summary-weeks">{weeklyPlan.map((week, index) => {
+          const start = new Date(planStart);
+          start.setDate(planStart.getDate() + index * 7);
+          const visibleIdeas = week.ideas.filter((idea) => !dismissedIdeas.includes(idea.id));
+          return <section className="summary-week" key={week.title}>
+            <header><span>WEEK {index + 1} · {formatWeekRange(start)}{index === 0 ? " · THIS WEEK" : ""}</span><span>{visibleIdeas.length} {visibleIdeas.length === 1 ? "idea" : "ideas"}</span></header>
+            <h4>{week.title}</h4>
+            {visibleIdeas.length ? <ul>{visibleIdeas.map((idea) => <li key={idea.id}><span>{idea.title}</span><button onClick={() => dismissIdea(idea.id)} type="button">Not for me</button></li>)}</ul> : <p className="empty-week">You’ve left out all the ideas for this week.</p>}
+          </section>;
+        })}</div>
+      </section>
+      <p className="plan-disclaimer"><Icon name="info" size={15} />These are example suggestions in this prototype, not yet personalized by a connected AI or verified against live research. They are not a diagnosis or a guarantee. Take what helps; leave what doesn't.</p>
+      <Button className="primary plan-continue" onClick={() => { setView("weekly"); setExpandedIdea(null); }}>See weekly plans <Icon name="arrow" /></Button>
+    </> : <>
+      <button className="plan-back" onClick={() => setView("summary")} type="button"><Icon name="chevron" size={16} /> Plan summary</button>
+      <header className="plan-page-heading weekly-heading"><h2>Weekly plans</h2></header>
+      <div className="week-picker">
+        <button aria-label="Previous week" disabled={selectedWeek === 0} onClick={() => { setSelectedWeek((week) => week - 1); setExpandedIdea(null); }} type="button"><Icon name="chevron" size={20} /></button>
+        <div><span>{selectedWeek === 0 ? "THIS WEEK" : `WEEK ${selectedWeek + 1}`}</span><strong>Week {selectedWeek + 1}</strong><small>{formatWeekRange(weekStart)}</small></div>
+        <button aria-label="Next week" disabled={selectedWeek === weeklyPlan.length - 1} onClick={() => { setSelectedWeek((week) => week + 1); setExpandedIdea(null); }} type="button"><Icon name="chevron" size={20} /></button>
+      </div>
+      <nav aria-label="Select week" className="week-dots">{weeklyPlan.map((week, index) => <button aria-label={`Go to week ${index + 1}`} aria-current={selectedWeek === index ? "step" : undefined} className={selectedWeek === index ? "active" : ""} key={week.title} onClick={() => { setSelectedWeek(index); setExpandedIdea(null); }} type="button" />)}</nav>
+      <section aria-live="polite" className="weekly-suggestions">
+        <span className="eyebrow">REVANA SUGGESTS · {currentWeek.ideas.filter((idea) => !dismissedIdeas.includes(idea.id)).length} IDEAS</span>
+        <h3>{currentWeek.title}</h3>
+        <div className="suggestion-list">{currentWeek.ideas.filter((idea) => !dismissedIdeas.includes(idea.id)).map((idea) => {
+          const expanded = expandedIdea === idea.id;
+          return <article className={`suggestion-card${expanded ? " expanded" : ""}`} key={idea.id}>
+            <button aria-expanded={expanded} className="suggestion-toggle" onClick={() => setExpandedIdea(expanded ? null : idea.id)} type="button"><span><strong>{idea.title}</strong>{!expanded && <small>{idea.preview}</small>}</span><Icon className={expanded ? "rotated" : ""} name="chevron" size={18} /></button>
+            {expanded && <div className="suggestion-detail" id={`suggestion-details-${idea.id}`}>
+              <p>{idea.suggestion}</p>
+              <h4>Why this, for you</h4><p>{idea.why}</p>
+              <details className="suggestion-research"><summary><Icon name="info" size={15} /> What to keep in mind</summary><p>{idea.research}</p></details>
+              <button className="suggestion-dismiss" onClick={() => dismissIdea(idea.id)} type="button">Not for me</button>
+            </div>}
+          </article>;
+        })}</div>
+        {currentWeek.ideas.every((idea) => dismissedIdeas.includes(idea.id)) && <p className="empty-week">You’ve left out all the ideas for this week. Choose another week or continue without suggestions.</p>}
+      </section>
+      <section className="plan-note">
+        <span className="eyebrow">IN YOUR WORDS · OPTIONAL</span>
+        <h3>Anything you tried or noticed?</h3>
+        <textarea maxLength={800} onChange={(event) => setNote(event.target.value)} placeholder="No pressure — a few words, or nothing at all." value={note} />
+        <Button className="primary" disabled={!note.trim()} onClick={() => setSavedNote(note.trim())}>{savedNote ? "Note saved" : "Keep this note"}</Button>
+        {savedNote && <p className="saved-note-status" role="status">Your note is saved for this visit.</p>}
+      </section>
+    </>}
+  </div>;
 }
 
 function Insights({ profile, onRestart }: { profile: Profile; onRestart: () => void }) {
