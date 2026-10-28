@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd frontend
 exec pnpm dlx --package=@vtsls/language-server@^0.3.0 vtsls --stdio
