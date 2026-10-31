@@ -115,18 +115,13 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 .form-sections textarea { min-height: 64px; resize: vertical; }
 .form-sections small { margin-top: 5px; color: var(--muted); font-size: 7px; }
 .upload { align-self: flex-start; margin-top: 7px; display: flex; align-items: center; gap: 5px; border: 0; background: none; color: var(--terracotta); font-size: 8px; font-weight: 700; cursor: pointer; }
-.safety-layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 15px; }
-.safety-layout section { padding: 18px; border: 1px solid var(--line); border-radius: 14px; }
-.safety-layout h3 { margin-bottom: 14px; font: 400 18px "Instrument Serif"; }
-.check-list { display: grid; gap: 7px; }
-.check-list button { display: flex; align-items: center; gap: 8px; border: 0; padding: 0; background: none; color: var(--muted); font-size: 9px; text-align: left; cursor: pointer; }
-.check-list i { width: 21px; height: 21px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; color: white; }
-.check-list button.selected { color: var(--ink); font-weight: 600; }
-.check-list button.selected i { background: var(--forest); border-color: var(--forest); }
-.safety-layout section > small { display: block; margin-top: 13px; color: var(--muted); font-size: 7px; }
-.safety-layout section > label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; color: var(--muted); font-size: 8px; }
-.safety-layout select { min-height: 41px; padding: 0 10px; color: var(--ink); font-size: 9px; }
-.privacy-note { font-size: 8px; line-height: 1.45; }
+.safety-sections { display: grid; gap: 13px; }
+.safety-card { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.safety-card h3 { margin-bottom: 14px; font: 400 21px "Instrument Serif"; }
+.safety-options { gap: 8px; }
+.safety-options button { min-height: 62px; }
+.safety-notes-label { display: block; margin: -4px 0 8px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.safety-card textarea { width: 100%; min-height: 100px; padding: 12px; resize: vertical; font-size: 13px; line-height: 1.5; }
 .analysis-page { min-height: 100vh; padding: 65px max(5vw, calc((100vw - 1240px)/2)); background: linear-gradient(145deg,#f5f2eb,#fffefb); }
 .analysis-intro { max-width: 660px; margin: auto; text-align: center; }
 .assistant-mark { width: 47px; height: 47px; display: grid; place-items: center; margin: 0 auto 15px; border-radius: 50%; background: var(--forest); color: white; }
@@ -213,11 +208,81 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 .starting-point p { color: var(--muted); font-size: 8px; line-height: 1.55; }
 .starting-point button { display: flex; align-items: center; gap: 5px; border: 0; padding: 0; background: none; color: var(--terracotta); font-size: 8px; font-weight: 700; cursor: pointer; }
 .plan-view, .insights-view { padding-top: 28px; }
-.week-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
-.week-grid section, .insight-cards section { min-height: 160px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; }
-.week-grid span, .insight-cards span { color: var(--terracotta); font-size: 7px; font-weight: 700; letter-spacing: .12em; }
-.week-grid h3, .insight-cards strong { display: block; margin: 12px 0 6px; font: 400 20px "Instrument Serif"; }
-.week-grid p, .insight-cards p { color: var(--muted); font-size: 9px; line-height: 1.5; }
+.plan-page-heading { margin-bottom: 21px; }
+.plan-page-heading .eyebrow { margin-bottom: 5px; }
+.plan-page-heading h2 { margin: 0; font: 400 35px/1.1 "Instrument Serif"; }
+.plan-summary-card { padding: 24px; border-radius: 19px; background: #cfe7d2; }
+.plan-card-label { display: flex; align-items: center; gap: 8px; color: var(--forest); font-size: 10px; font-weight: 700; letter-spacing: .13em; }
+.plan-summary-card h3 { max-width: 650px; margin: 17px 0 11px; color: var(--forest); font: italic 400 29px/1.2 "Instrument Serif"; }
+.plan-summary-card > p { max-width: 730px; margin: 0; color: #3f5145; font-size: 13px; line-height: 1.65; }
+.plan-topic-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 17px; }
+.plan-topic-tags span { padding: 7px 12px; border-radius: 20px; background: #fffefb; color: #3d4940; font-size: 10px; }
+.plan-reasons { margin: 27px 0 30px; }
+.plan-reasons h3, .plan-upcoming-heading h3 { margin: 0 0 14px; font: 400 24px "Instrument Serif"; }
+.plan-reasons p { margin: 0 0 11px; padding: 3px 0 3px 14px; border-left: 2px solid var(--forest); color: #5e5d57; font-size: 12px; line-height: 1.65; }
+.plan-reasons p:last-child { margin-bottom: 0; }
+.plan-upcoming-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.plan-upcoming-heading h3 { margin-bottom: 4px; }
+.plan-upcoming-heading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.plan-upcoming-heading > span { flex: none; color: var(--muted); font-size: 10px; }
+.summary-weeks { overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: #fff; box-shadow: 0 2px 5px rgba(46,43,37,.05); }
+.summary-week { padding: 17px 19px; border-bottom: 1px solid var(--line); }
+.summary-week:last-child { border-bottom: 0; }
+.summary-week > header { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 9px; letter-spacing: .1em; }
+.summary-week > header span:last-child { flex: none; letter-spacing: 0; }
+.summary-week h4 { margin: 7px 0 11px; color: var(--ink); font: italic 400 18px "Instrument Serif"; }
+.summary-week ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.summary-week li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 35px; color: #333631; font-size: 11px; }
+.summary-week li button { flex: none; border: 0; border-bottom: 1px solid #77746d; padding: 3px 0; background: transparent; color: #69665f; font-size: 10px; cursor: pointer; }
+.summary-week li button:hover { color: var(--terracotta); border-color: var(--terracotta); }
+.empty-week { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.plan-disclaimer { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0; padding: 13px; border-radius: 12px; background: #f3eddf; color: #685f51; font-size: 10px; line-height: 1.6; }
+.plan-disclaimer svg { flex: none; margin-top: 1px; }
+.plan-continue { width: 100%; min-height: 48px; }
+.plan-back { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 13px; border: 0; padding: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+.plan-back svg { transform: rotate(180deg); }
+.weekly-heading { margin-bottom: 20px; }
+.week-picker { display: grid; grid-template-columns: 46px 1fr 46px; align-items: center; gap: 12px; max-width: 430px; margin: 0 auto; text-align: center; }
+.week-picker > button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #fff; cursor: pointer; }
+.week-picker > button:last-child svg { transform: rotate(180deg); }
+.week-picker > button:disabled { cursor: not-allowed; opacity: .4; }
+.week-picker > div { display: flex; flex-direction: column; gap: 3px; }
+.week-picker > div span { color: var(--sage-deep); font-size: 9px; font-weight: 700; letter-spacing: .13em; }
+.week-picker > div strong { font-size: 15px; }
+.week-picker > div small { color: var(--muted); font-size: 11px; }
+.week-dots { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 17px 0 29px; }
+.week-dots button { width: 8px; height: 8px; border: 0; border-radius: 9px; padding: 0; background: #d8d3c9; cursor: pointer; transition: width .2s, background .2s; }
+.week-dots button.active { width: 24px; background: var(--forest); }
+.weekly-suggestions > .eyebrow { margin-bottom: 5px; color: var(--sage-deep); }
+.weekly-suggestions > h3 { margin: 0 0 13px; font: italic 400 24px "Instrument Serif"; }
+.suggestion-list { display: grid; gap: 9px; }
+.suggestion-card { overflow: hidden; border: 1px solid rgba(228,224,216,.8); border-radius: 20px; background: #fff; box-shadow: 0 2px 4px rgba(46,43,37,.05); }
+.suggestion-card.expanded { border: 2px solid var(--sage-deep); }
+.suggestion-toggle { width: 100%; min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 17px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.suggestion-toggle > span { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.suggestion-toggle strong { font-size: 14px; font-weight: 600; line-height: 1.4; }
+.suggestion-toggle small { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.suggestion-toggle > svg { flex: none; color: #514e47; transform: rotate(90deg); transition: transform .18s; }
+.suggestion-toggle > svg.rotated { transform: rotate(-90deg); }
+.suggestion-detail { padding: 0 18px 17px; }
+.suggestion-detail > p { margin: 0 0 12px; color: #53544f; font-size: 12px; line-height: 1.65; }
+.suggestion-detail h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 700; }
+.suggestion-research { margin: 13px 0; border-radius: 12px; background: #f3eee6; }
+.suggestion-research summary { min-height: 44px; display: flex; align-items: center; gap: 7px; padding: 10px 13px; color: #47443d; font-size: 10px; font-weight: 600; cursor: pointer; list-style: none; }
+.suggestion-research summary::-webkit-details-marker { display: none; }
+.suggestion-research > p { margin: 0; padding: 0 13px 13px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.suggestion-dismiss { border: 0; border-bottom: 1px solid #77746d; padding: 3px 0; background: transparent; color: #69665f; font-size: 10px; cursor: pointer; }
+.plan-note { margin-top: 28px; padding: 20px; border-radius: 18px; background: #f6e1d8; }
+.plan-note .eyebrow { margin-bottom: 6px; color: #805c4d; }
+.plan-note h3 { margin-bottom: 13px; font: 400 22px "Instrument Serif"; }
+.plan-note textarea { width: 100%; min-height: 95px; padding: 13px; border-radius: 13px; resize: vertical; font-size: 13px; line-height: 1.5; }
+.plan-note .button { width: 100%; margin-top: 10px; }
+.saved-note-status { margin: 8px 0 0; color: var(--sage-deep); font-size: 11px; }
+.insight-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
+.insight-cards section { min-height: 160px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.insight-cards span { color: var(--terracotta); font-size: 7px; font-weight: 700; letter-spacing: .12em; }
+.insight-cards strong { display: block; margin: 12px 0 6px; font: 400 20px "Instrument Serif"; }
+.insight-cards p { color: var(--muted); font-size: 9px; line-height: 1.5; }
 .optional-layer { margin-top: 25px; padding: 23px; border-radius: 16px; background: #eee9e0; }
 .optional-layer > div > h2 { margin-bottom: 5px; font: 400 26px "Instrument Serif"; }
 .optional-layer > div > p { color: var(--muted); font-size: 9px; }
@@ -238,7 +303,7 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .analysis-grid, .insight-cards { grid-template-columns: 1fr; }
   .analysis-grid section { min-height: auto; }
   .dash-grid { grid-template-columns: 1fr; }
-  .week-grid { grid-template-columns: 1fr; }
+  .insight-cards { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -275,7 +340,7 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .back-link { z-index: 10; left: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: 0 4px 14px rgba(46,43,37,.1); font-size: 13px; }
   .save-exit { min-height: 44px; padding: 0 4px; font-size: 12px; }
   .adaptive-stack { gap: 10px; }
-  .adaptive-stack section, .safety-layout section { min-width: 0; padding: 14px; }
+  .adaptive-stack section, .safety-card { min-width: 0; padding: 14px; }
   .adaptive-heading strong { font-size: 17px; line-height: 1.3; }
   .adaptive-heading small { font-size: 9px; }
   .chip-grid { gap: 7px; }
@@ -286,15 +351,13 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .form-sections input, .form-sections select, .form-sections textarea { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; }
   .form-sections textarea { min-height: 76px; }
   .form-sections small { font-size: 11px; line-height: 1.4; }
-  .safety-layout { grid-template-columns: 1fr; gap: 10px; }
-  .safety-layout h3 { font-size: 20px; }
-  .check-list { gap: 9px; }
-  .check-list button { min-height: 42px; gap: 10px; font-size: 13px; }
-  .check-list i { flex: none; width: 23px; height: 23px; }
-  .safety-layout section > small { font-size: 11px; line-height: 1.45; }
-  .safety-layout section > label { gap: 7px; margin-bottom: 14px; font-size: 12px; }
-  .safety-layout select { width: 100%; min-height: 46px; font-size: 16px; }
-  .privacy-note { padding: 12px; font-size: 12px; line-height: 1.5; }
+  .safety-sections { gap: 10px; }
+  .safety-card { padding: 14px; }
+  .safety-card h3 { margin-bottom: 12px; font-size: 22px; }
+  .safety-options { gap: 7px; }
+  .safety-options button { min-height: 58px; }
+  .safety-notes-label { font-size: 13px; }
+  .safety-card textarea { min-height: 110px; font-size: 16px; }
   .analysis-page { min-height: 100svh; padding: 35px 16px calc(32px + env(safe-area-inset-bottom)); }
   .analysis-intro h1 { font-size: clamp(36px, 10vw, 43px); }
   .analysis-intro p { font-size: 14px; line-height: 1.55; }
@@ -359,11 +422,60 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .starting-point p { font-size: 13px; line-height: 1.5; }
   .starting-point button { min-height: 40px; font-size: 12px; }
   .plan-view, .insights-view { padding-top: 20px; }
-  .week-grid { grid-template-columns: 1fr; gap: 9px; }
-  .week-grid section, .insight-cards section { min-height: auto; padding: 16px; }
-  .week-grid span, .insight-cards span { font-size: 9px; }
-  .week-grid h3, .insight-cards strong { margin: 9px 0 6px; font-size: 20px; }
-  .week-grid p, .insight-cards p { font-size: 13px; line-height: 1.5; }
+  .plan-page-heading { margin-bottom: 16px; }
+  .plan-page-heading h2 { font-size: 32px; }
+  .plan-summary-card { padding: 18px; border-radius: 18px; }
+  .plan-card-label { font-size: 10px; line-height: 1.4; }
+  .plan-summary-card h3 { margin: 14px 0 9px; font-size: 24px; line-height: 1.25; }
+  .plan-summary-card > p { font-size: 14px; line-height: 1.6; }
+  .plan-topic-tags { gap: 6px; margin-top: 14px; }
+  .plan-topic-tags span { padding: 7px 10px; font-size: 11px; }
+  .plan-reasons { margin: 25px 0; }
+  .plan-reasons h3, .plan-upcoming-heading h3 { font-size: 23px; }
+  .plan-reasons p { padding-left: 11px; font-size: 13px; line-height: 1.6; }
+  .plan-upcoming-heading { align-items: flex-start; margin-bottom: 12px; }
+  .plan-upcoming-heading p { font-size: 12px; line-height: 1.5; }
+  .plan-upcoming-heading > span { font-size: 11px; }
+  .summary-weeks { border-radius: 17px; }
+  .summary-week { padding: 15px 16px; }
+  .summary-week > header { font-size: 9px; line-height: 1.4; }
+  .summary-week h4 { font-size: 18px; }
+  .summary-week li { min-height: 42px; font-size: 13px; }
+  .summary-week li button { font-size: 12px; }
+  .empty-week { font-size: 12px; }
+  .plan-disclaimer { margin: 12px 0; padding: 12px; font-size: 12px; line-height: 1.55; }
+  .plan-continue { min-height: 50px; font-size: 14px; }
+  .plan-back { min-height: 40px; margin-bottom: 10px; font-size: 13px; }
+  .weekly-heading { margin-bottom: 19px; }
+  .week-picker { grid-template-columns: 44px 1fr 44px; gap: 8px; }
+  .week-picker > button { width: 42px; height: 42px; }
+  .week-picker > div span { font-size: 10px; }
+  .week-picker > div strong { font-size: 17px; }
+  .week-picker > div small { font-size: 12px; }
+  .week-dots { margin: 16px 0 25px; }
+  .weekly-suggestions > .eyebrow { font-size: 10px; line-height: 1.5; }
+  .weekly-suggestions > h3 { margin-bottom: 13px; font-size: 25px; }
+  .suggestion-list { gap: 8px; }
+  .suggestion-card { border-radius: 20px; }
+  .suggestion-toggle { min-height: 72px; padding: 13px 16px; }
+  .suggestion-toggle strong { font-size: 16px; }
+  .suggestion-toggle small { font-size: 13px; line-height: 1.5; }
+  .suggestion-detail { padding: 0 17px 16px; }
+  .suggestion-detail > p { font-size: 14px; line-height: 1.6; }
+  .suggestion-detail h4 { font-size: 13px; }
+  .suggestion-research summary { min-height: 48px; font-size: 12px; }
+  .suggestion-research > p { font-size: 12px; line-height: 1.55; }
+  .suggestion-dismiss { min-height: 38px; font-size: 12px; }
+  .plan-note { margin-top: 24px; padding: 17px; border-radius: 18px; }
+  .plan-note h3 { font-size: 22px; }
+  .plan-note textarea { min-height: 100px; font-size: 16px; }
+  .plan-note .button { min-height: 48px; font-size: 14px; }
+  .saved-note-status { font-size: 12px; }
+  .insight-cards { grid-template-columns: 1fr; gap: 9px; }
+  .insight-cards section { min-height: auto; padding: 16px; }
+  .insight-cards span { font-size: 9px; }
+  .insight-cards strong { margin: 9px 0 6px; font-size: 20px; }
+  .insight-cards p { font-size: 13px; line-height: 1.5; }
   .optional-layer { margin-top: 18px; padding: 16px; }
   .optional-layer > div > h2 { font-size: 24px; }
   .optional-layer > div > p { font-size: 13px; line-height: 1.5; }
