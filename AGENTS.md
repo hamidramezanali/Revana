@@ -1,28 +1,49 @@
-# Revana Frontend Project
+# Revana agent guidance
 
-This repository is the Revana frontend only. The backend will be developed and deployed as a separate project and repository. Do not add backend services, database credentials, or LLM provider secrets to this frontend.
+Start with `docs/architecture.md` and `docs/agent-roadmap.md`.
 
-## Product direction
+## Product goal
 
-- Improve the frontend gradually, preserving a clear, calm, mobile-first experience.
-- Keep user-reported information distinct from generated suggestions and planned actions.
-- Treat completion, skips, edits, and progress notes as user input; never infer that a recommendation was followed.
-- Make recommendations explainable, optional, and non-diagnostic. Show uncertainty and avoid presenting an LLM response as medical advice.
-- Use the product roadmap for the proposed architecture, data model, and sequencing: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md).
+Revana is an interactive beauty and lifestyle agent. Keep the current visual direction
+and direction -> goals -> understanding -> fit/safety -> analysis -> plan workflow.
+Questions must adapt to every previous answer; the backend allows at most six initial
+adaptive questions and three follow-up questions per check-in. Users may skip or finish
+early. Separate explicit user reports, hypotheses and unknowns. Plan revisions require
+user acceptance and preserve accepted history.
 
-## Frontend conventions
+## Repository
 
-- React 19, TypeScript, Vite 8, and Tailwind CSS v4.
-- Main UI: `src/App.tsx`; global styles: `src/index.css`; entry point: `src/main.tsx`.
-- Keep API contracts typed and validate untrusted responses at the boundary.
-- Backend communication must use documented HTTP APIs. Do not connect directly to the database or call an LLM provider from the browser.
-- Follow existing responsive and reduced-motion patterns. Keep keyboard access, visible focus, and accessible labels.
+- `frontend/`: React 19, TypeScript, Vite, Tailwind v4. Entry: `src/App.tsx`.
+- `frontend/src/Agent.tsx`: agent API client, adaptive questions, analysis/dashboard.
+- `backend/`: Python 3.12+, FastAPI. Entry: `app/main.py`.
+- `contracts/openapi.json`: generated API contract.
+- `frontend/src/api.generated.ts`: generated serialized response model types.
+- `.figma/`: design tooling. Do not assume a dev server is already running.
 
-## Build and validation
+## Privacy and scope
 
-- Install dependencies with `pnpm install`.
-- Run locally with `pnpm dev`.
-- Verify production output with `pnpm build` and types with `pnpm exec tsc --noEmit`.
-- Format with `pnpm format`.
+Single-user local implementation first. Keep API keys server-side. Journey answers can
+be health-adjacent: never log their contents, raw request bodies or provider responses.
+Local SQLite is not production storage; do not deploy it to ephemeral Vercel disks.
+Do not bypass the hosted authorization/storage gate to make deployment appear ready.
+No diagnoses, prescriptions or unsupported efficacy claims. Prompt rules do not prove
+clinical safety. Tests must use synthetic data and fake providers, never real user data.
+Live OpenAI calls require configured credentials and deliberate validation; never send
+repository contents or existing private records as an unsolicited smoke test.
 
-Keep changes focused, update relevant documentation, and run the smallest validation that covers the change.
+## Development and validation
+
+Run the API from `backend/`: `.venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1`.
+Run the frontend from `frontend/`: `pnpm dev` (8443), proxied to the API on port 8000.
+Use `REVANA_OPENAI_API_KEY` and `REVANA_OPENAI_MODEL` only in backend environment config.
+
+Backend: `ruff check .`, `ruff format --check .`, `pytest`.
+Frontend: `pnpm exec tsc --noEmit`, `pnpm build`.
+After API changes, from `backend/` with `PYTHONPATH=.`:
+`python scripts/export_openapi.py` and `python scripts/export_client_types.py`.
+
+Keep changes reviewable, update documentation when behavior changes, and report
+unverified live-provider/browser behavior honestly. Preserve unrelated user changes.
+
+Frontend: preserve responsive and reduced-motion behavior, visible keyboard focus, and
+accessible labels. Suggested actions never count as user-reported completion.

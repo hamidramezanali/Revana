@@ -1,5 +1,11 @@
 # Revana Product and Technical Roadmap
 
+> Historical product proposal from the frontend prototype. The current repository contains
+> both `frontend/` and `backend/`. See [architecture.md](architecture.md) and
+> [agent-roadmap.md](agent-roadmap.md) for the implemented local agent and hosted gates.
+> The vendors, APIs, example fallbacks, and separate-repository layout below remain proposals,
+> not descriptions of the running application.
+
 ## Product direction
 
 Revana helps a person turn their own goals and context into a small, adaptable plan, then understand what they actually tried and how it felt. Improve the frontend gradually; build a trustworthy data and service foundation before adding complex analytics or automation.
