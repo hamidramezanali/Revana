@@ -1,32 +1,48 @@
 # Architecture decisions
 
-| Area | Decision |
-|---|---|
-| Repo | Single repo: `frontend/`, `backend/`, `contracts/` |
-| Backend | Python, FastAPI, versioned under `/v1` |
-| Hosting | Vercel, one project per folder |
-| Auth | Auth0 with Google and Apple; bearer access tokens validated by the backend |
-| Database | Managed pooled Postgres in an EU region (not yet added) |
-| LLM | OpenAI, called only from the backend behind a provider interface (not yet added) |
-| Clients | Web now; Expo/React Native later, so the API stays bearer-token and client-agnostic |
-| Data | All answers and chat are kept; stored as new versions, never overwritten |
+| Area | Current implementation | Hosted direction |
+|---|---|---|
+| Repo | `frontend/`, `backend/`, `contracts/` | Same |
+| Backend | Python/FastAPI, versioned `/v1` API | Same |
+| Frontend | React/TypeScript/Vite; existing visual workflow | Web first; mobile later |
+| Hosting | Single-user local, loopback only | Two Vercel projects after hosted readiness |
+| Access | Random per-journey bearer capability, hashed in database | Auth0 + ownership enforcement |
+| Database | Local durable SQLite | Managed pooled EU Postgres + migrations |
+| LLM | Server-side structured OpenAI Responses adapter | Reviewed guidance + evaluations |
+| Data | Saved answers, accepted plan versions, pending proposal; export/delete | Defined retention + vendor handling |
 
-## Conventions
+## Adaptive agent
 
-- **Contract first.** `contracts/openapi.json` is generated from the backend and committed. Clients generate
-  their types from it.
-- **Errors.** Every non-2xx response is `{"error": {"code": "...", "message": "..."}}`. Messages never echo
-  user-submitted values.
-- **Sensitive data.** Answers and chats can be health-adjacent. Do not log their contents.
+Direction and goal selection lead to a consent step, then one question per answer,
+with a hard cap of six adaptive assessment questions. Fit/safety controls precede
+plan generation. The analysis separates reported facts, hypotheses and uncertainties.
+The dashboard supports follow-up check-ins with at most three questions and a proposed
+plan revision that must be accepted before replacing the current plan.
 
-## Roadmap
+The backend owns question budgets, active-question IDs, input bounds and revision
+checks. LLM generation completes before database writes; failure leaves saved state
+unchanged. Atomic compare-and-swap writes reject stale/replayed mutations. Accepted
+plans remain versioned. The provider is replaceable in tests; demo responses are not
+used as a live fallback.
 
-1. Repo restructure and backend scaffold (done)
-2. Database and migrations
-3. Auth0 integration and user provisioning
-4. Assessment persistence
-5. OpenAI question service
-6. Chat
-7. Plan generation
-8. Frontend integration
-9. Privacy and operations (export, deletion, rate limits, retention)
+## Contract and errors
+
+`contracts/openapi.json` is generated from the backend. Serialized frontend response
+types in `frontend/src/api.generated.ts` are generated from the same schemas. Regenerate
+both after changing models/endpoints; tests verify freshness.
+
+Non-2xx responses use `{"error": {"code": "...", "message": "..."}}`. Validation errors
+include field locations only. Never log answers, chats, tokens, keys or upstream bodies.
+Agent responses use `Cache-Control: no-store`.
+
+## Deployment boundary
+
+The local agent requires development mode and refuses Vercel startup. Bind the API to
+`127.0.0.1`; the agent also checks the request host, local peer and browser origin.
+These checks are a local boundary, not hosted account authentication. Never expose
+this SQLite/capability implementation as a public multi-user service. Hosted readiness
+requires Auth0, per-resource authorization, durable Postgres, rate/spend controls,
+privacy/retention operations and deployment validation.
+
+See [the agent roadmap](agent-roadmap.md) for milestones, launch instructions,
+data behavior, operating limits and outstanding validation gates.

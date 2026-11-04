@@ -3,12 +3,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 BACKEND = Path(__file__).resolve().parents[1]
 
 
-def test_openapi_contract_is_current():
+@pytest.mark.parametrize("script", ["export_openapi.py", "export_client_types.py"])
+def test_openapi_contract_is_current(script):
     result = subprocess.run(
-        [sys.executable, "scripts/export_openapi.py", "--check"],
+        [sys.executable, f"scripts/{script}", "--check"],
         check=False,
         cwd=BACKEND,
         env={**os.environ, "PYTHONPATH": str(BACKEND)},

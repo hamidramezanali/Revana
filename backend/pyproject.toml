@@ -5,13 +5,13 @@ description = "Revana API"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",
+  "httpx>=0.27",
   "pydantic-settings>=2.6",
   "uvicorn[standard]>=0.32",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "httpx>=0.27",
   "pytest>=8.3",
   "ruff>=0.8",
 ]

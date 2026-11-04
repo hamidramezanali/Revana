@@ -29,3 +29,8 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 .vercel/
+
+# Local sensitive journey storage
+backend/data/
+*.sqlite3
+*.sqlite3-*
