@@ -27,6 +27,10 @@ Revana is an interactive agent, not a static questionnaire or a one-off plan gen
 - Saved answers, accepted plan history, action completion by plan version, proposed
   changes, resume, export, deletion.
 - Existing visual workflow connected to live question/plan generation and check-ins.
+- Boundary cards and optional limitations feed the saved plan preferences. The plan
+  summary and expandable details use accepted backend actions; “Not for me” and
+  observations start check-ins rather than silently changing the accepted plan.
+  Weekly scheduling from the earlier prototype remains a future data-model extension.
 - Provider failure leaves saved data unchanged and surfaces a retryable error;
   no preset responses presented as AI. No configured key/model means unavailable.
 - Automated fake-provider coverage of orchestration and privacy boundaries.

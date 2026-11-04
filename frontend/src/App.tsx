@@ -24,6 +24,7 @@ type Profile = {
   goals: Goal[];
   ownWords: string;
   sensitivities: string[];
+  limitations: string;
   budget: string;
   effort: string;
 };
@@ -34,6 +35,7 @@ const initialProfile: Profile = {
   goals: [],
   ownWords: "",
   sensitivities: [],
+  limitations: "",
   budget: "Under $100 / month",
   effort: "Three high-impact actions",
 };
@@ -108,12 +110,24 @@ function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (
     : item === options[0] ? [item] : [...profile.sensitivities.filter(x => x !== options[0]), item] });
   return (
     <div className="question-page wide-question">
-      <span className="eyebrow">FIT & SAFETY · 4 OF 4</span>
-      <h2>Shape the plan around your boundaries.</h2>
-      <p>These answers control how specific we can safely be. You can skip sensitive questions and add them later.</p>
-      <div className="safety-layout">
-        <section><h3>Anything we should account for?</h3><div className="check-list">{options.map((item) => <button className={profile.sensitivities.includes(item) ? "selected" : ""} key={item} onClick={() => toggle(item)} type="button"><i>{profile.sensitivities.includes(item) && <Icon name="check" size={14} />}</i>{item}</button>)}</div><small>We won’t recommend supplements based only on appearance goals.</small></section>
-        <section><h3>Plan preferences</h3><label>Monthly budget<select onChange={(e) => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={(e) => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
+      <span className="eyebrow">YOUR BOUNDARIES · 4 OF 4</span>
+      <h2>Anything we should keep in mind?</h2>
+      <p>You can skip sensitive questions. Your preferences help shape your plan.</p>
+      <div className="safety-sections">
+        <section className="safety-card">
+          <h3>Anything we should account for?</h3>
+          <div className="goal-grid safety-options">{options.map((item, index) => {
+            const selected = profile.sensitivities.includes(item);
+            const icons: IconName[] = ["check", "heart", "skin", "info", "heart", "user"];
+            return <button aria-pressed={selected} className={selected ? "selected" : ""} key={item} onClick={() => toggle(item)} type="button"><span className="goal-icon"><Icon name={icons[index]} size={17} /></span><strong>{item}</strong><i>{selected && <Icon name="check" size={15} />}</i></button>;
+          })}</div>
+        </section>
+        <section className="safety-card">
+          <h3>Any other limitations or allergies?</h3>
+          <label className="safety-notes-label" htmlFor="safety-limitations">Share anything else you’d like your plan to take into account</label>
+          <textarea id="safety-limitations" maxLength={800} onChange={event => setProfile({ ...profile, limitations: event.target.value })} placeholder="Ingredients you avoid, movement limitations, or anything you’d rather leave out…" value={profile.limitations} />
+        </section>
+        <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
       </div>
       <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved on this computer’s backend and sent to OpenAI when generating questions or plans. Photo uploads are not supported.</span></div>
       <Button className="primary continue" onClick={next}>Connect the dots <Icon name="arrow" /></Button>
@@ -162,7 +176,7 @@ function App() {
   const buildPlan = () => void run(async () => {
     if (!journey) return;
     const saved = await agentRequest<Journey>("plan", { revision: journey.revision,
-      preferences: { sensitivities: profile.sensitivities, budget: profile.budget, effort: profile.effort } });
+      preferences: { sensitivities: profile.sensitivities, limitations: profile.limitations, budget: profile.budget, effort: profile.effort } });
     setJourney(saved); setScreen("analysis");
   });
   const deleteJourney = () => void run(async () => {

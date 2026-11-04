@@ -568,6 +568,12 @@
             "title": "Effort",
             "type": "string"
           },
+          "limitations": {
+            "default": "",
+            "maxLength": 800,
+            "title": "Limitations",
+            "type": "string"
+          },
           "sensitivities": {
             "items": {
               "type": "string"

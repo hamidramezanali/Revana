@@ -31,6 +31,8 @@ router = APIRouter(
     tags=["agent"],
     responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422, 502, 503)},
 )
+# Keep the generated contract stable across Python HTTPStatus wording changes.
+router.responses[422]["description"] = "Unprocessable Content"
 security = HTTPBearer(auto_error=False)
 MAX_QUESTIONS = 6
 MAX_CHECKIN_QUESTIONS = 3

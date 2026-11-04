@@ -1,5 +1,5 @@
 type IconName = "arrow" | "calendar" | "check" | "chevron" | "clock" | "hair" | "heart" | "home" | "info" | "location" | "plus" | "search" | "skin" | "sparkle" | "star" | "user";
-function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+function Icon({ name, size = 20, className = "" }: { name: IconName; size?: number; className?: string }) {
   const paths: Record<IconName, React.ReactNode> = {
     arrow: <><path d="M5 12h14M14 7l5 5-5 5" /></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></>,
@@ -18,7 +18,7 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
     star: <path d="m12 3 2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9L12 3Z" />,
     user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c.7-5 3.4-7 8-7s7.3 2 8 7" /></>,
   };
-  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size}><g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7">{paths[name]}</g></svg>;
+  return <svg aria-hidden="true" className={className} fill="none" height={size} viewBox="0 0 24 24" width={size}><g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7">{paths[name]}</g></svg>;
 }
 
 function Button({ children, className = "", disabled, onClick }: { children: React.ReactNode; className?: string; disabled?: boolean; onClick?: () => void }) {

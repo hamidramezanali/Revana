@@ -318,3 +318,46 @@ def test_missing_configuration_does_not_create_a_journey(agent, monkeypatch):
         },
     )
     assert result.status_code == 503
+
+
+@pytest.mark.parametrize("limitations", ["", "Avoid fragranced products", "x" * 800])
+def test_limitations_reach_provider_and_survive_resume(agent, limitations):
+    client, calls = agent
+    headers, journey = start(client)
+    preferences = {
+        "sensitivities": [],
+        "budget": "Low",
+        "effort": "Low",
+        "limitations": limitations,
+    }
+    response = client.post(
+        "/v1/agent/plan",
+        headers=headers,
+        json={"revision": journey["revision"], "preferences": preferences},
+    )
+    assert response.status_code == 200
+    assert calls[-1][1]["preferences"]["limitations"] == limitations
+    resumed = client.get("/v1/agent/session", headers=headers).json()
+    assert resumed["preferences"]["limitations"] == limitations
+
+
+def test_overlong_limitations_leave_journey_unchanged(agent):
+    client, calls = agent
+    headers, journey = start(client)
+    count = len(calls)
+    response = client.post(
+        "/v1/agent/plan",
+        headers=headers,
+        json={
+            "revision": journey["revision"],
+            "preferences": {
+                "sensitivities": [],
+                "budget": "Low",
+                "effort": "Low",
+                "limitations": "x" * 801,
+            },
+        },
+    )
+    assert response.status_code == 422
+    assert len(calls) == count
+    assert client.get("/v1/agent/session", headers=headers).json() == journey

@@ -20,6 +20,7 @@ class Context(Model):
 
 
 class Preferences(Model):
+    limitations: str = Field(default="", max_length=800)
     sensitivities: list[str] = Field(max_length=10)
     budget: str = Field(max_length=100)
     effort: str = Field(max_length=100)

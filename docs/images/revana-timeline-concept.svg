@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1440" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F0E8"/>
+      <stop offset="1" stop-color="#E5ECE5"/>
+    </linearGradient>
+    <filter id="shadow" x="110" y="90" width="1220" height="830" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="18"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix values="0 0 0 0 0.12 0 0 0 0 0.16 0 0 0 0 0.13 0 0 0 0.13 0"/>
+      <feBlend in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+    <style>
+      .sans { font-family: Arial, Helvetica, sans-serif; }
+      .serif { font-family: Georgia, "Times New Roman", serif; }
+    </style>
+  </defs>
+  <rect width="1440" height="1000" fill="url(#bg)"/>
+  <circle cx="1285" cy="150" r="170" fill="#D8E3D8" opacity=".65"/>
+  <circle cx="160" cy="880" r="210" fill="#EBDDD4" opacity=".58"/>
+  <text x="120" y="72" class="sans" fill="#53705F" font-size="14" font-weight="700" letter-spacing="3">REVANA · PRODUCT CONCEPT</text>
+  <text x="120" y="119" class="serif" fill="#252725" font-size="35">A plan that stays distinct from real life.</text>
+  <g filter="url(#shadow)">
+    <rect x="120" y="150" width="1200" height="760" rx="28" fill="#FFFEFB"/>
+  </g>
+  <path d="M120 178C120 162.536 132.536 150 148 150H1292C1307.46 150 1320 162.536 1320 178V222H120V178Z" fill="#F9F7F2"/>
+  <circle cx="154" cy="186" r="6" fill="#C8B7A8"/>
+  <circle cx="176" cy="186" r="6" fill="#D9C9B9"/>
+  <circle cx="198" cy="186" r="6" fill="#E7DCD0"/>
+  <text x="240" y="192" class="sans" fill="#233C34" font-size="17" font-weight="700" letter-spacing="3">✦ REVANA</text>
+  <text x="833" y="190" class="sans" fill="#706F69" font-size="14">Today</text>
+  <text x="915" y="190" class="sans" fill="#706F69" font-size="14">My plan</text>
+  <text x="1006" y="190" class="sans" fill="#706F69" font-size="14">Progress</text>
+  <rect x="1194" y="168" width="78" height="36" rx="18" fill="#E6EDE6"/>
+  <text x="1212" y="191" class="sans" fill="#355342" font-size="12" font-weight="700">PROFILE</text>
+  <text x="190" y="277" class="sans" fill="#B96F57" font-size="12" font-weight="700" letter-spacing="2">MONDAY · YOUR PERSONAL PLAN</text>
+  <text x="190" y="328" class="serif" fill="#252725" font-size="42">Small steps, chosen for you.</text>
+  <text x="190" y="357" class="sans" fill="#706F69" font-size="15">Your plan is a suggestion. Your progress is always yours to report.</text>
+  <rect x="190" y="393" width="704" height="92" rx="16" fill="#F4F2EC"/>
+  <text x="214" y="422" class="sans" fill="#53705F" font-size="11" font-weight="700" letter-spacing="1.6">THIS WEEK</text>
+  <text x="214" y="453" class="serif" fill="#252725" font-size="23">A steady start, not a perfect streak.</text>
+  <rect x="716" y="416" width="146" height="40" rx="20" fill="#E1E9E0"/>
+  <text x="739" y="441" class="sans" fill="#44634E" font-size="12" font-weight="700">2 SUGGESTED</text>
+  <text x="190" y="532" class="sans" fill="#53705F" font-size="12" font-weight="700" letter-spacing="1.7">TODAY · SUGGESTED ACTIONS</text>
+  <rect x="190" y="551" width="704" height="128" rx="16" fill="#FFFFFF" stroke="#E4E0D8"/>
+  <circle cx="226" cy="589" r="13" stroke="#8A9A8D" stroke-width="2"/>
+  <text x="254" y="585" class="sans" fill="#B96F57" font-size="10" font-weight="700" letter-spacing="1.2">HAIR · ROUTINE RESET</text>
+  <text x="254" y="613" class="serif" fill="#252725" font-size="22">Try a gentler heat setting</text>
+  <text x="254" y="640" class="sans" fill="#706F69" font-size="13">A low-effort experiment connected to your routine.</text>
+  <text x="254" y="660" class="sans" fill="#53705F" font-size="11">Why this? · Based on your answers and reviewed guidance</text>
+  <rect x="190" y="695" width="704" height="128" rx="16" fill="#FFFFFF" stroke="#E4E0D8"/>
+  <circle cx="226" cy="733" r="13" stroke="#8A9A8D" stroke-width="2"/>
+  <text x="254" y="729" class="sans" fill="#B96F57" font-size="10" font-weight="700" letter-spacing="1.2">OBSERVE · OPTIONAL</text>
+  <text x="254" y="757" class="serif" fill="#252725" font-size="22">Notice how your hair feels</text>
+  <text x="254" y="784" class="sans" fill="#706F69" font-size="13">Skip, change, or try it when it fits your day.</text>
+  <rect x="928" y="393" width="322" height="194" rx="18" fill="#233C34"/>
+  <text x="956" y="427" class="sans" fill="#BCD0C2" font-size="11" font-weight="700" letter-spacing="1.5">COMING WEEKS</text>
+  <text x="956" y="461" class="serif" fill="#FFFEFB" font-size="25">Your plan, at a glance</text>
+  <path d="M967 496V550" stroke="#769080" stroke-width="2"/>
+  <circle cx="967" cy="502" r="6" fill="#D1A280"/>
+  <text x="986" y="506" class="sans" fill="#FFFEFB" font-size="13" font-weight="700">Week 1</text>
+  <text x="986" y="524" class="sans" fill="#C8D3CB" font-size="11">Start with one routine change</text>
+  <circle cx="967" cy="548" r="6" fill="#8FA593"/>
+  <text x="986" y="552" class="sans" fill="#FFFEFB" font-size="13" font-weight="700">Week 2</text>
+  <text x="986" y="570" class="sans" fill="#C8D3CB" font-size="11">Review what you reported</text>
+  <rect x="928" y="607" width="322" height="216" rx="18" fill="#F7F4EE" stroke="#E4E0D8"/>
+  <text x="956" y="641" class="sans" fill="#B96F57" font-size="11" font-weight="700" letter-spacing="1.5">YOUR REPORT · USER INPUT</text>
+  <text x="956" y="678" class="serif" fill="#252725" font-size="23">What actually happened?</text>
+  <text x="956" y="710" class="sans" fill="#706F69" font-size="13">Tell us what you tried, changed,</text>
+  <text x="956" y="731" class="sans" fill="#706F69" font-size="13">skipped, or noticed.</text>
+  <rect x="956" y="753" width="183" height="42" rx="21" fill="#233C34"/>
+  <text x="978" y="779" class="sans" fill="#FFFFFF" font-size="12" font-weight="700">ADD A CHECK-IN</text>
+  <rect x="190" y="850" width="1060" height="1" fill="#E4E0D8"/>
+  <text x="190" y="879" class="sans" fill="#706F69" font-size="12">Planned actions are recommendations—not proof of completion. You stay in control.</text>
+  <text x="1195" y="879" class="sans" fill="#53705F" font-size="11" font-weight="700">CONCEPT 01</text>
+</svg>

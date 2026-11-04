@@ -44,3 +44,6 @@ After API changes, from `backend/` with `PYTHONPATH=.`:
 
 Keep changes reviewable, update documentation when behavior changes, and report
 unverified live-provider/browser behavior honestly. Preserve unrelated user changes.
+
+Frontend: preserve responsive and reduced-motion behavior, visible keyboard focus, and
+accessible labels. Suggested actions never count as user-reported completion.
