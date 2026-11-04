@@ -1,41 +1,46 @@
-# figma-make-app
+# Revana agent guidance
 
-React + Vite + Tailwind CSS project running inside Figma Make.
+Start with `docs/architecture.md` and `docs/agent-roadmap.md`.
 
-## Development Server
+## Product goal
 
-A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
+Revana is an interactive beauty and lifestyle agent. Keep the current visual direction
+and direction -> goals -> understanding -> fit/safety -> analysis -> plan workflow.
+Questions must adapt to every previous answer; the backend allows at most six initial
+adaptive questions and three follow-up questions per check-in. Users may skip or finish
+early. Separate explicit user reports, hypotheses and unknowns. Plan revisions require
+user acceptance and preserve accepted history.
 
-- Preview URL: The user can access the running app through the preview panel
-- Hot reload: Changes to source files are reflected immediately
+## Repository
 
-## Project Structure
+- `frontend/`: React 19, TypeScript, Vite, Tailwind v4. Entry: `src/App.tsx`.
+- `frontend/src/Agent.tsx`: agent API client, adaptive questions, analysis/dashboard.
+- `backend/`: Python 3.12+, FastAPI. Entry: `app/main.py`.
+- `contracts/openapi.json`: generated API contract.
+- `frontend/src/api.generated.ts`: generated serialized response model types.
+- `.figma/`: design tooling. Do not assume a dev server is already running.
 
-This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
+## Privacy and scope
 
-- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
-- `src/App.tsx` - Primary application component and the usual starting point for UI work
-- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
-- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
-- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
-- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
-- `.mise.toml` - Toolchain versions for Node.js and pnpm
+Single-user local implementation first. Keep API keys server-side. Journey answers can
+be health-adjacent: never log their contents, raw request bodies or provider responses.
+Local SQLite is not production storage; do not deploy it to ephemeral Vercel disks.
+Do not bypass the hosted authorization/storage gate to make deployment appear ready.
+No diagnoses, prescriptions or unsupported efficacy claims. Prompt rules do not prove
+clinical safety. Tests must use synthetic data and fake providers, never real user data.
+Live OpenAI calls require configured credentials and deliberate validation; never send
+repository contents or existing private records as an unsolicited smoke test.
 
-## Dependencies
+## Development and validation
 
-- Runtime: React 19 and React DOM 19
-- Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
-- Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
-- Formatting: oxfmt
+Run the API from `backend/`: `.venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1`.
+Run the frontend from `frontend/`: `pnpm dev` (8443), proxied to the API on port 8000.
+Use `REVANA_OPENAI_API_KEY` and `REVANA_OPENAI_MODEL` only in backend environment config.
 
-## Styling
+Backend: `ruff check .`, `ruff format --check .`, `pytest`.
+Frontend: `pnpm exec tsc --noEmit`, `pnpm build`.
+After API changes, from `backend/` with `PYTHONPATH=.`:
+`python scripts/export_openapi.py` and `python scripts/export_client_types.py`.
 
-This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
-
-`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
-
-## Code quality
-
-- Use double quotes for strings containing apostrophes (`"We're here to help"`), or escape them in single-quoted strings. An unescaped apostrophe in a single-quoted string breaks the build.
-- Ensure JSX tags are closed and braces are balanced.
-- Export components as default exports.
+Keep changes reviewable, update documentation when behavior changes, and report
+unverified live-provider/browser behavior honestly. Preserve unrelated user changes.

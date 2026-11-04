@@ -1,6 +1,12 @@
 # Revana
 
-A personalized beauty and lifestyle planning product.
+An interactive beauty and lifestyle agent. Revana asks up to six adaptive questions,
+creates an overall personal plan, and proposes revisions based on later check-ins.
+The existing React assessment, analysis and dashboard workflow is preserved.
+
+**Current release: single-user local development.** The live agent requires backend
+OpenAI configuration. See [the agent roadmap](docs/agent-roadmap.md) for implementation
+status, setup, privacy behavior and the gates before a hosted beta.
 
 ```
 frontend/    Vite + React web app
@@ -28,7 +34,8 @@ python -m venv .venv
 .venv/Scripts/activate        # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
-uvicorn app.main:app --reload
+# Set REVANA_OPENAI_API_KEY and REVANA_OPENAI_MODEL in .env.
+uvicorn app.main:app --host 127.0.0.1 --reload
 ```
 
 ## Tests and checks
@@ -46,14 +53,17 @@ endpoint or model, regenerate it and commit the result:
 
 ```bash
 cd backend
-PYTHONPATH=. python scripts/export_openapi.py     # PowerShell: $env:PYTHONPATH="."
+PYTHONPATH=. python scripts/export_openapi.py
+PYTHONPATH=. python scripts/export_client_types.py     # PowerShell: $env:PYTHONPATH="."
 ```
 
 CI and `pytest` fail if the committed file is out of date.
 
-## Deployment (Vercel)
+## Hosted deployment (planned; currently blocked)
 
-Create two Vercel projects from this repository:
+Do not deploy the current local agent to Vercel. It intentionally refuses Vercel startup.
+Complete the authorization, durable database, privacy and operational gates in the
+[roadmap](docs/agent-roadmap.md) first. The intended future layout is:
 
 | Project  | Root directory | Notes |
 |----------|----------------|-------|

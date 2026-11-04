@@ -374,3 +374,22 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Adaptive agent uses the existing cream, forest and serif visual language. */
+.agent-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+.agent-small { font-size: 12px; line-height: 1.6; color: var(--muted); }
+.agent-error { color: #873b32; font-size: 14px; line-height: 1.6; }
+.agent-banner { padding: 16px 5vw; background: var(--cream); border-bottom: 1px solid var(--line); }
+.agent-banner p { margin-bottom: 8px; }
+.agent-consent { display: flex; align-items: flex-start; gap: 12px; margin: 24px 0; font-size: 14px; line-height: 1.7; }
+.agent-consent input { margin-top: 6px; flex: none; }
+.agent-fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.agent-proposal { padding: 24px; margin-bottom: 24px; border: 1px solid var(--sage-deep); background: var(--sage); border-radius: 16px; }
+.agent-proposal li { margin: 14px 0; }
+.action-copy details summary { cursor: pointer; font-weight: 600; }
+.plan-view details, .insights-view details { margin: 12px 0; padding: 12px; border-bottom: 1px solid var(--line); }
+.plan-view details summary, .insights-view details summary { cursor: pointer; }
+.form-sections textarea { min-height: 130px; }
+
+.action-copy { min-width: 0; overflow-wrap: anywhere; }
+.app-header > .agent-small { text-align: right; }
