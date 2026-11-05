@@ -89,7 +89,7 @@ class AnswerRequest(Model):
                 raise ValueError("A skipped question cannot include answers.")
         elif not self.answer.strip() and not self.selected_option_ids and not self.photos:
             raise ValueError("Choose an option or add an answer.")
-        if self.photos and (not self.photo_consent or any(len(p) > 2_000_000 for p in self.photos)):
+        if self.photos and (not self.photo_consent or any(len(p) > 1_200_000 for p in self.photos)):
             raise ValueError("Photo consent and supported size are required.")
         if len(set(self.selected_option_ids)) != len(self.selected_option_ids):
             raise ValueError("Selected option IDs must be distinct.")

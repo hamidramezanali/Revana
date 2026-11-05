@@ -18,7 +18,7 @@ async function preparePhoto(file: File): Promise<string> {
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       const result = canvas.toDataURL("image/jpeg", .85);
-      if (result.length <= 2_000_000) return result;
+      if (result.length <= 1_200_000) return result;
       scale *= .75;
     }
     throw new Error("Try a smaller photo.");

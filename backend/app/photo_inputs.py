@@ -22,7 +22,7 @@ def sanitized_photos(photos: list[str]) -> list[str]:
             if header not in allowed:
                 raise ValueError("Unsupported type")
             raw = base64.b64decode(encoded, validate=True)
-            if not raw or len(raw) > 1_500_000:
+            if not raw or len(raw) > 900_000:
                 raise ValueError("Unsupported size")
             with warnings.catch_warnings():
                 warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -56,6 +56,6 @@ def sanitized_photos(photos: list[str]) -> list[str]:
         ):
             raise HTTPException(
                 422,
-                "Use up to three clear, still JPG, PNG or WebP photos, each under 1.5 MB after resizing.",
+                "Use up to three clear, still JPG, PNG or WebP photos, each under 900 KB after resizing.",
             ) from None
     return result

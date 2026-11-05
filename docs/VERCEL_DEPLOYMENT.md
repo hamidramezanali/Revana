@@ -108,3 +108,41 @@ Official references:
 - [FastAPI entrypoint](https://vercel.com/docs/frameworks/backend/fastapi)
 - [Function payload limits](https://vercel.com/docs/functions/limitations#request-body-size)
 - [Deployment protection](https://vercel.com/docs/deployment-protection)
+
+
+## Postgres preparation and proposed public testing switch
+
+The storage adapter now accepts `REVANA_DATABASE_URL`, `POSTGRES_URL`, or Neon’s
+`DATABASE_URL`, in that priority order. It uses durable `revana_journeys` records,
+hashed bearer capabilities, parameterized SQL and revision-checked writes. Without a database
+URL, the existing local SQLite path is used. A configured but unavailable database
+returns a generic 503 without leaking credentials or records. Remote Postgres requires
+TLS; loopback-only test databases can explicitly disable it.
+
+The packaged migration `app/migrations/001_journeys.sql` creates the isolated table
+on the first connection. A transaction advisory lock serializes concurrent cold starts.
+This creates a fresh hosted store; it does not upload this computer’s local profiles.
+The backend role needs permission to create the table for this first migration.
+
+For Neon, connect the database to `revana-5pgq` in Vercel Storage. The integration can
+supply `DATABASE_URL` directly; keep it server-side. Do not paste connection strings
+in chat or commit them. The database is not yet contacted by the deployed application
+while the existing hosted startup guard is in place.
+
+Photo payloads are now limited to 900 KB per encoded source image and a 4 MB aggregate
+request, with the browser resizing to match. This leaves room below Vercel’s 4.5 MB cap.
+Existing stored records are unaffected.
+
+The user requested postponing deployment privacy. The public-runtime change was
+rejected by automatic approval review; the guard in `app/main.py` remains unchanged.
+The concrete remaining change is a temporary hosted mode that accepts same-origin
+Vercel requests, requires Postgres for hosted journeys, exposes actionable missing-DB
+errors, and keeps the existing per-journey bearer access. This would have no account
+sign-in or allowlist: anyone reaching it could create a journey and consume the
+server-side OpenAI budget. Database credentials and OpenAI keys would stay server-side.
+Account authentication and production governance remain future work. That runtime
+change awaits explicit approval following the review rejection.
+
+Validation: all existing journey regression cases were run against SQLite and an
+isolated real PostgreSQL container, using only synthetic answers and mocked OpenAI
+responses. The actual Neon connection and deployed runtime remain to be checked.

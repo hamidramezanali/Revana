@@ -7,6 +7,7 @@ dependencies = [
   "fastapi>=0.115",
   "httpx>=0.27",
   "Pillow>=12.0,<13",
+  "psycopg[binary]>=3.2,<4",
   "pydantic-settings>=2.6",
   "uvicorn[standard]>=0.32",
 ]
@@ -28,7 +29,7 @@ line-length = 100
 target-version = "py312"
 
 [tool.setuptools.package-data]
-app = ["prompts/*.md"]
+app = ["prompts/*.md", "migrations/*.sql"]
 
 [tool.vercel]
 entrypoint = "app.main:app"

@@ -4,7 +4,7 @@ from starlette.responses import JSONResponse
 
 
 class AgentBodyLimit:
-    def __init__(self, app, limit=6_100_000):
+    def __init__(self, app, limit=4_000_000):
         self.app = app
         self.limit = limit
 

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     environment: str = "development"
     openai_api_key: SecretStr | None = None
     openai_model: str = ""
+    database_url: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("REVANA_DATABASE_URL", "POSTGRES_URL", "DATABASE_URL"),
+    )
     database_path: str = "data/revana.sqlite3"
     # Origins allowed to call the API from a browser, e.g. the web app.
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:8443"])

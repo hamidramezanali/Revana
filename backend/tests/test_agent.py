@@ -1,4 +1,5 @@
 import json
+import os
 
 import httpx
 import pytest
@@ -36,9 +37,15 @@ def example_plan():
     )
 
 
-@pytest.fixture
-def agent(monkeypatch, tmp_path):
+@pytest.fixture(
+    params=["sqlite"] + (["postgres"] if os.environ.get("REVANA_TEST_DATABASE_URL") else [])
+)
+def agent(monkeypatch, tmp_path, request):
     monkeypatch.setenv("REVANA_DATABASE_PATH", str(tmp_path / "journeys.sqlite3"))
+    for name in ("REVANA_DATABASE_URL", "POSTGRES_URL", "DATABASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    if request.param == "postgres":
+        monkeypatch.setenv("REVANA_DATABASE_URL", os.environ["REVANA_TEST_DATABASE_URL"])
     get_settings.cache_clear()
     calls = []
 

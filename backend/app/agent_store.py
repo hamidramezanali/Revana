@@ -9,13 +9,19 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
+from app import postgres_store
 from app.agent_models import Journey
 from app.config import get_settings
 
 
 @contextmanager
 def connection() -> Iterator[sqlite3.Connection]:
-    path = Path(get_settings().database_path).resolve()
+    settings = get_settings()
+    if settings.database_url:
+        with postgres_store.connection(settings.database_url.get_secret_value()) as db:
+            yield db
+        return
+    path = Path(settings.database_path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path, timeout=10)
     db.execute("PRAGMA secure_delete=ON")
@@ -67,3 +73,8 @@ def save(token: str, journey: Journey, expected: int) -> Journey:
 def delete(token: str) -> None:
     with connection() as db:
         db.execute("DELETE FROM journeys WHERE key = ?", (key(token),))
+
+
+def check_available() -> None:
+    with connection() as db:
+        db.execute("SELECT 1")

@@ -188,3 +188,14 @@ entrypoint in its pyproject. This supersedes the earlier two-project hosting pla
 The startup guard and local SQLite runtime are unchanged: hosted execution remains
 blocked until storage, authorization, request handling and upload limits pass their
 gates. See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for exact setup and limitations.
+
+
+## Postgres storage checkpoint
+
+An optional psycopg adapter now persists journeys in `revana_journeys`, with packaged
+initial migration, hashed capabilities and compare-and-swap revision writes. Neon’s
+`DATABASE_URL` is accepted directly. Local SQLite remains available without a database
+URL; remote Postgres uses TLS. Integration tests exercise the journey workflow on both
+stores. Photo payloads fit within 4 MB total. The hosted runtime guard is still present:
+the requested temporary public mode was rejected by automatic review and is pending
+explicit approval. No deployment privacy settings have been changed.
