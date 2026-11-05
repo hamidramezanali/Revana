@@ -113,3 +113,24 @@ are retained locally for repeat avoidance; this is not the planned retention red
 Synthetic integration tests cover persistence, migration, repeat/failure/concurrent
 protection, requests without votes and requests when all existing actions are kept.
 No live model-quality evaluation was performed for this checkpoint.
+
+
+## Mobile shell and Back navigation (2026-11-05)
+
+The dashboard now uses a single-column app shell with a sticky Back/brand header and
+fixed Today, My plan, Coach and Insights bottom navigation. Coach input and data
+controls have their own destination instead of a desktop sidebar. Plan summaries are
+expandable, cards remain title-first, and safe-area spacing protects the bottom bar.
+The app remains a browser application; this does not add native installation or offline support.
+
+Hash routes preserve the selected screen/tab on reload and support browser Back and
+Forward. From Today, Back opens the analysis; Back to start opens a welcome screen
+with Return to my plan. Navigation never deletes the saved journey or restarts its
+assessment. Old assessment routes cannot reopen generation for an existing plan;
+they resolve to analysis instead. Back from another tab returns to Today; Back from
+an active check-in returns to the plan while saved answers remain available.
+
+Validation: TypeScript and Vite production build; browser navigation, restoration and
+phone-width layout checks. No provider requests or saved-plan mutations are required
+for navigation. The requested in-app preview is left at 390 by 844 pixels; this is
+viewport emulation, not a physical iOS/Android browser test.

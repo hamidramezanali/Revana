@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Brand, Button, Icon, SafetyStrip, type IconName } from "./ui";
 import { AdaptiveQuestions, AgentAnalysis, AgentDashboard, AgentError, agentRequest, forgetToken, savedToken, startJourney, type Journey } from "./Agent";
 
-type Screen = "welcome" | "timeline" | "goals" | "details" | "safety" | "analysis" | "dashboard";
+import { navigate, useScreenNavigation, type Screen } from "./navigation";
 type Goal = "skin" | "hair" | "body" | "energy" | "other";
 
 function scrollToTop() {
@@ -57,12 +57,12 @@ function OnboardingShell({ children, screen, setScreen }: { children: React.Reac
   );
 }
 
-function Welcome({ onStart }: { onStart: () => void }) {
+function Welcome({ onStart, returning = false }: { onStart: () => void; returning?: boolean }) {
   return (
     <div className="welcome">
       <div className="welcome-copy">
         <h1>Your goals. Your lifestyle.<br /><em>Your transformation</em></h1>
-        <Button className="primary large" onClick={onStart}>Begin your journey <Icon name="arrow" /></Button>
+        <Button className="primary large" onClick={onStart}>{returning ? "Return to my plan" : "Begin your journey"} <Icon name="arrow" /></Button>
       </div>
       <div className="welcome-visual">
         <img alt="Natural portrait representing personal wellbeing" src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=85&w=1080" />
@@ -137,7 +137,7 @@ function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (
 
 
 function App() {
-  const [screen, setScreen] = useState<Screen>("welcome");
+  const [screen, setScreen] = useScreenNavigation();
   const [profile, setProfile] = useState(initialProfile);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [busy, setBusy] = useState(false);
@@ -166,13 +166,21 @@ function App() {
           setProfile({ ...initialProfile, goals: saved.context.goals, ownWords: saved.context.description,
             targetDate: saved.context.target_date, deadlineType: saved.context.target_date ? "event" : "journey",
             ...(saved.preferences ?? {}) });
-          setScreen(saved.plans.length ? "dashboard" : "details");
+          const route = window.location.hash;
+          const canResume = saved.plans.length && ["#/welcome", "#/analysis", "#/dashboard/today", "#/dashboard/plan", "#/dashboard/coach", "#/dashboard/insights"].includes(route);
+          if (!canResume) navigate(saved.plans.length ? "dashboard" : "details", true);
         }
       } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Could not restore your journey."); }
       finally { if (!cancelled) setRestoring(false); }
     })();
     return () => { cancelled = true; };
   }, []);
+  useEffect(() => {
+    if (restoring) return;
+    if (journey?.plans.length && !["welcome", "analysis", "dashboard"].includes(screen)) navigate("analysis", true);
+    else if (journey && !journey.plans.length && ["timeline", "goals"].includes(screen)) navigate("details", true);
+    else if (!journey?.plans.length && ["analysis", "dashboard"].includes(screen)) navigate(journey ? "details" : "welcome", true);
+  }, [screen, journey, restoring]);
   const buildPlan = () => void run(async () => {
     if (!journey) return;
     const saved = await agentRequest<Journey>("plan", { revision: journey.revision,
@@ -188,10 +196,10 @@ function App() {
   return <>
     {error && <div className="agent-banner"><AgentError error={error} /><Button className="secondary" disabled={busy} onClick={() => window.location.reload()}>Reload saved journey</Button>{!journey && savedToken() && <><p className="agent-small">If this backend no longer has your journey, you can forget this browser link and start again. This does not delete data from another backend or a backup.</p><Button className="secondary" disabled={busy} onClick={() => { forgetToken(); setError(""); setScreen("welcome"); }}>Forget browser link and start again</Button></>}</div>}
     {deleteConfirm && <div className="agent-banner" role="alert"><p>Delete this saved journey, all answers and plan versions? Export first if you want a copy.</p><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(false)}>Keep journey</Button> <Button className="primary" disabled={busy} onClick={deleteJourney}>Delete permanently</Button></div>}
-    {screen === "dashboard" && journey ? <AgentDashboard journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onDelete={() => setDeleteConfirm(true)} />
-    : screen === "analysis" && journey ? <AgentAnalysis journey={journey} onPlan={() => setScreen("dashboard")} />
+    {screen === "dashboard" && journey && journey.plans.length > 0 ? <AgentDashboard journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onDelete={() => setDeleteConfirm(true)} onBack={() => setScreen("analysis")} />
+    : screen === "analysis" && journey && journey.plans.length > 0 ? <AgentAnalysis journey={journey} onPlan={() => setScreen("dashboard")} onBack={() => setScreen("welcome")} />
     : <OnboardingShell screen={screen} setScreen={setScreen}>
-      {screen === "welcome" && <><Welcome onStart={() => setScreen("timeline")} />{configured === false && <p className="agent-banner">Connect an OpenAI key and structured-output model in the backend configuration to enable your beauty agent.</p>}</>}
+      {screen === "welcome" && <><Welcome returning={!!journey?.plans.length} onStart={() => setScreen(journey?.plans.length ? "dashboard" : "timeline")} />{configured === false && <p className="agent-banner">Connect an OpenAI key and structured-output model in the backend configuration to enable your beauty agent.</p>}</>}
       {screen === "timeline" && <Timeline profile={profile} setProfile={setProfile} next={() => setScreen("goals")} />}
       {screen === "goals" && <Goals profile={profile} setProfile={setProfile} next={() => setScreen("details")} />}
       {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana asks at most six questions, one at a time, based on each answer. You can skip any question or finish early.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved on this computer’s backend; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {

@@ -3,6 +3,7 @@ import { QuestionCard } from "./QuestionCard";
 import { PlanActions, actionLists } from "./PlanActions";
 import { ActionCard, type ActionChoice } from "./ActionCard";
 import { PlanView } from "./PlanView";
+import { dashboardTabs, useDashboardNavigation } from "./navigation";
 import { Brand, Button, Icon, SafetyStrip } from "./ui";
 
 import type { ApiJourney, ApiContext, ApiAnswerRequest } from "./api.generated";
@@ -65,9 +66,9 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
   </div>;
 }
 
-export function AgentAnalysis({ journey, onPlan }: { journey: Journey; onPlan: () => void }) {
+export function AgentAnalysis({ journey, onPlan, onBack }: { journey: Journey; onPlan: () => void; onBack: () => void }) {
   const plan = journey.plans[journey.plans.length - 1].plan;
-  return <div className="analysis-page"><div className="analysis-intro"><span className="eyebrow">PERSONAL ANALYSIS</span><h1>Let’s connect the dots.</h1><p>{plan.summary}</p></div>
+  return <div className="analysis-page"><button type="button" className="app-back" onClick={onBack}>← Back to start</button><div className="analysis-intro"><span className="eyebrow">PERSONAL ANALYSIS</span><h1>Let’s connect the dots.</h1><p>{plan.summary}</p></div>
     <div className="analysis-grid">{([
       ["REPORTED BY YOU", "Your starting point", plan.reported, "reported"],
       ["WORKING HYPOTHESES", "Promising opportunities", plan.hypotheses, "inferred"],
@@ -78,11 +79,13 @@ export function AgentAnalysis({ journey, onPlan }: { journey: Journey; onPlan: (
   </div>;
 }
 
-export function AgentDashboard({ journey, update, busy, run, onDelete }: {
+export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }: {
   journey: Journey; update: (journey: Journey) => void; busy: boolean;
-  run: (task: () => Promise<void>) => void; onDelete: () => void;
+  run: (task: () => Promise<void>) => void; onDelete: () => void; onBack: () => void;
 }) {
-  const [tab, setTab] = useState("Today");
+  const [tab, setTab] = useDashboardNavigation();
+  const pageHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { window.scrollTo({top: 0, behavior: "instant"}); pageHeading.current?.focus({preventScroll: true}); }, [tab]);
   const [planMessage, setPlanMessage] = useState("");
   const [message, setMessage] = useState("");
   const [checking, setChecking] = useState(journey.mode === "checkin" && !journey.proposal);
@@ -114,19 +117,26 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = "revana-journey.json"; anchor.click();
     URL.revokeObjectURL(url);
   };
-  return <div className="dashboard-app"><header className="app-header"><Brand /><nav aria-label="Dashboard navigation">{["Today", "My plan", "Insights"].map(x => <button key={x} className={tab === x ? "active" : ""} onClick={() => setTab(x)}>{x}</button>)}</nav><div className="agent-small">Your beauty agent</div></header><SafetyStrip />
-    <main className="dash-main"><section className="dash-hero"><div><span className="eyebrow">YOUR PERSONAL PLAN · VERSION {version.version}</span><h1>Your next useful steps.</h1><p>{plan.summary}</p></div><div className="review-card"><span>NEXT REVIEW</span><strong>{review.toLocaleDateString()}</strong><small>Check in sooner if something changes.</small></div></section>
+  const back = () => {
+    if (checking) { setChecking(false); return; }
+    if (tab !== "Today") { setTab("Today"); return; }
+    onBack();
+  };
+  const navigation = <nav className="app-navigation" aria-label="Main navigation">{dashboardTabs.map((item, index) => <button key={item} type="button" aria-current={tab === item ? "page" : undefined} className={tab === item ? "active" : ""} onClick={() => { setChecking(false); setTab(item); }}><Icon name={(["home", "check", "sparkle", "search"] as const)[index]} size={21} /><span>{item}</span></button>)}</nav>;
+  return <div className="dashboard-app"><header className="app-header"><button type="button" className="app-back" disabled={busy} onClick={back} aria-label={checking ? "Back to plan" : tab === "Today" ? "Back to analysis" : "Back to Today"}>← Back</button><Brand /><span className="app-header-caption">Your beauty coach</span></header>
+    {navigation}
+    <main className="dash-main"><section className="dash-hero"><div><span className="eyebrow">YOUR PERSONAL PLAN · VERSION {version.version}</span><h1 ref={pageHeading} tabIndex={-1}>{tab === "Today" ? "A little care, every day." : tab === "My plan" ? "Your personal plan." : tab === "Coach" ? "Let’s check in." : "Your understanding."}</h1>{tab === "Today" ? <details className="hero-summary"><summary>Your plan at a glance</summary><p>{plan.summary}</p></details> : tab === "Coach" ? <p>What’s changed since we last spoke?</p> : tab === "Insights" ? <p>What you shared, and what we’re still exploring.</p> : null}</div><div className="review-card"><Icon name="calendar" size={18} /><span>Next review</span><strong>{review.toLocaleDateString(undefined, {day: "numeric", month: "short"})}</strong></div></section>
       {journey.proposal && <section className="plan-proposal" aria-labelledby="proposal-heading"><span className="eyebrow">PROPOSED UPDATE</span><h2 id="proposal-heading">Your refreshed plan</h2><p>{journey.proposal.changes}</p><div className="focus-action-list">{journey.proposal.actions.map(action => <ActionCard key={action.id} action={action} badge={(journey.action_preferences ?? []).some(item => item.plan_version === version.version && item.action_id === action.id && item.choice === "keep") ? "Kept unchanged" : "Suggested"} />)}</div><div className="agent-buttons"><Button className="primary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("accept", { revision: journey.revision })))}>Accept updated plan</Button><Button className="secondary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("discard-proposal", { revision: journey.revision })))}>Keep current plan</Button></div><div className="proposal-safety">{journey.proposal.safety_notes.map((text, index) => <p key={index}>{text}</p>)}</div></section>}
-      {checking ? <AdaptiveQuestions journey={journey} update={update} busy={busy} run={run} onFinish={draft} /> : <div className="dash-grid"><div>
+      {checking ? <AdaptiveQuestions journey={journey} update={update} busy={busy} run={run} onFinish={draft} /> : <div className={`dash-grid${tab === "Coach" ? " coach-active" : ""}`}><div className="dash-primary">
         {tab === "Today" && <><div className="section-title"><h2>Your actions & ideas</h2><span className="progress-text">{keptCompleted}/{keptActions.length} kept actions complete</span></div>{actionSection}</>}
         {tab === "My plan" && <PlanView key={version.version} journey={journey} busy={busy} onCheckin={message => run(async () => {
           update(await agentRequest<Journey>("checkins", { revision: journey.revision, message }));
           setChecking(true);
         })}>{actionSection}</PlanView>}
         {tab === "Insights" && <div className="insights-view"><h2>What we’re learning</h2><p>Observations, not arbitrary wellness scores.</p><h3>Reported by you</h3><ul>{plan.reported.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Working hypotheses</h3><ul>{plan.hypotheses.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Still uncertain</h3><ul>{plan.uncertainties.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Your answers & check-ins</h3>{journey.events.map((e, i) => <details key={i}><summary>{e.question}</summary><p>{e.skipped ? "Skipped" : [e.selected_options?.join(", "), e.answer].filter(Boolean).join(" — ")}</p></details>)}</div>}
-      </div><aside><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
+      </div><aside className="coach-panel" aria-label="Coach and your data"><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
         update(await agentRequest<Journey>("checkins", { revision: journey.revision, message: message.trim() }));
         setMessage(""); setChecking(true);
-      })}>{busy ? "Thinking…" : "Ask my beauty agent"}</Button></section><section className="starting-point"><h3>Your data</h3><p>Saved on this computer’s backend. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete journey</Button></div></section></aside></div>}
-    </main></div>;
+      })}>{busy ? "Thinking…" : "Ask my beauty agent"}</Button></section><details className="starting-point"><summary>Your data & settings</summary><p>Saved on this computer’s backend. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete journey</Button></div></details></aside></div>}
+    </main><SafetyStrip /></div>;
 }
