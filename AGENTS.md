@@ -70,6 +70,11 @@ unverified live-provider/browser behavior honestly. Preserve unrelated user chan
 Frontend: preserve responsive and reduced-motion behavior, visible keyboard focus, and
 accessible labels. Suggested actions never count as user-reported completion.
 
+Action preferences are distinct from completion. Keep actions unchanged in application
+code during revisions, not merely through a model instruction. Reject invalid
+replacement sources and protect proposed updates with revision checks. Today and My
+plan share the readable action-card components.
+
 ## Delivery checkpoints
 
 Implement the slices in `docs/agent-roadmap.md`. Keep commits focused and push each

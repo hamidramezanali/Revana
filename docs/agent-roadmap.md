@@ -48,7 +48,10 @@ worded unwanted suggestions still requires model-quality evaluation.
 Refresh creates a proposal, leaving the accepted plan unchanged until acceptance.
 Kept choices carry into the accepted version. Changing preferences invalidates older
 proposals; proposals can also be explicitly discarded. Revision checks protect races.
-The matching readable cards and mobile feedback controls are the next UI checkpoint.
+The mobile cards now show a prominent title, compact badges, Keep it/Not for me
+controls and collapsed details. Today and My plan share these cards. An optional
+message and Refresh my plan button create a reviewable proposal; keeping an action
+is distinct from marking it completed. The accepted plan stays active until acceptance.
 
 ## Target release
 

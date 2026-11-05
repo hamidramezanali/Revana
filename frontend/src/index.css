@@ -536,3 +536,50 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .agent-question-card .button { min-height: 46px; font-size: 14px; }
   .adaptive-question-page > .agent-buttons .button { min-height: 44px; }
 }
+
+
+/* Focused actions: title first, compact badges, details on demand. */
+.focus-action-list { display: grid; gap: 14px; }
+.focus-action { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+.focus-action h3 { margin: 0 0 12px; color: var(--ink); font: 650 21px/1.35 "DM Sans", sans-serif; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.focus-action-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.focus-action-badges span { max-width: 100%; display: inline-block; overflow: hidden; padding: 5px 9px; border-radius: 20px; background: var(--cream); color: #575951; font-size: 12px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.focus-action-badges .focus-action-tag { background: var(--sage); color: var(--forest); }
+.focus-action-choices { display: flex; gap: 9px; }
+.focus-action-choices button { min-height: 44px; flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: white; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.focus-action-choices .selected.keep { border-color: var(--forest); background: var(--forest); color: white; }
+.focus-action-choices .selected.reject { border-color: #8b5341; background: var(--blush); color: #6d3e2f; }
+.focus-action.preference-keep { border-color: var(--sage-deep); }
+.focus-action.preference-not_for_me { border-color: #c99c8d; }
+.focus-action-details { margin-top: 10px; }
+.focus-action-details summary { display: list-item; width: fit-content; min-height: 40px; padding: 10px 0; color: #65675f; font-size: 13px; line-height: 1.5; cursor: pointer; }
+.focus-action-details p { margin: 8px 0 12px; color: #4e514a; font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
+.focus-action-details h4 { margin: 16px 0 5px; font-size: 14px; font-weight: 650; }
+.focus-action-details .focus-action-fit { color: var(--muted); font-size: 13px; }
+.plan-refresh { margin-top: 22px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: #eef2eb; }
+.plan-refresh h3 { margin: 0 0 8px; font: 600 19px/1.4 "DM Sans", sans-serif; }
+.plan-refresh p { margin: 0 0 15px; color: #555b51; font-size: 14px; line-height: 1.6; }
+.plan-refresh .plan-refresh-counts { color: var(--forest); font-weight: 600; }
+.plan-refresh label { display: block; margin-bottom: 9px; font-size: 14px; font-weight: 500; }
+.plan-refresh label span { margin-left: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.plan-refresh textarea, .plan-observation textarea { display: block; width: 100%; min-height: 86px; padding: 12px; font-size: 16px; line-height: 1.5; resize: vertical; }
+.plan-refresh .button { width: 100%; min-height: 46px; margin-top: 14px; font-size: 14px; }
+.plan-refresh .plan-refresh-hint { margin: 12px 0 0; font-size: 12px; }
+.plan-proposal { margin: 0 0 26px; padding: 22px; border: 1px solid var(--sage-deep); border-radius: 18px; background: var(--sage); }
+.plan-proposal > h2 { margin-bottom: 10px; font: 400 30px/1.2 "Instrument Serif", serif; }
+.plan-proposal > p, .proposal-safety p { color: #485244; font-size: 14px; line-height: 1.6; }
+.plan-proposal .button { min-height: 44px; font-size: 14px; }
+.plan-proposal .agent-buttons { margin-bottom: 15px; }
+.plan-overview { margin-bottom: 20px; color: #55584f; font-size: 15px; line-height: 1.6; }
+.plan-safety-copy { margin-top: 26px; }
+.plan-safety-copy h3 { font: 400 24px "Instrument Serif", serif; }
+.plan-safety-copy p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.plan-observation, .plan-history { margin-top: 22px; font-size: 14px; line-height: 1.6; }
+.plan-observation > summary, .plan-history > summary { min-height: 44px; padding: 11px 0; cursor: pointer; }
+.plan-observation .button { margin-top: 12px; min-height: 44px; font-size: 14px; }
+@media (max-width: 640px) {
+  .focus-action { padding: 17px; }
+  .focus-action h3 { font-size: 20px; }
+  .plan-refresh, .plan-proposal { padding: 17px; }
+  .focus-action-choices button { padding: 9px; }
+}

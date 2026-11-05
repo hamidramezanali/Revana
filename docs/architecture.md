@@ -50,6 +50,25 @@ privacy/retention operations and deployment validation.
 See [the agent roadmap](agent-roadmap.md) for milestones, launch instructions,
 data behavior, operating limits and outstanding validation gates.
 
+## Action feedback and plan refresh
+
+Action preferences are versioned separately from completions. Saving Keep it or Not
+for me does not call the provider and does not claim the user performed the action.
+The refresh request combines the original problem, answer history, constraints,
+accepted plan, current preferences and an optional message.
+
+The provider returns replacement actions with editable source IDs. Application code
+validates those IDs, inserts kept actions verbatim, rejects exact repeats of unwanted
+actions and preserves the accepted version until the proposal is accepted. Kept
+preferences carry into the accepted version. Check-in plan updates use the same
+preservation path when preferences exist. Semantic similarity of reworded suggestions
+remains an evaluation concern; exact text checks do not prove semantic novelty.
+
+Changing preferences invalidates an earlier proposal. Discarding a proposal keeps the
+accepted plan intact. Revision checks prevent concurrent feedback from being lost.
+The Today and My plan views share title-first cards, compact badges, preference
+controls and collapsed details. Progress completion remains a separate explicit control.
+
 ## Next architecture changes (planned)
 
 The current local runtime remains available during development. The target is a

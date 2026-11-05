@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { QuestionCard } from "./QuestionCard";
+import { PlanActions } from "./PlanActions";
+import { ActionCard, type ActionChoice } from "./ActionCard";
 import { PlanView } from "./PlanView";
 import { Brand, Button, Icon, SafetyStrip } from "./ui";
 
@@ -81,10 +83,12 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
   run: (task: () => Promise<void>) => void; onDelete: () => void;
 }) {
   const [tab, setTab] = useState("Today");
+  const [planMessage, setPlanMessage] = useState("");
   const [message, setMessage] = useState("");
   const [checking, setChecking] = useState(journey.mode === "checkin" && !journey.proposal);
   const version = journey.plans[journey.plans.length - 1];
   const plan = version.plan;
+  useEffect(() => { setPlanMessage(""); }, [version.version]);
   const completed = journey.completions.filter(item => item.plan_version === version.version).map(item => item.action_id);
   const review = new Date(version.created_at);
   review.setDate(review.getDate() + plan.review_days);
@@ -92,6 +96,17 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
     update(await agentRequest<Journey>("plan", { revision: journey.revision, preferences: journey.preferences }));
     setChecking(false);
   });
+  const chooseAction = (actionId: string, choice: ActionChoice) => run(async () => {
+    update(await agentRequest<Journey>("action-preferences", { revision: journey.revision, action_id: actionId, choice }));
+  });
+  const reshuffle = (message: string) => run(async () => {
+    update(await agentRequest<Journey>("reshuffle", { revision: journey.revision, message }));
+    setChecking(false); window.scrollTo({ top: 0, behavior: "auto" });
+  });
+  const completeAction = (actionId: string) => run(async () => {
+    update(await agentRequest<Journey>("actions", { revision: journey.revision, action_id: actionId, completed: !completed.includes(actionId) }));
+  });
+  const actionSection = <PlanActions journey={journey} busy={busy} note={planMessage} onNoteChange={setPlanMessage} onChoice={chooseAction} onReshuffle={reshuffle} onComplete={completeAction} />;
   const exportJourney = () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify(journey, null, 2)], { type: "application/json" }));
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = "revana-journey.json"; anchor.click();
@@ -99,13 +114,13 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
   };
   return <div className="dashboard-app"><header className="app-header"><Brand /><nav aria-label="Dashboard navigation">{["Today", "My plan", "Insights"].map(x => <button key={x} className={tab === x ? "active" : ""} onClick={() => setTab(x)}>{x}</button>)}</nav><div className="agent-small">Your beauty agent</div></header><SafetyStrip />
     <main className="dash-main"><section className="dash-hero"><div><span className="eyebrow">YOUR PERSONAL PLAN · VERSION {version.version}</span><h1>Your next useful steps.</h1><p>{plan.summary}</p></div><div className="review-card"><span>NEXT REVIEW</span><strong>{review.toLocaleDateString()}</strong><small>Check in sooner if something changes.</small></div></section>
-      {journey.proposal && <section className="agent-proposal"><span className="eyebrow">PROPOSED UPDATE · YOUR CURRENT PLAN STAYS ACTIVE UNTIL YOU ACCEPT</span><h2>A plan shaped by your feedback.</h2><p>{journey.proposal.summary}</p><p><strong>What changes:</strong> {journey.proposal.changes}</p><ul>{journey.proposal.actions.map(a => <li key={a.id}><strong>{a.title}</strong> — {a.detail}<p>{a.why} · {a.cost} · {a.timing}</p></li>)}</ul>{journey.proposal.safety_notes.map((x, i) => <p key={i}>{x}</p>)}<Button className="primary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("accept", { revision: journey.revision })))}>Accept updated plan</Button><p className="agent-small">You can keep the current plan and submit different feedback below.</p></section>}
+      {journey.proposal && <section className="plan-proposal" aria-labelledby="proposal-heading"><span className="eyebrow">PROPOSED UPDATE</span><h2 id="proposal-heading">Your refreshed plan</h2><p>{journey.proposal.changes}</p><div className="focus-action-list">{journey.proposal.actions.map(action => <ActionCard key={action.id} action={action} badge={(journey.action_preferences ?? []).some(item => item.plan_version === version.version && item.action_id === action.id && item.choice === "keep") ? "Kept unchanged" : "Suggested"} />)}</div><div className="agent-buttons"><Button className="primary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("accept", { revision: journey.revision })))}>Accept updated plan</Button><Button className="secondary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("discard-proposal", { revision: journey.revision })))}>Keep current plan</Button></div><div className="proposal-safety">{journey.proposal.safety_notes.map((text, index) => <p key={index}>{text}</p>)}</div></section>}
       {checking ? <AdaptiveQuestions journey={journey} update={update} busy={busy} run={run} onFinish={draft} /> : <div className="dash-grid"><div>
-        {tab === "Today" && <><div className="section-title"><h2>{plan.actions.length} focused {plan.actions.length === 1 ? "action" : "actions"}</h2><span className="progress-text">{completed.length}/{plan.actions.length} complete</span></div><div className="action-list">{plan.actions.map(a => <article key={a.id} className={completed.includes(a.id) ? "done" : ""}><button type="button" className="complete" aria-label={`Complete: ${a.title}`} aria-pressed={completed.includes(a.id)} disabled={busy} onClick={() => run(async () => { update(await agentRequest<Journey>("actions", { revision: journey.revision, action_id: a.id, completed: !completed.includes(a.id) })); })}>{completed.includes(a.id) && <Icon name="check" size={15} />}</button><div className="action-copy"><span>{a.category}</span><h3>{a.title}</h3><p>{a.detail}</p><div className="action-meta"><span>{a.timing}</span><b>{a.cost}</b><b>{a.effort} effort</b></div><details className="why-panel"><summary>Why this for me?</summary><p>{a.why}</p><strong>What to observe</strong><p>{a.observation}</p></details></div></article>)}</div></>}
+        {tab === "Today" && <><div className="section-title"><h2>{plan.actions.length} focused {plan.actions.length === 1 ? "action" : "actions"}</h2><span className="progress-text">{completed.length}/{plan.actions.length} complete</span></div>{actionSection}</>}
         {tab === "My plan" && <PlanView key={version.version} journey={journey} busy={busy} onCheckin={message => run(async () => {
           update(await agentRequest<Journey>("checkins", { revision: journey.revision, message }));
           setChecking(true);
-        })} />}
+        })}>{actionSection}</PlanView>}
         {tab === "Insights" && <div className="insights-view"><h2>What we’re learning</h2><p>Observations, not arbitrary wellness scores.</p><h3>Reported by you</h3><ul>{plan.reported.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Working hypotheses</h3><ul>{plan.hypotheses.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Still uncertain</h3><ul>{plan.uncertainties.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Your answers & check-ins</h3>{journey.events.map((e, i) => <details key={i}><summary>{e.question}</summary><p>{e.skipped ? "Skipped" : [e.selected_options?.join(", "), e.answer].filter(Boolean).join(" — ")}</p></details>)}</div>}
       </div><aside><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
         update(await agentRequest<Journey>("checkins", { revision: journey.revision, message: message.trim() }));
