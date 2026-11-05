@@ -129,10 +129,16 @@ def status() -> AgentStatus:
     settings = get_settings()
     if settings.hosted:
         store.check_available()
-        if not settings.openai_api_key or not settings.openai_model:
-            raise HTTPException(
-                503, "Set REVANA_OPENAI_API_KEY and REVANA_OPENAI_MODEL in Vercel, then redeploy."
+        missing = [
+            name
+            for name, value in (
+                ("REVANA_OPENAI_API_KEY", settings.openai_api_key),
+                ("REVANA_OPENAI_MODEL", settings.openai_model),
             )
+            if not value
+        ]
+        if missing:
+            raise HTTPException(503, "Set " + " and ".join(missing) + " in Vercel, then redeploy.")
     return AgentStatus(
         configured=bool(settings.openai_api_key and settings.openai_model),
         max_questions=MAX_QUESTIONS,
