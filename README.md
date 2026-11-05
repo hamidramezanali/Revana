@@ -4,13 +4,17 @@ An interactive beauty and lifestyle agent. Revana asks up to six adaptive questi
 creates an overall personal plan, and proposes revisions based on later check-ins.
 The existing React assessment, analysis and dashboard workflow is preserved.
 
+The next release is planned as a mobile-first coach with an editable care profile,
+a complete free starting plan, and paid progress tracking and plan updates. See the
+[current product plan](docs/PRODUCT_ROADMAP.md) and its small implementation checkpoints.
+
 **Current release: single-user local development.** The live agent requires backend
 OpenAI configuration. See [the agent roadmap](docs/agent-roadmap.md) for implementation
 status, setup, privacy behavior and the gates before a hosted beta.
 
 ```
 frontend/    Vite + React web app
-backend/     FastAPI service (Python), deployed to Vercel
+backend/     FastAPI service (Python), currently local-only
 contracts/   openapi.json, generated from the backend; the source of truth for the API
 docs/        Architecture and decisions
 .figma/      Figma Make tooling (runs the frontend from the repo root)

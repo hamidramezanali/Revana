@@ -1,6 +1,6 @@
 # Revana agent guidance
 
-Start with `docs/architecture.md` and `docs/agent-roadmap.md`.
+Start with `docs/PRODUCT_ROADMAP.md`, `docs/architecture.md` and `docs/agent-roadmap.md`.
 
 ## Product goal
 
@@ -10,6 +10,24 @@ Questions must adapt to every previous answer; the backend allows at most six in
 adaptive questions and three follow-up questions per check-in. Users may skip or finish
 early. Separate explicit user reports, hypotheses and unknowns. Plan revisions require
 user acceptance and preserve accepted history.
+
+## Agreed next release (planned)
+
+The current code is the local baseline, not the finished hosted product. Build a
+mobile-first text coach around an editable care profile and a complete free initial
+plan. Paid access enables structured progress, follow-up and plan revisions. Preserve
+the mobile UI merged into main; do not replace a useful plan with teaser ideas.
+
+Future durable memory holds confirmed facts, labeled hypotheses, concise validated
+notes, accepted plans and eligible structured outcomes. Conversation text is temporary;
+removing history UI alone is insufficient. Do not claim raw data is removed before
+conversion, cleanup and retention tests pass. Evidence-backed claims require traceable
+reviewed sources. A capable model or stronger prompt alone does not establish quality.
+
+The separate product-role instruction file is planned at
+`backend/app/prompts/coach.md`; this AGENTS.md remains developer guidance.
+Sweden/Scandinavia first; keep locale/country/timezone/currency/units separate. English
+is acceptable initially. Voice and photos are later scope.
 
 ## Repository
 
@@ -22,7 +40,9 @@ user acceptance and preserve accepted history.
 
 ## Privacy and scope
 
-Single-user local implementation first. Keep API keys server-side. Journey answers can
+The current runtime is single-user local. Hosted identity/storage and billing are
+planned before public launch; retain the local deployment boundary until tested.
+Keep API keys server-side. Journey answers can
 be health-adjacent: never log their contents, raw request bodies or provider responses.
 Local SQLite is not production storage; do not deploy it to ephemeral Vercel disks.
 Do not bypass the hosted authorization/storage gate to make deployment appear ready.
@@ -47,3 +67,11 @@ unverified live-provider/browser behavior honestly. Preserve unrelated user chan
 
 Frontend: preserve responsive and reduced-motion behavior, visible keyboard focus, and
 accessible labels. Suggested actions never count as user-reported completion.
+
+## Delivery checkpoints
+
+Implement the slices in `docs/agent-roadmap.md`. Keep commits focused and push each
+completed, validated checkpoint to GitHub instead of batching unrelated work. Start
+feature branches from updated main. A push does not authorize merging or deploying.
+Update current-state documentation as each slice lands, and distinguish synthetic
+validation from live-provider recommendation quality.

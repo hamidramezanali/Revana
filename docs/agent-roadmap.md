@@ -1,88 +1,102 @@
-# Revana: adaptive beauty agent
+# Revana implementation roadmap
 
-Updated 2026-11-04. Product direction: retain the existing cream/forest visual design
-and direction -> goals -> understanding -> fit/safety -> analysis -> plan workflow.
-Revana is an interactive agent, not a static questionnaire or a one-off plan generator.
+Updated 2026-11-05. Product definition: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md).
+Base implementation: `main`, including the merged mobile UI and local adaptive agent.
+This update changes the delivery plan; it does not implement the new behavior below.
 
-## Product rules
+## Current baseline
 
-- Keep all five goal areas: face/skin, hair, body/fitness, energy/lifestyle, custom.
-- Ask **one LLM-generated question per turn**, conditioned on all recorded answers.
-- Ask **at most six adaptive assessment questions**, with early completion and skip.
-  Direction, goal selection and fit/safety controls are separate explicit setup steps.
-- Generate a whole plan from the actual answers and preferences; never infer facts
-  from prefilled example routines. Clearly separate reports, hypotheses and unknowns.
-- Check-ins use the current plan and history, ask at most three follow-up questions,
-  and propose a new version. Users accept changes before the current plan changes.
-- Single-user local version first. Cloud accounts and multi-user hosting are later.
-- No diagnoses, prescriptions, supplement regimens or invasive procedure instructions.
-  Prompt rules are an initial boundary, not a clinically validated safety system.
+- React/TypeScript mobile-responsive UI and FastAPI `/v1/agent` API in one repository.
+- One generated question per turn; caps of six assessment and three check-in questions.
+- Server-side structured provider adapter, bounded inputs and revision conflict checks.
+- Durable local SQLite journeys, accepted plan history, proposals and action completion.
+- Fit/safety preferences and limitations reach the provider; accepted plan summary and
+  expandable details are integrated with check-ins. Suggested actions are not completions.
+- Export/delete and browser resume exist. API/client contracts are generated and checked.
+- The current code still saves raw answer events, sends journey context to the provider,
+  has no dedicated product-role prompt file, no hosted user accounts and no payment gates.
+  Historical answers can be displayed/exported. Removing those paths is upcoming work.
+- Live clinical recommendation quality is not established by synthetic integration tests.
+  Public hosting remains blocked pending authorization, storage and operational gates.
 
-## Milestone 1: working local agent loop (implemented)
+## Target release
 
-- Versioned `/v1/agent` API, structured server-side OpenAI Responses adapter.
-- Explicit adult/cloud-processing consent before the first LLM request.
-- Server-enforced question budgets, answer IDs, optimistic concurrency and input bounds.
-- Durable SQLite journeys; token hashes in storage, bearer token in this browser.
-- Saved answers, accepted plan history, action completion by plan version, proposed
-  changes, resume, export, deletion.
-- Existing visual workflow connected to live question/plan generation and check-ins.
-- Boundary cards and optional limitations feed the saved plan preferences. The plan
-  summary and expandable details use accepted backend actions; “Not for me” and
-  observations start check-ins rather than silently changing the accepted plan.
-  Weekly scheduling from the earlier prototype remains a future data-model extension.
-- Provider failure leaves saved data unchanged and surfaces a retryable error;
-  no preset responses presented as AI. No configured key/model means unavailable.
-- Automated fake-provider coverage of orchestration and privacy boundaries.
+Mobile-first text discovery builds an editable care profile and a complete free plan.
+Persistent memory consists of confirmed facts, concise validated notes, accepted plans
+and eligible structured outcomes. Older chat is not a product destination and raw text
+does not become permanent memory. Paid access enables progress, follow-up and updates.
+Sweden/Scandinavia first, with global language and regional foundations.
 
-Acceptance: the complete flow passes automated checks locally. Live-model quality and
-browser visual validation are separate checks; do not describe fake-provider tests as
-proof of real recommendations or clinical safety.
+## Checkpoints and acceptance gates
 
-## Milestone 2: guidance quality and interaction validation
+| Slice | Deliverable and acceptance | Commit/push boundary |
+|---|---|---|
+| 0. Plan | Align product, implementation, architecture and agent guidance; distinguish runtime from target | Documentation-only checkpoint |
+| 1. Coaching instructions | Add versioned `backend/app/prompts/coach.md`, task templates and instruction-loading tests; initially preserve working provider contract | Prompt foundation |
+| 2. Profile and context | Define typed facts, concerns, provenance, confirmation, hypotheses, notes and outcomes; add explicit context builder and token budget; regenerate contracts | Profile/context foundation |
+| 3. Temporary conversations | Implement bounded temporary turns, candidate extraction, confirmation, revision-safe consolidation, expiry and legacy conversion; remove durable transcript UI/export paths | Memory lifecycle, split migration if needed |
+| 4. Recommendation quality | Add reviewed evidence registry, retrieval, citation/applicability validation and evaluation cases; choose a high-capability model using measured results | Evidence foundation, then separate model/evaluation checkpoint |
+| 5. Mobile free-plan journey | Adapt existing UI to text-first discovery, six-question ceiling, compact profile review, full plan, expandable evidence and explicit free/paid affordances | Discovery/profile UI, then separate plan UI checkpoint |
+| 6. Hosted identity/storage | Add durable Postgres/migrations, secure guest sessions, email verification/recovery, guest linking and per-resource ownership; keep public hosting blocked until tested | Database foundation, then identity/authorization checkpoint |
+| 7. Paid follow-up domain | Add dated structured outcomes, check-in context and accepted plan updates; define server-enforced capability rules and test with synthetic entitlement states | Follow-up/progress checkpoint |
+| 8. Billing | Select provider, price and limits; add checkout, verified/idempotent webhooks, entitlements, cancellation and recovery flows; default-deny paid writes | Billing backend, then subscription UI checkpoint |
+| 9. Beta readiness | Validate recommendation quality, phone usability, isolation, retention/deletion, recovery, billing lifecycle, cost limits and privacy-safe monitoring | Release-readiness checkpoint |
 
-1. Build synthetic evaluation profiles across all five areas, including skipped answers,
-   ambiguous goals, budget constraints, reactions, conflicting instructions and updates.
-2. Assess question relevance, redundancy, early stopping, plan grounding and consistency.
-3. Add a reviewed guidance library and verifiable source attribution. Do not let the
-   model fabricate citations, confidence scores or efficacy promises.
-4. Establish reviewed escalation rules and adversarial tests for safety-sensitive cases.
-5. Validate live provider refusals, model availability, latency, cost and malformed outputs.
-6. Browser-test onboarding, resume, provider failure, check-in and plan acceptance on
-   desktop/mobile; improve accessibility based on those results.
+Dependencies: profile/context precedes memory consolidation; evidence validation precedes
+claiming evidence-backed plans. Hosted identity and durable storage precede live billing.
+Paid capabilities may be developed with synthetic entitlements locally but are not
+released before verified billing and ownership controls exist. No public beta before
+all relevant quality, authorization, privacy and operations gates pass.
 
-Acceptance: documented quality thresholds pass on representative profiles and a human
-review confirms useful plans and appropriate boundaries. No public beta before this gate.
+## Validation for each slice
 
-## Milestone 3: dependable ongoing use
+- Run relevant backend lint/format/tests and frontend type/build checks when changed.
+  Regenerate and verify API/client contracts after model or endpoint changes.
+- Profile/memory: preserve uncertainty and user corrections, separate generated content
+  from reports, reject stale writes, test expiry, extraction failure and legacy conversion.
+- Provider: test task/context selection, sensitive-field exclusion, question budgets,
+  refusal/malformed outputs, incomplete streams, retries and privacy-safe failures.
+- Evidence: validate sources exist and support the claim/context; evaluate irrelevant
+  generic advice, contraindications, conflicting answers and unsupported novelty.
+- Phone UI: assess 360px and 390px widths, keyboard-open composer, long text, streaming,
+  interrupted sessions, reload, loading/error states, accessibility and reduced motion.
+- Identity/billing: verify guest linking and recovery, cross-user isolation, spoofed and
+  replayed webhooks, duplicate events, cancellation, failed payment and access expiry.
+- Keep raw sensitive content out of logs, analytics and permanent exports. Verify actual
+  storage cleanup, not just disappearance from the UI. Document separate provider and
+  backup retention. Synthetic tests do not prove live recommendation quality.
 
-- Expand action completion into dated outcome observations and adherence history.
-- Editable profile and preferences through explicit new versions.
-- Richer coach conversation and check-ins without always requiring a plan revision.
-- User-controlled reminders and review scheduling; no notifications without opt-in.
-- Discard proposals explicitly, compare complete versions and recover interrupted drafts.
-- Database schema migrations, retention settings, encrypted storage strategy, backup and
-  restore tests; evaluate deletion in backups and OS snapshots.
-- Longer-journey context management with provenance, before removing current size limits.
+## Decisions to finalize within their implementation slices
 
-Acceptance: several review cycles preserve history and adapt the plan to actual outcomes.
+- Temporary conversation expiry and recovery policy; legacy/backups conversion behavior.
+- Evidence review ownership, allowed sources and measurable quality thresholds.
+- Actual model/project availability, latency and cost; no live-user data in model trials.
+- Hosted identity/guest-linking provider fit and durable database deployment.
+- Subscription price, billing provider, usage limits and expired-subscription behavior.
 
-## Milestone 4: hosted private beta
+These are implementation decisions, not reasons to invent defaults or block unrelated
+foundation work. Record decisions explicitly before implementing dependent behavior.
 
-- Managed EU Postgres and migrations; do not use local SQLite on ephemeral Vercel disks.
-- Auth0 login, validated bearer tokens, user provisioning, per-resource ownership tests.
-- Replace local capability access with account authorization and recovery/revocation.
-- Consent versioning, privacy notice, export/deletion across hosted storage and vendors.
-- Server-side rate limiting, spending budgets, privacy-safe monitoring, recovery runbooks.
-- Restore the intended two-project Vercel deployment only after these gates pass.
+## Later scope
 
-Acceptance: cross-account isolation, deployment, deletion, recovery and load checks pass.
+Voice input/output can use the same text/context/memory pipeline. Optional photos,
+native apps, notifications, professional-service discovery and advanced scheduling
+follow the validated text-coaching release. Do not add them to the initial scope.
 
-## Milestone 5: expansion driven by usage
+## Working and GitHub conventions
 
-Optional photo assessment requires separate consent, secure file handling and its own
-evaluation. Native mobile, professional-service discovery, integrations and monetization
-follow demonstrated repeat use. None is required to validate the adaptive agent loop.
+- Start from the latest `main`; preserve its merged mobile changes and unrelated files.
+- This documentation checkpoint comes first. Application implementation follows review
+  of this plan, in the slices above.
+- Use `codex/` feature branches and small, coherent commits. Push each completed, checked
+  checkpoint; report what landed, what was tested and any remaining limits.
+- Prefer separate PRs for coherent slices. Do not auto-merge or deploy merely because
+  a checkpoint was pushed. Keep runtime docs synchronized with completed work.
+
+## Current local setup and data behavior
+
+The following instructions describe the existing local runtime. They are not claims
+that the planned hosted, billing or transcript-removal changes are already implemented.
 
 ## Running the local implementation
 

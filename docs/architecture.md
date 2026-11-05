@@ -1,15 +1,18 @@
 # Architecture decisions
 
+Updated 2026-11-05. The table and runtime sections describe the implemented local
+application. Planned product behavior is specified in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md).
+
 | Area | Current implementation | Hosted direction |
 |---|---|---|
 | Repo | `frontend/`, `backend/`, `contracts/` | Same |
 | Backend | Python/FastAPI, versioned `/v1` API | Same |
-| Frontend | React/TypeScript/Vite; existing visual workflow | Web first; mobile later |
+| Frontend | React/TypeScript/Vite; merged mobile-responsive workflow | Mobile-first web; native/voice later |
 | Hosting | Single-user local, loopback only | Two Vercel projects after hosted readiness |
 | Access | Random per-journey bearer capability, hashed in database | Auth0 + ownership enforcement |
 | Database | Local durable SQLite | Managed pooled EU Postgres + migrations |
 | LLM | Server-side structured OpenAI Responses adapter | Reviewed guidance + evaluations |
-| Data | Saved answers, accepted plan versions, pending proposal; export/delete | Defined retention + vendor handling |
+| Data | Saved raw answers, accepted plan versions, pending proposal; export/delete | Care profile + structured outcomes; temporary raw turns; explicit retention |
 
 ## Adaptive agent
 
@@ -46,3 +49,27 @@ privacy/retention operations and deployment validation.
 
 See [the agent roadmap](agent-roadmap.md) for milestones, launch instructions,
 data behavior, operating limits and outstanding validation gates.
+
+## Next architecture changes (planned)
+
+The current local runtime remains available during development. The target is a
+mobile-first coach with a complete free starting plan and paid progress/plan updates.
+The existing prompt-in-code and whole-journey context will be replaced by versioned
+product/task instructions and a bounded context builder.
+
+Persist typed profile facts, provenance, confirmation, clearly labeled hypotheses,
+validated concise notes and accepted plans. Paid outcomes are separate dated records.
+Conversation turns become temporary with explicit expiry and validated consolidation;
+remove raw-event history displays and verbatim transcript exports. Existing raw journey
+data needs deliberate conversion and documented backup handling. Hiding chat UI alone
+does not implement this retention model.
+
+Hosted development adds Postgres/migrations and secure guest/account authorization,
+followed by verified billing and backend entitlements. Initial plan access, profile
+correction, export and deletion remain available without a subscription. Auth0 is the
+existing identity direction; validate guest-linking/email flows before implementation
+or record an explicit replacement decision. Payment and LLM providers do not replace
+application authorization. The local hosting restriction stays until release gates pass.
+
+See the [implementation roadmap](agent-roadmap.md) for dependencies and small
+commit/push checkpoints. This documentation update does not change application behavior.
