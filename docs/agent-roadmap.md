@@ -10,6 +10,22 @@ Updated 2026-11-05. Product definition: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md)
 Base implementation: `main`, including the merged mobile UI and local adaptive agent.
 This update changes the delivery plan; it does not implement the new behavior below.
 
+## Warm personal coach design checkpoint (2026-11-05)
+
+Applied the selected C. Warm personal coach direction across onboarding, adaptive
+questions, photo answers/review, analysis, Today, My plan, Coach, Insights and settings.
+Figtree is bundled locally; cream surfaces, terracotta controls, rounded cards and
+larger labels replace the earlier mixed typography. Optional notes and suggestion
+messages expand on demand. Cost badges wrap instead of truncating. Kept actions have
+a visible completion control, separate from preference, with readable completed titles.
+The API, question limits, photo consent/review and plan acceptance behavior are unchanged.
+
+Validation: TypeScript check and production build pass. An isolated fake-provider
+journey covered multiple choices plus a note, analysis, keeping and completing an
+action, action details, all dashboard tabs and settings. Checked 360/390px phones and
+1280px desktop, with no horizontal overflow in those checked views or browser errors.
+This is synthetic UI validation, not a live-provider quality or real-device assessment.
+
 ## Current baseline
 
 - React/TypeScript mobile-responsive UI and FastAPI `/v1/agent` API in one repository.

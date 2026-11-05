@@ -41,8 +41,10 @@ export function PlanActions({ journey, busy, note, onNoteChange, onChoice, onRes
     <section className="plan-refresh" aria-labelledby="refresh-heading">
       <h3 id="refresh-heading">Explore more ideas</h3>
       <p>Get a fresh batch tailored to your answers and choices. Your kept list stays unchanged.</p>
+      <details className="suggestion-message"><summary>Add a message for your coach</summary>
       <label htmlFor="plan-refresh-note">Anything to help the coach? <span>Optional</span></label>
       <textarea id="plan-refresh-note" maxLength={1000} rows={2} value={note} disabled={busy} onChange={event => onNoteChange(event.target.value)} placeholder="For example: less time, or lower-cost ideas." />
+      </details>
       <Button className="primary" disabled={busy || limitReached} onClick={() => onReshuffle(note.trim())}>{busy ? "Thinking…" : "Get new suggestions"}</Button>
       <p className="plan-refresh-hint">{limitReached ? "This local journey has reached its suggestion limit. You can still use your kept list and export your journey." : "Each batch replaces the suggestions above. Only actions you keep are saved to your list."}</p>
     </section>

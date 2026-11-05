@@ -12,7 +12,10 @@ export function ActionCard({ action, choice, busy = false, onChoice, completed =
   badge?: string;
 }) {
   return <article className={`focus-action${choice ? ` preference-${choice}` : ""}`}>
-    <h3>{action.title}</h3>
+    <div className="focus-action-heading">
+      {onComplete && <button className={`action-completion${completed ? " completed" : ""}`} type="button" disabled={busy} aria-pressed={completed} aria-label={`${completed ? "Mark not completed" : "Mark completed"}: ${action.title}`} onClick={onComplete}>{completed ? "✓" : ""}</button>}
+      <h3>{action.title}</h3>
+    </div>
     <div className="focus-action-badges">
       <span title={action.effort}>{action.effort} effort</span>
       <span title={action.cost}>{action.cost}</span>
@@ -29,7 +32,6 @@ export function ActionCard({ action, choice, busy = false, onChoice, completed =
       <h4>Why this fits you</h4><p>{action.why}</p>
       <h4>When and what to notice</h4><p>{action.timing}</p><p>{action.observation}</p>
       <p className="focus-action-fit">{action.category} · {action.effort} effort · {action.cost}</p>
-      {onComplete && <button className="button secondary" type="button" disabled={busy} aria-pressed={completed} onClick={onComplete}>{completed ? "Mark not completed" : "Mark completed"}</button>}
     </details>
   </article>;
 }
