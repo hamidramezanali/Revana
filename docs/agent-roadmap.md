@@ -35,6 +35,21 @@ text-only questions offer “Show suggested answers” to add choices without re
 the assessment, changing its question or consuming the question budget. This does not implement profile consolidation, payment or
 reviewed evidence retrieval.
 
+## Action-preference backend checkpoint (2026-11-05)
+
+Action choices are saved per accepted plan version and are separate from completion.
+Keep, Not for me and clear choices do not trigger LLM requests. A refresh includes the
+original problem, all answers, preferences and an optional message. The model returns
+replacements with editable source IDs; the server inserts kept actions unchanged and
+rejects invalid sources or exact repeats of rejected actions. This also applies to
+check-in plan updates when action preferences exist. Semantic equivalence of differently
+worded unwanted suggestions still requires model-quality evaluation.
+
+Refresh creates a proposal, leaving the accepted plan unchanged until acceptance.
+Kept choices carry into the accepted version. Changing preferences invalidates older
+proposals; proposals can also be explicitly discarded. Revision checks protect races.
+The matching readable cards and mobile feedback controls are the next UI checkpoint.
+
 ## Target release
 
 Mobile-first text discovery builds an editable care profile and a complete free plan.

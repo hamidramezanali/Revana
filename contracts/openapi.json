@@ -73,6 +73,66 @@
         "title": "Action",
         "type": "object"
       },
+      "ActionPreference": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "choice": {
+            "enum": [
+              "keep",
+              "not_for_me"
+            ],
+            "title": "Choice",
+            "type": "string"
+          },
+          "plan_version": {
+            "title": "Plan Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan_version",
+          "action_id",
+          "choice"
+        ],
+        "title": "ActionPreference",
+        "type": "object"
+      },
+      "ActionPreferenceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Action Id",
+            "type": "string"
+          },
+          "choice": {
+            "enum": [
+              "keep",
+              "not_for_me",
+              "clear"
+            ],
+            "title": "Choice",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "action_id",
+          "choice"
+        ],
+        "title": "ActionPreferenceRequest",
+        "type": "object"
+      },
       "AgentStatus": {
         "additionalProperties": false,
         "properties": {
@@ -408,6 +468,13 @@
       "Journey": {
         "additionalProperties": false,
         "properties": {
+          "action_preferences": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPreference"
+            },
+            "title": "Action Preferences",
+            "type": "array"
+          },
           "assessment_count": {
             "default": 0,
             "title": "Assessment Count",
@@ -446,6 +513,13 @@
             ],
             "title": "Mode",
             "type": "string"
+          },
+          "plan_feedback": {
+            "items": {
+              "$ref": "#/components/schemas/PlanFeedback"
+            },
+            "title": "Plan Feedback",
+            "type": "array"
           },
           "plans": {
             "items": {
@@ -562,6 +636,47 @@
           "changes"
         ],
         "title": "Plan",
+        "type": "object"
+      },
+      "PlanFeedback": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "kept_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kept Action Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "plan_version": {
+            "title": "Plan Version",
+            "type": "integer"
+          },
+          "rejected_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rejected Action Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan_version",
+          "kept_action_ids",
+          "rejected_action_ids",
+          "message",
+          "created_at"
+        ],
+        "title": "PlanFeedback",
         "type": "object"
       },
       "PlanRequest": {
@@ -688,6 +803,27 @@
           "why"
         ],
         "title": "Question",
+        "type": "object"
+      },
+      "ReshuffleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Message",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "ReshuffleRequest",
         "type": "object"
       },
       "RevisionRequest": {
@@ -857,6 +993,112 @@
           }
         ],
         "summary": "Accept",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/action-preferences": {
+      "post": {
+        "operationId": "setAgentActionPreference",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Action Preference",
         "tags": [
           "agent"
         ]
@@ -1180,6 +1422,112 @@
         ]
       }
     },
+    "/v1/agent/discard-proposal": {
+      "post": {
+        "operationId": "discardAgentPlanProposal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Discard Proposal",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/v1/agent/plan": {
       "post": {
         "operationId": "generateAgentPlan",
@@ -1387,6 +1735,112 @@
           }
         ],
         "summary": "Upgrade Question Options",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/reshuffle": {
+      "post": {
+        "operationId": "reshuffleAgentPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReshuffleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reshuffle",
         "tags": [
           "agent"
         ]

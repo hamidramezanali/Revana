@@ -102,6 +102,29 @@ class CheckInRequest(RevisionRequest):
     message: str = Field(min_length=1, max_length=2000)
 
 
+class ActionPreferenceRequest(RevisionRequest):
+    action_id: str = Field(min_length=1, max_length=80)
+    choice: Literal["keep", "not_for_me", "clear"]
+
+
+class ReshuffleRequest(RevisionRequest):
+    message: str = Field(default="", max_length=1000)
+
+
+class ActionPreference(Model):
+    plan_version: int
+    action_id: str
+    choice: Literal["keep", "not_for_me"]
+
+
+class PlanFeedback(Model):
+    plan_version: int
+    kept_action_ids: list[str]
+    rejected_action_ids: list[str]
+    message: str
+    created_at: datetime
+
+
 class Action(Model):
     id: str = Field(min_length=1, max_length=80)
     category: str = Field(min_length=1, max_length=80)
@@ -129,6 +152,14 @@ class Plan(Model):
         if len({action.id for action in self.actions}) != len(self.actions):
             raise ValueError("Action IDs must be unique.")
         return self
+
+
+class ReplacementAction(Action):
+    replaces_action_id: str = Field(min_length=1, max_length=80)
+
+
+class ReshuffleDraft(Plan):
+    actions: list[ReplacementAction] = Field(max_length=4)
 
 
 class Completion(Model):
@@ -169,6 +200,8 @@ class Journey(Model):
     plans: list[PlanVersion] = Field(default_factory=list)
     proposal: Plan | None = None
     completions: list[Completion] = Field(default_factory=list)
+    action_preferences: list[ActionPreference] = Field(default_factory=list)
+    plan_feedback: list[PlanFeedback] = Field(default_factory=list)
 
 
 class SessionCreated(Model):

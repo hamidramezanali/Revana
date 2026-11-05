@@ -8,6 +8,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app import agent_provider as provider
 from app import agent_store as store
 from app.agent_models import (
+    ActionPreference,
+    ActionPreferenceRequest,
     AgentStatus,
     AnswerRequest,
     CheckInRequest,
@@ -19,14 +21,17 @@ from app.agent_models import (
     GeneratedQuestion,
     Journey,
     Plan,
+    PlanFeedback,
     PlanRequest,
     PlanVersion,
+    ReshuffleRequest,
     RevisionRequest,
     SessionCreated,
     StartRequest,
 )
 from app.config import get_settings
 from app.errors import ErrorResponse
+from app.plan_revision import build_revision, current_preferences
 
 router = APIRouter(
     prefix="/agent",
@@ -167,15 +172,18 @@ def plan(body: PlanRequest, access: Access) -> Journey:
     journey.preferences = body.preferences
     if journey.proposal is not None:
         raise HTTPException(409, "Accept or start another check-in before generating again.")
-    generated = provider.generate(
-        "Create ONE coherent personal plan using the initial goals/description, ALL "
-        "answer events (selected_options plus any additional answer text), and preferences. "
-        "Unselected options are not user reports. Respect skipped/unknown answers. "
-        "For a revision, explain changes from the latest accepted plan. Do not fabricate facts. "
-        "If safety constraints prevent specific advice, prioritize professional guidance.",
-        coaching_context(journey),
-        Plan,
-    )
+    if journey.plans and current_preferences(journey):
+        generated = build_revision(journey, coaching_context(journey), "")
+    else:
+        generated = provider.generate(
+            "Create ONE coherent personal plan using the initial goals/description, ALL "
+            "answer events (selected_options plus any additional answer text), and preferences. "
+            "Unselected options are not user reports. Respect skipped/unknown answers. "
+            "For a revision, explain changes from the latest accepted plan. Do not fabricate facts. "
+            "If safety constraints prevent specific advice, prioritize professional guidance.",
+            coaching_context(journey),
+            Plan,
+        )
     if journey.plans:
         journey.proposal = generated
     else:
@@ -213,10 +221,18 @@ def accept(body: RevisionRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if journey.proposal is None:
         raise HTTPException(409, "There is no proposed plan to accept.")
+    previous_preferences = current_preferences(journey)
     journey.plans.append(
         PlanVersion(
             version=len(journey.plans) + 1, created_at=datetime.now(UTC), plan=journey.proposal
         )
+    )
+    new_version = journey.plans[-1]
+    new_ids = {action.id for action in new_version.plan.actions}
+    journey.action_preferences.extend(
+        ActionPreference(plan_version=new_version.version, action_id=item.action_id, choice="keep")
+        for item in previous_preferences
+        if item.choice == "keep" and item.action_id in new_ids
     )
     journey.proposal = None
     journey.mode = "assessment"
@@ -276,4 +292,72 @@ def upgrade_question_options(body: RevisionRequest, access: Access) -> Journey:
         option.id = uuid4().hex
     question.options = generated.options
     question.selection_mode = generated.selection_mode
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/action-preferences", response_model=Journey, operation_id="setAgentActionPreference")
+def set_action_preference(body: ActionPreferenceRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans:
+        raise HTTPException(409, "Create a plan before choosing actions.")
+    current = journey.plans[-1]
+    if body.action_id not in {action.id for action in current.plan.actions}:
+        raise HTTPException(422, "This action is not part of your current plan.")
+    journey.action_preferences = [
+        item
+        for item in journey.action_preferences
+        if not (item.plan_version == current.version and item.action_id == body.action_id)
+    ]
+    if body.choice != "clear":
+        journey.action_preferences.append(
+            ActionPreference(
+                plan_version=current.version, action_id=body.action_id, choice=body.choice
+            )
+        )
+    # A proposal made before these choices is no longer valid to accept.
+    journey.proposal = None
+    journey.decision = Decision(summary=current.plan.summary, ready=True, questions=[])
+    journey.mode = "assessment"
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/reshuffle", response_model=Journey, operation_id="reshuffleAgentPlan")
+def reshuffle(body: ReshuffleRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans:
+        raise HTTPException(409, "Create your initial plan first.")
+    if len(journey.plans) >= 25 or len(journey.plan_feedback) >= 50:
+        raise HTTPException(409, "This journey has reached its revision limit. Export it first.")
+    if journey.proposal is not None:
+        raise HTTPException(409, "Accept or discard the proposed update before refreshing again.")
+    preferences = current_preferences(journey)
+    message = body.message.strip()
+    if not preferences and not message:
+        raise HTTPException(422, "Choose actions to keep or replace, or add a message.")
+    proposed = build_revision(journey, coaching_context(journey), message)
+    journey.plan_feedback.append(
+        PlanFeedback(
+            plan_version=journey.plans[-1].version,
+            kept_action_ids=[item.action_id for item in preferences if item.choice == "keep"],
+            rejected_action_ids=[
+                item.action_id for item in preferences if item.choice == "not_for_me"
+            ],
+            message=message,
+            created_at=datetime.now(UTC),
+        )
+    )
+    journey.proposal = proposed
+    journey.decision = Decision(summary=proposed.summary, ready=True, questions=[])
+    journey.mode = "assessment"
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/discard-proposal", response_model=Journey, operation_id="discardAgentPlanProposal")
+def discard_proposal(body: RevisionRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if journey.proposal is None:
+        raise HTTPException(409, "There is no proposed update to discard.")
+    journey.proposal = None
+    journey.decision = Decision(summary=journey.plans[-1].plan.summary, ready=True, questions=[])
+    journey.mode = "assessment"
     return store.save(access, journey, body.revision)
