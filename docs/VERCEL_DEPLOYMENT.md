@@ -25,7 +25,7 @@ is for local development only. No frontend API URL or `VITE_` secret is needed.
 | Name | Value/source |
 | --- | --- |
 | `REVANA_OPENAI_API_KEY` | Secret OpenAI API key |
-| `REVANA_OPENAI_MODEL` | `gpt-6.1-terra` (current selected model) |
+| `REVANA_OPENAI_MODEL` | Optional override; defaults to the selected `gpt-6.1-terra` even when blank |
 | `DATABASE_URL` | Neon’s pooled Postgres URL, installed by the Vercel integration |
 
 Alternatively, `REVANA_DATABASE_URL` or `POSTGRES_URL` is accepted, in that precedence
@@ -96,3 +96,7 @@ References: [Services](https://vercel.com/kb/guide/vercel-services),
 [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi),
 [payload limits](https://vercel.com/docs/functions/limitations#request-body-size),
 [deployment protection for later](https://vercel.com/docs/deployment-protection).
+
+The selected Terra model is also a backend default. Missing or blank model variables
+do not block startup; an explicit nonblank model name overrides it. A real server-side
+OpenAI key and working database connection are still required.

@@ -119,17 +119,27 @@ def test_hosted_postgres_sessions_remain_separate_and_mutations_resume(runtime, 
         assert client.get("/v1/agent/session", headers=headers).status_code == 404
 
 
-@pytest.mark.parametrize("missing", ["REVANA_OPENAI_MODEL", "REVANA_OPENAI_API_KEY"])
-def test_hosted_missing_model_has_actionable_error(runtime, monkeypatch, missing):
+def test_hosted_missing_key_has_actionable_error(runtime, monkeypatch):
     monkeypatch.setattr(agent_store, "check_available", lambda: None)
-    monkeypatch.setenv(missing, "")
+    monkeypatch.setenv("REVANA_OPENAI_API_KEY", "")
     get_settings.cache_clear()
     with TestClient(create_app(), base_url="https://revana-test.example") as client:
         response = client.get("/v1/agent/status")
         assert response.status_code == 503
-        message = response.json()["error"]["message"]
-        assert missing in message
-        other = (
-            "REVANA_OPENAI_API_KEY" if missing == "REVANA_OPENAI_MODEL" else "REVANA_OPENAI_MODEL"
-        )
-        assert other not in message
+        assert "REVANA_OPENAI_API_KEY" in response.json()["error"]["message"]
+        assert "REVANA_OPENAI_MODEL" not in response.json()["error"]["message"]
+
+
+@pytest.mark.parametrize("model", [None, "", "  ", "custom-model"])
+def test_hosted_uses_selected_terra_default_and_allows_override(runtime, monkeypatch, model):
+    monkeypatch.setattr(agent_store, "check_available", lambda: None)
+    if model is None:
+        monkeypatch.delenv("REVANA_OPENAI_MODEL")
+    else:
+        monkeypatch.setenv("REVANA_OPENAI_MODEL", model)
+    get_settings.cache_clear()
+    expected = "custom-model" if model == "custom-model" else "gpt-6.1-terra"
+    assert get_settings().openai_model == expected
+    with TestClient(create_app(), base_url="https://revana-test.example") as client:
+        response = client.get("/v1/agent/status")
+        assert response.status_code == 200 and response.json()["configured"] is True
