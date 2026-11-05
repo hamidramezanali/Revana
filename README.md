@@ -63,16 +63,15 @@ PYTHONPATH=. python scripts/export_client_types.py     # PowerShell: $env:PYTHON
 
 CI and `pytest` fail if the committed file is out of date.
 
-## Hosted deployment (planned; currently blocked)
+## Vercel deployment configuration (runtime still gated)
 
-Do not deploy the current local agent to Vercel. It intentionally refuses Vercel startup.
-Complete the authorization, durable database, privacy and operational gates in the
-[roadmap](docs/agent-roadmap.md) first. The intended future layout is:
+The root `vercel.json` defines **one Services project** containing the Vite frontend
+and FastAPI backend. `/v1` API requests route to the backend; other paths route to
+the frontend. Import the repository root, with the **Services** framework preset.
+See [the Vercel setup guide](docs/VERCEL_DEPLOYMENT.md) for GitHub connection settings,
+entrypoints, private access and validation.
 
-| Project  | Root directory | Notes |
-|----------|----------------|-------|
-| frontend | `frontend`     | Vite is detected automatically |
-| backend  | `backend`      | FastAPI is detected from `app/main.py` |
-
-Set `REVANA_CORS_ORIGINS` on the backend project to a JSON list containing the frontend's URL.
-Secrets (database, Auth0, OpenAI) are only ever set as backend environment variables.
+The current local agent intentionally refuses Vercel startup. Routing configuration
+does not remove that restriction: durable hosted storage, private access/authorization,
+hosted request handling and upload limits must be completed before a live deployment.
+Keep OpenAI credentials server-side. Never upload the local database or `.env`.

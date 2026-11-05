@@ -8,7 +8,7 @@ application. Planned product behavior is specified in [PRODUCT_ROADMAP.md](PRODU
 | Repo | `frontend/`, `backend/`, `contracts/` | Same |
 | Backend | Python/FastAPI, versioned `/v1` API | Same |
 | Frontend | React/TypeScript/Vite; merged mobile-responsive workflow | Mobile-first web; native/voice later |
-| Hosting | Single-user local, loopback only | Two Vercel projects after hosted readiness |
+| Hosting | Single-user local, loopback only | One Vercel Services project after hosted readiness |
 | Access | Random per-journey bearer capability, hashed in database | Auth0 + ownership enforcement |
 | Database | Local durable SQLite | Managed pooled EU Postgres + migrations |
 | LLM | Server-side structured OpenAI Responses adapter | Reviewed guidance + evaluations |
@@ -177,3 +177,14 @@ upload gate. The backend accepts photo-only answers and photos with choices/text
 all questions. Visual notes remain subject to consent, temporary handling and user
 review. Photos never establish sensations, duration or other missing nonvisual facts.
 This supersedes the earlier restriction to visually classified questions.
+
+
+## Vercel Services configuration
+
+The repository-root `vercel.json` now declares backend (FastAPI) and frontend (Vite)
+services on one project/domain. The frontend retains same-origin `/v1` requests;
+ordered service rewrites preserve that prefix. FastAPI has an explicit `app.main:app`
+entrypoint in its pyproject. This supersedes the earlier two-project hosting plan.
+The startup guard and local SQLite runtime are unchanged: hosted execution remains
+blocked until storage, authorization, request handling and upload limits pass their
+gates. See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for exact setup and limitations.

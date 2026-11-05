@@ -260,3 +260,13 @@ upload gate. The backend accepts photo-only answers and photos with choices/text
 all questions. Visual notes remain subject to consent, temporary handling and user
 review. Photos never establish sensations, duration or other missing nonvisual facts.
 This supersedes the earlier restriction to visually classified questions.
+
+
+## Single-project Vercel Services configuration
+
+Added root service/build/routing configuration and an explicit FastAPI entrypoint.
+Use one Services project rooted at the repository, not two separate imports. The
+frontend already calls `/v1`; `/api` from the suggested template is not its contract.
+This checkpoint configures the deployment layout only. Hosted runtime, storage,
+authorization and photo-size gates remain outstanding and the startup guard remains.
+Setup and validation limits: [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).

@@ -214,3 +214,11 @@ upload gate. The backend accepts photo-only answers and photos with choices/text
 all questions. Visual notes remain subject to consent, temporary handling and user
 review. Photos never establish sensations, duration or other missing nonvisual facts.
 This supersedes the earlier restriction to visually classified questions.
+
+
+### Hosting configuration update
+
+The GitHub deployment layout is now one Vercel Services project with Vite and FastAPI
+services under the repository root, sharing same-origin `/v1` routing. This replaces
+the earlier two-project layout; the hosted identity, storage and operational gates
+still apply. Configuration details are in [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
