@@ -21,6 +21,11 @@ def connection() -> Iterator[sqlite3.Connection]:
         with postgres_store.connection(settings.database_url.get_secret_value()) as db:
             yield db
         return
+    if settings.hosted:
+        raise HTTPException(
+            503,
+            "Connect Neon/Postgres in Vercel Storage and set DATABASE_URL or REVANA_DATABASE_URL, then redeploy.",
+        )
     path = Path(settings.database_path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path, timeout=10)

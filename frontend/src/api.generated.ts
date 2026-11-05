@@ -2,7 +2,7 @@
 export type ApiAction = { "id": string; "category": string; "title": string; "detail": string; "why": string; "timing": string; "cost": string; "effort": string; "observation": string };
 export type ApiActionPreference = { "plan_version": number; "action_id": string; "choice": "keep" | "not_for_me" };
 export type ApiActionPreferenceRequest = { "revision": number; "action_id": string; "choice": "keep" | "not_for_me" | "clear" };
-export type ApiAgentStatus = { "configured": boolean; "max_questions": number; "max_checkin_questions": number; "mode": "single-user-local" };
+export type ApiAgentStatus = { "configured": boolean; "max_questions": number; "max_checkin_questions": number; "mode": "single-user-local" | "hosted" };
 export type ApiAnswerOption = { "id": string; "label": string; "exclusive": boolean };
 export type ApiAnswerRequest = { "revision": number; "question_id": string; "answer": string; "selected_option_ids": Array<string>; "skipped": boolean; "photos": Array<string>; "photo_consent": boolean };
 export type ApiCheckInRequest = { "revision": number; "message": string };

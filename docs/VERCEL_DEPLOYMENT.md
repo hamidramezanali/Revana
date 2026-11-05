@@ -1,148 +1,98 @@
-# Vercel Services deployment configuration
+# Vercel Services setup
 
-Revana declares one Vercel project with two services in the root `vercel.json`.
-This replaces the earlier plan to create separate frontend/backend projects.
-It configures routing and builds; it does not enable the hosted coaching runtime.
+## Current scope
 
-## Repository and Vercel settings
+Temporary public testing was explicitly approved on 2026-11-05, without account sign-in.
+OpenAI keys and database credentials remain server-side. Journeys have separate random
+bearer capabilities, stored hashed in Postgres; users cannot list journeys. Deployment
+privacy and account authentication are deferred at the user’s request. This is testing
+scope, not a production-readiness claim.
 
-- Import `hamidramezanali/Revana` through the GitHub integration.
-- Use the branch containing this configuration and the latest application changes.
-  Do not assume `main` contains unmerged feature branches.
-- Set the project Root Directory to the repository root (`.`), not `frontend` or
-  `backend`. Enable including files outside service roots if Vercel exposes that
-  setting: Vite imports the tracked `.figma/make/site.json` from the repository root.
-- Set the project Framework Preset to **Services** in the Vercel dashboard.
-  Do not add a top-level `framework` property alongside `services` in `vercel.json`;
-  framework values belong to each service (`fastapi` and `vite`).
-- Leave project-wide build/install/output overrides unset; the frontend service
-  declares its frozen pnpm install, build script and `dist` output directory.
-- Keep Node.js aligned with CI (22.x). Vercel detects pnpm from the committed lockfile.
-- The backend uses its `pyproject.toml` dependencies, including the image decoder.
-  `[tool.vercel].entrypoint = "app.main:app"` explicitly selects the FastAPI app.
-- Configure deployment protection for every URL you intend to share. Verify that
-  a signed-out request cannot access either the frontend or backend. `robots.txt`
-  is not access control. Only grant the intended collaborators access.
+## Vercel project
 
-## Routing
+Use `hamidramezanali/Revana`, Production Branch `main`, Root Directory `.`, Framework
+Preset **Services** in the dashboard. Do not put a top-level `framework` in vercel.json.
+The root config declares Vite and FastAPI services. The frontend uses a frozen pnpm
+install and builds to `dist`. Node 22.x matches CI. FastAPI’s explicit entrypoint is
+`app.main:app`. Source files above the frontend root include `.figma/make/site.json`.
 
-| Request | Service | Path seen by the application |
-| --- | --- | --- |
-| `/v1` | backend | `/v1` (backend decides its response) |
-| `/v1/health` | backend | `/v1/health` |
-| `/v1/agent/status` | backend | `/v1/agent/status` |
-| `/v1/agent/answers` | backend | `/v1/agent/answers` |
-| `/`, `/assets/...`, `/#/dashboard/today` | frontend | Original path; hash stays in browser |
+Ordered rewrites route `/v1` and `/v1/...` to the backend with the original path;
+everything else goes to the frontend. Browser API calls stay same-origin. Vite’s proxy
+is for local development only. No frontend API URL or `VITE_` secret is needed.
 
-API rewrites precede the frontend catch-all. Service routing preserves the request
-path: the application uses `/v1`, not `/api`, so no prefix transformation is needed.
-Frontend requests stay same-origin; no public backend URL or browser API key is needed.
-The existing Vite proxy remains the separate local-development path.
+## Required environment variables
 
-## Current runtime gate — resolve before attempting live deployment
+| Name | Value/source |
+| --- | --- |
+| `REVANA_OPENAI_API_KEY` | Secret OpenAI API key |
+| `REVANA_OPENAI_MODEL` | `gpt-6.1-terra` (current selected model) |
+| `DATABASE_URL` | Neon’s pooled Postgres URL, installed by the Vercel integration |
 
-`backend/app/main.py` intentionally refuses Vercel startup and non-development mode.
-That guard remains unchanged. **A live multi-service deployment is still blocked**:
-this configuration must not be presented as a working hosted agent.
+Alternatively, `REVANA_DATABASE_URL` or `POSTGRES_URL` is accepted, in that precedence
+before `DATABASE_URL`. Avoid stale duplicate database variables. Keep them Secret/sensitive.
+`VERCEL` automatically selects hosted mode, so a development environment value cannot
+accidentally force SQLite in the hosted function. Without a Postgres URL the service
+starts but returns a clear 503 setup error, rather than writing profiles to `/tmp`.
 
-Do not remove the guard or point SQLite at `/tmp` to get a green deployment. Complete
-these runtime changes before enabling hosted execution:
+1. Vercel project `revana-5pgq` → Storage → Neon; choose an EU region where possible.
+2. Connect the database to this project and its Production environment. Prefer a
+   separate database branch for future Preview deployments so testing is isolated.
+3. Verify the project has the three variables above; do not paste secrets in chat.
+4. Redeploy the latest `main` commit after saving the environment variables.
+5. Check `/v1/health` (process health) and `/v1/agent/status` (database and model setup).
+6. Run a synthetic assessment and confirm it resumes after a reload, generates a plan,
+   keeps suggestions, and deletes/restarts independently of a second browser session.
 
-1. Durable hosted storage and migrations instead of local SQLite.
-2. Tested private access and per-resource authorization, including direct API requests;
-   two collaborators must not accidentally share or overwrite a profile.
-3. Explicit hosted host/origin handling that replaces the loopback-only boundary.
-4. Request/spending limits and privacy/retention operations appropriate to test data.
-5. Vercel-compatible photo limits: Functions accept at most 4.5 MB per request, while
-   three maximum-size base64 photos can exceed this. Lower the aggregate image budget
-   or implement another authenticated, temporary transport before hosted photo testing.
+## Storage and migration
 
-Keep `REVANA_OPENAI_API_KEY` and `REVANA_OPENAI_MODEL` server-side. Do not copy the
-local `.env`, SQLite database, real profiles or photos into GitHub or deployment files.
-A key alone does not satisfy the hosted readiness gate.
+The packaged `app/migrations/001_journeys.sql` creates `revana_journeys` on the first
+connection. The backend role needs table-creation permission for this initial migration.
+An advisory transaction lock handles concurrent cold starts. Values stay parameterized;
+updates use compare-and-swap revision checks. Failed writes/generation do not replace
+saved plans. Remote connections use TLS; prepared statements are disabled for pooled
+serverless connections. The connection closes after each transaction.
 
-## Importing OpenAI environment variables
+A missing URL produces an actionable setup error. A connection/permission failure
+produces a generic storage-unavailable response without echoing credentials or records.
+Local development still supports SQLite when no Postgres URL is set. Existing local
+profiles are not automatically uploaded or migrated to Neon. Exports contain personal
+information and should stay private. Raw questionnaire photos are not stored; reviewed
+notes and existing raw answer events are retained under the current application model.
 
-The backend already reads process environment variables through its `REVANA_` settings
-prefix. No frontend key, code change, or `vercel.json` secret value is required.
+## OpenAI environment import
 
-The repository-root `.env.example` is an import template with an empty key and the
-selected Terra model. To prepare an actual import file from this computer's existing
-backend `.env` (or process environment), run in PowerShell from the repository root:
+The root `.env.example` is a template with no key. From this computer’s repository root:
 
 ```powershell
 .\backend\.venv\Scripts\python.exe backend/scripts/export_vercel_env.py
 ```
 
-This creates `.env.vercel.local` at the repository root, containing only:
+This prepares ignored `.env.vercel.local` with the existing OpenAI key/model only.
+Import it using Vercel Project Settings → Environment Variables. It does not include
+or configure the database. Never commit real `.env` files, add `VITE_` to secret names,
+or expose credentials using Vite define/envPrefix. The export helper uploads nothing.
 
-- `REVANA_OPENAI_API_KEY` (the existing local value, never printed)
-- `REVANA_OPENAI_MODEL` (the existing local value)
+## Requests and limits
 
-The generated file contains a real secret and is ignored by Git. Do not force-add it,
-share its contents, or place it in `frontend/`. The helper excludes local database,
-origin and development-mode settings so these cannot accidentally configure hosting.
+Hosted mode accepts same-origin requests, explicitly configured CORS origins and the
+Vercel deployment/production URLs. Unrelated browser origins are rejected. Requests
+without Origin can still access the approved public API. Local mode keeps its loopback
+host/client checks. CORS is not account authentication.
 
-In Vercel Project Settings > Environment Variables, use the `.env` import control to
-import this local file. Select Production for `main`; optionally configure Preview
-separately for protected feature deployments. Mark the API key as Secret/sensitive.
-Do not prefix either variable with `VITE_` or expose it through Vite's `define`/`envPrefix`.
-Vercel Services may share project environment variables, so server-only usage must
-also be enforced by the frontend build: these names are not exported to the browser.
-Redeploy after saving variables for them to apply to the next deployment.
+Photo source images are capped at 900 KB, with a 4 MB aggregate request cap, below
+Vercel Functions’ 4.5 MB payload limit. The browser re-encodes/resizes photos to match.
+No external image URLs or original metadata are forwarded. Reviewed notes are confirmed
+before subsequent coaching. OpenAI and database limits/errors remain visible to users.
 
-This step stages credentials only; the hosted runtime gate described above remains.
-The helper does not upload anything to Vercel. Actual dashboard import is separate.
+## Validation
 
-## Validation and remaining external checks
+The local and hosted synthetic workflows are tested against real isolated PostgreSQL
+and local SQLite, using fake OpenAI responses. These do not validate clinical guidance
+or a real phone’s camera. Actual Neon access and deployment status must be checked
+after Vercel redeploys; a green build alone is not runtime verification.
 
-Validate the JSON against the current published Vercel schema, build the frontend,
-and run backend checks. These establish configuration/build compatibility locally;
-they do not prove a successful Vercel build, deployment protection or durable storage.
-A linked Vercel deployment and signed-out access tests remain external release checks.
-
-Official references:
-
-- [Services setup](https://vercel.com/kb/guide/vercel-services)
-- [Service routing and path preservation](https://vercel.com/docs/services/routing)
-- [FastAPI entrypoint](https://vercel.com/docs/frameworks/backend/fastapi)
-- [Function payload limits](https://vercel.com/docs/functions/limitations#request-body-size)
-- [Deployment protection](https://vercel.com/docs/deployment-protection)
-
-
-## Postgres preparation and proposed public testing switch
-
-The storage adapter now accepts `REVANA_DATABASE_URL`, `POSTGRES_URL`, or Neon’s
-`DATABASE_URL`, in that priority order. It uses durable `revana_journeys` records,
-hashed bearer capabilities, parameterized SQL and revision-checked writes. Without a database
-URL, the existing local SQLite path is used. A configured but unavailable database
-returns a generic 503 without leaking credentials or records. Remote Postgres requires
-TLS; loopback-only test databases can explicitly disable it.
-
-The packaged migration `app/migrations/001_journeys.sql` creates the isolated table
-on the first connection. A transaction advisory lock serializes concurrent cold starts.
-This creates a fresh hosted store; it does not upload this computer’s local profiles.
-The backend role needs permission to create the table for this first migration.
-
-For Neon, connect the database to `revana-5pgq` in Vercel Storage. The integration can
-supply `DATABASE_URL` directly; keep it server-side. Do not paste connection strings
-in chat or commit them. The database is not yet contacted by the deployed application
-while the existing hosted startup guard is in place.
-
-Photo payloads are now limited to 900 KB per encoded source image and a 4 MB aggregate
-request, with the browser resizing to match. This leaves room below Vercel’s 4.5 MB cap.
-Existing stored records are unaffected.
-
-The user requested postponing deployment privacy. The public-runtime change was
-rejected by automatic approval review; the guard in `app/main.py` remains unchanged.
-The concrete remaining change is a temporary hosted mode that accepts same-origin
-Vercel requests, requires Postgres for hosted journeys, exposes actionable missing-DB
-errors, and keeps the existing per-journey bearer access. This would have no account
-sign-in or allowlist: anyone reaching it could create a journey and consume the
-server-side OpenAI budget. Database credentials and OpenAI keys would stay server-side.
-Account authentication and production governance remain future work. That runtime
-change awaits explicit approval following the review rejection.
-
-Validation: all existing journey regression cases were run against SQLite and an
-isolated real PostgreSQL container, using only synthetic answers and mocked OpenAI
-responses. The actual Neon connection and deployed runtime remain to be checked.
+References: [Services](https://vercel.com/kb/guide/vercel-services),
+[routing](https://vercel.com/docs/services/routing),
+[FastAPI](https://vercel.com/docs/frameworks/backend/fastapi),
+[payload limits](https://vercel.com/docs/functions/limitations#request-body-size),
+[deployment protection for later](https://vercel.com/docs/deployment-protection).

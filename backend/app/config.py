@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic import AliasChoices, Field, SecretStr
@@ -17,6 +18,10 @@ class Settings(BaseSettings):
     database_path: str = "data/revana.sqlite3"
     # Origins allowed to call the API from a browser, e.g. the web app.
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:8443"])
+
+    @property
+    def hosted(self) -> bool:
+        return bool(os.environ.get("VERCEL")) or self.environment != "development"
 
 
 @lru_cache

@@ -1,3 +1,9 @@
+> Current deployment update (2026-11-05): temporary public Vercel testing has been
+> explicitly approved. Hosted mode now requires Postgres, supports same-origin API
+> requests and preserves per-journey bearer access. Account sign-in and deployment
+> privacy are deferred. This supersedes historical local-only/guard checkpoints below.
+> See [the current deployment guide](VERCEL_DEPLOYMENT.md).
+
 # Architecture decisions
 
 Updated 2026-11-05. The table and runtime sections describe the implemented local

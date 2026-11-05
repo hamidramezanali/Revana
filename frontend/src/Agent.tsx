@@ -25,7 +25,11 @@ export async function agentRequest<T>(path: string, body?: unknown, method?: str
   });
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    throw new Error(data?.error?.message ?? "Revana is unavailable. Your saved journey is unchanged; please retry.");
+    const fallback = response.status === 413 ? "These photos are too large. Try fewer or smaller photos."
+      : response.status === 401 || response.status === 403 ? "This deployment requires access. Sign in to the deployment and retry."
+      : response.status === 404 ? "The coaching service route is unavailable. Check this deployment’s backend configuration."
+      : "The coaching service could not start or respond. Check the backend deployment logs; your saved journey is unchanged.";
+    throw new Error(typeof data?.error?.message === "string" ? data.error.message : fallback);
   }
   return response.status === 204 ? undefined as T : response.json();
 }
@@ -142,6 +146,6 @@ export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }:
       </div><aside className="coach-panel" aria-label="Coach and your data"><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
         update(await agentRequest<Journey>("checkins", { revision: journey.revision, message: message.trim() }));
         setMessage(""); setChecking(true);
-      })}>{busy ? "Thinking…" : "Ask my beauty agent"}</Button></section><details className="starting-point"><summary>Your data & settings</summary><p>Saved on this computer’s backend. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete profile & start over</Button></div></details></aside></div>}
+      })}>{busy ? "Thinking…" : "Ask my beauty agent"}</Button></section><details className="starting-point"><summary>Your data & settings</summary><p>Saved by this Revana deployment. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete profile & start over</Button></div></details></aside></div>}
     </main><SafetyStrip /></div>;
 }

@@ -44,12 +44,16 @@ continuing. Never persist raw images or confuse photo observations with user rep
 
 ## Privacy and scope
 
-The current runtime is single-user local. Hosted identity/storage and billing are
-planned before public launch; retain the local deployment boundary until tested.
+The user explicitly approved temporary public Vercel testing without account sign-in
+on 2026-11-05, after acknowledging public API usage and OpenAI budget exposure.
+Hosted journeys require durable Postgres and retain separate bearer capabilities.
+Account authentication, deployment privacy and billing remain future work. Preserve
+the loopback boundary for local development and keep all credentials server-side.
 Keep API keys server-side. Journey answers can
 be health-adjacent: never log their contents, raw request bodies or provider responses.
 Local SQLite is not production storage; do not deploy it to ephemeral Vercel disks.
-Do not bypass the hosted authorization/storage gate to make deployment appear ready.
+Do not silently replace durable hosted storage with ephemeral SQLite. Do not claim
+account authentication or production readiness for the approved temporary public test.
 No diagnoses, prescriptions or unsupported efficacy claims. Prompt rules do not prove
 clinical safety. Tests must use synthetic data and fake providers, never real user data.
 Live OpenAI calls require configured credentials and deliberate validation; never send

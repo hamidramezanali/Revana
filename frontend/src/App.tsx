@@ -130,7 +130,7 @@ function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (
         </section>
         <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
       </div>
-      <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved on this computer’s backend and sent to OpenAI when generating questions or plans. Some questions allow optional photos. Photos are processed temporarily; reviewed visual notes can be saved.</span></div>
+      <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved by this Revana deployment and sent to OpenAI when generating questions or plans. Some questions allow optional photos. Photos are processed temporarily; reviewed visual notes can be saved.</span></div>
       <Button className="primary continue" onClick={next}>Connect the dots <Icon name="arrow" /></Button>
     </div>
   );
@@ -171,7 +171,7 @@ function App() {
           const canResume = saved.plans.length && ["#/welcome", "#/analysis", "#/dashboard/today", "#/dashboard/plan", "#/dashboard/coach", "#/dashboard/insights"].includes(route);
           if (!canResume) navigate(saved.plans.length ? "dashboard" : "details", true);
         }
-      } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Could not restore your journey."); }
+      } catch (e) { if (!cancelled) { setConfigured(false); setError(e instanceof Error ? e.message : "Could not restore your journey."); } }
       finally { if (!cancelled) setRestoring(false); }
     })();
     return () => { cancelled = true; };
@@ -200,10 +200,10 @@ function App() {
     {screen === "dashboard" && journey && journey.plans.length > 0 ? <AgentDashboard journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onDelete={() => setDeleteConfirm(true)} onBack={() => setScreen("analysis")} />
     : screen === "analysis" && journey && journey.plans.length > 0 ? <AgentAnalysis journey={journey} onPlan={() => setScreen("dashboard")} onBack={() => setScreen("welcome")} />
     : <OnboardingShell screen={screen} setScreen={setScreen}>
-      {screen === "welcome" && <><Welcome returning={!!journey?.plans.length} onStart={() => setScreen(journey?.plans.length ? "dashboard" : "timeline")} />{configured === false && <p className="agent-banner">Connect an OpenAI key and structured-output model in the backend configuration to enable your beauty agent.</p>}</>}
+      {screen === "welcome" && <><Welcome returning={!!journey?.plans.length} onStart={() => setScreen(journey?.plans.length ? "dashboard" : "timeline")} />{configured === false && <p className="agent-banner">The coaching service is not ready. Check the setup message above, then reload to retry.</p>}</>}
       {screen === "timeline" && <Timeline profile={profile} setProfile={setProfile} next={() => setScreen("goals")} />}
       {screen === "goals" && <Goals profile={profile} setProfile={setProfile} next={() => setScreen("details")} />}
-      {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana asks at most six questions, one at a time, based on each answer. You can skip any question or finish early.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved on this computer’s backend; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {
+      {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana asks at most six questions, one at a time, based on each answer. You can skip any question or finish early.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved by this Revana deployment; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {
         setJourney(await startJourney({ goals: profile.goals.length ? profile.goals : ["other"], description: profile.ownWords.slice(0, 2000), target_date: profile.targetDate }));
       })}>{busy ? "Preparing your first question…" : "Start my assessment"}</Button></div> : <AdaptiveQuestions journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onFinish={() => setScreen("safety")} />)}
       {screen === "safety" && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}

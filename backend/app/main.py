@@ -12,10 +12,6 @@ from app.errors import register_error_handlers
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    if settings.environment != "development" or os.environ.get("VERCEL"):
-        raise RuntimeError(
-            "The single-user agent requires local development hosting. See docs/agent-roadmap.md."
-        )
     app = FastAPI(title="Revana API", version="0.1.0")
     # Bearer-token auth only, so credentials/cookies are not allowed cross-origin.
     app.add_middleware(
@@ -28,8 +24,11 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def local_agent_only(request: Request, call_next):
         if request.url.path.startswith("/v1/agent"):
-            if request.url.hostname not in {"localhost", "127.0.0.1", "::1", "testserver"} or (
-                request.client and request.client.host not in {"127.0.0.1", "::1", "testclient"}
+            if not settings.hosted and (
+                request.url.hostname not in {"localhost", "127.0.0.1", "::1", "testserver"}
+                or (
+                    request.client and request.client.host not in {"127.0.0.1", "::1", "testclient"}
+                )
             ):
                 return JSONResponse(
                     status_code=403,
@@ -41,7 +40,14 @@ def create_app() -> FastAPI:
                     },
                 )
             origin = request.headers.get("origin")
-            if origin and origin not in settings.cors_origins:
+            allowed_origins = set(settings.cors_origins)
+            if settings.hosted:
+                allowed_origins.add(f"{request.url.scheme}://{request.url.netloc}")
+                allowed_origins.add(f"https://{request.url.netloc}")
+                for name in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+                    if os.environ.get(name):
+                        allowed_origins.add("https://" + os.environ[name])
+            if origin and origin not in allowed_origins:
                 return JSONResponse(
                     status_code=403,
                     content={

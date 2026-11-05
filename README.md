@@ -8,7 +8,7 @@ The next release is planned as a mobile-first coach with an editable care profil
 a complete free starting plan, and paid progress tracking and plan updates. See the
 [current product plan](docs/PRODUCT_ROADMAP.md) and its small implementation checkpoints.
 
-**Current release: single-user local development.** The live agent requires backend
+**Current release: local development and temporary hosted testing.** The live agent requires backend
 OpenAI configuration. See [the agent roadmap](docs/agent-roadmap.md) for implementation
 status, setup, privacy behavior and the gates before a hosted beta.
 
@@ -63,15 +63,15 @@ PYTHONPATH=. python scripts/export_client_types.py     # PowerShell: $env:PYTHON
 
 CI and `pytest` fail if the committed file is out of date.
 
-## Vercel deployment configuration (runtime still gated)
+## Vercel deployment
 
-The root `vercel.json` defines **one Services project** containing the Vite frontend
-and FastAPI backend. `/v1` API requests route to the backend; other paths route to
-the frontend. Import the repository root, with the **Services** framework preset.
-See [the Vercel setup guide](docs/VERCEL_DEPLOYMENT.md) for GitHub connection settings,
-entrypoints, private access and validation.
+The root `vercel.json` defines one Services project with a Vite frontend and FastAPI
+backend. Import the repository root, select Services, and use `main` for Production.
+Set server-side `REVANA_OPENAI_API_KEY`, `REVANA_OPENAI_MODEL` and Neon’s `DATABASE_URL`,
+then redeploy. The backend automatically uses durable Postgres on Vercel; no SQLite
+fallback is allowed there. Local development can still use SQLite.
 
-The current local agent intentionally refuses Vercel startup. Routing configuration
-does not remove that restriction: durable hosted storage, private access/authorization,
-hosted request handling and upload limits must be completed before a live deployment.
-Keep OpenAI credentials server-side. Never upload the local database or `.env`.
+Temporary public testing without account sign-in is approved. Keep each journey’s
+browser token private; account authentication and deployment privacy are deferred.
+See [the setup guide](docs/VERCEL_DEPLOYMENT.md) for Neon, migration and runtime checks.
+Never upload this computer’s `.env`, local database or real profiles to GitHub.

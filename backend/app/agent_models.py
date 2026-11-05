@@ -258,4 +258,4 @@ class AgentStatus(Model):
     configured: bool
     max_questions: int
     max_checkin_questions: int
-    mode: Literal["single-user-local"] = "single-user-local"
+    mode: Literal["single-user-local", "hosted"] = "single-user-local"

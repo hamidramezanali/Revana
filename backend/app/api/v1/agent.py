@@ -127,15 +127,24 @@ def decide(journey: Journey) -> Decision:
 @router.get("/status", response_model=AgentStatus, operation_id="getAgentStatus")
 def status() -> AgentStatus:
     settings = get_settings()
+    if settings.hosted:
+        store.check_available()
+        if not settings.openai_api_key or not settings.openai_model:
+            raise HTTPException(
+                503, "Set REVANA_OPENAI_API_KEY and REVANA_OPENAI_MODEL in Vercel, then redeploy."
+            )
     return AgentStatus(
         configured=bool(settings.openai_api_key and settings.openai_model),
         max_questions=MAX_QUESTIONS,
         max_checkin_questions=MAX_CHECKIN_QUESTIONS,
+        mode="hosted" if settings.hosted else "single-user-local",
     )
 
 
 @router.post("/sessions", response_model=SessionCreated, operation_id="startAgentSession")
 def start(body: StartRequest) -> SessionCreated:
+    if get_settings().hosted:
+        store.check_available()
     journey = Journey(
         context=body.context,
         decision=Decision(summary="Starting assessment.", ready=False, questions=[]),

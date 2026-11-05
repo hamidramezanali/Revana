@@ -149,8 +149,11 @@
             "type": "integer"
           },
           "mode": {
-            "const": "single-user-local",
             "default": "single-user-local",
+            "enum": [
+              "single-user-local",
+              "hosted"
+            ],
             "title": "Mode",
             "type": "string"
           }
