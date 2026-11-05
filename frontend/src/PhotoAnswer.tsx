@@ -26,7 +26,7 @@ async function preparePhoto(file: File): Promise<string> {
 }
 
 export function PhotoAnswer({ mode, photos, onChange, busy, onPreparing }: {
-  mode: "products" | "skin" | "hair";
+  mode: "none" | "products" | "skin" | "hair";
   photos: string[];
   onChange: (photos: string[]) => void;
   busy: boolean;
@@ -51,7 +51,7 @@ export function PhotoAnswer({ mode, photos, onChange, busy, onPreparing }: {
   const disabled = busy || preparing;
   return <section className="photo-answer" aria-label="Optional photo answer">
     <h3>Add photos <span>Optional · up to 3</span></h3>
-    <p>{mode === "products" ? "Show the product front or ingredient label. Keep small print clear." : mode === "skin" ? "A clear photo of the area can help describe what’s visible. Avoid identifying details." : "Show the hair or scalp area you want to discuss, in clear light."}</p>
+    <p>{mode === "products" ? "Show the product front or ingredient label. Keep small print clear." : mode === "skin" ? "A clear photo of the area can help describe what’s visible. Avoid identifying details." : mode === "hair" ? "Show the hair or scalp area you want to discuss, in clear light." : "Add a photo that helps explain your answer, such as a product or the area you’re describing. Tell us about feelings or timing in your answer."}</p>
     <input ref={picker} className="photo-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={disabled} aria-label="Choose answer photos" onChange={event => void add(event.target.files)} />
     <input ref={camera} className="photo-file-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={disabled} aria-label="Take an answer photo" onChange={event => void add(event.target.files)} />
     <div className="photo-picker-buttons"><button className="button secondary" type="button" disabled={disabled || photos.length >= 3} onClick={() => picker.current?.click()}>Choose photos</button><button className="button secondary" type="button" disabled={disabled || photos.length >= 3} onClick={() => camera.current?.click()}>Take a photo</button></div>

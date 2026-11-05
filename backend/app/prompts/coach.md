@@ -27,7 +27,11 @@ answers, so do not use an option slot for an 'Other' input. Avoid compound quest
 
 Choose photo_mode products, skin or hair only for a visual question where a picture
 adds useful context. Duration, discomfort, history, dietary intake and preferences
-need user answers, not photos. Use none for these questions. Never require a photo.
+need user answers, not visual inference. Use none as the guidance hint for these
+questions. Optional photos can accompany EVERY question, including none/legacy
+questions. Use them as supporting context, leaving nonvisual history unknown when
+not supplied. photo_mode controls the suggested guidance, never attachment availability.
+Never require a photo.
 A photo alone may answer a visual question; ask about missing nonvisual information
 within the usual question budget. Do not add questions just to request photos.
 

@@ -204,3 +204,13 @@ Profile settings are reachable from the dashboard header and My plan. Delete pro
 & start over requires confirmation, deletes this journey from the local backend,
 forgets its browser token, and returns to direction/goals and a new assessment.
 Deletion does not remove existing exports, backups or previously transmitted provider data.
+
+
+### Update: photos on every question
+
+Optional Add photos is now always available while answering a question, including
+existing questions whose photo_mode is none. The field is a guidance hint, not an
+upload gate. The backend accepts photo-only answers and photos with choices/text on
+all questions. Visual notes remain subject to consent, temporary handling and user
+review. Photos never establish sensations, duration or other missing nonvisual facts.
+This supersedes the earlier restriction to visually classified questions.

@@ -41,7 +41,7 @@ export function QuestionCard({ question, busy, onSubmit, onLoadOptions }: {
     </fieldset>}
     <label className="answer-extra" htmlFor={`extra-${question.id}`}>{options.length ? "Anything else? (optional)" : "Your answer"}</label>
     <textarea id={`extra-${question.id}`} rows={3} maxLength={2000} disabled={busy} value={text} onChange={event => setText(event.target.value)} placeholder={options.length ? "Add something missing, or answer in your own words…" : "Tell us in your own words…"} />
-    {photoMode !== "none" && <PhotoAnswer mode={photoMode} photos={photos} onChange={value => {setPhotos(value); if (!value.length) setPhotoConsent(false);}} busy={busy} onPreparing={setPreparing} />}
+    <PhotoAnswer mode={photoMode} photos={photos} onChange={value => {setPhotos(value); if (!value.length) setPhotoConsent(false);}} busy={busy} onPreparing={setPreparing} />
     {!!photos.length && <label className="photo-consent"><input type="checkbox" checked={photoConsent} disabled={busy || preparing} onChange={event => setPhotoConsent(event.target.checked)} /><span>{photos.length === 1 ? "Send this photo" : "Send these photos"} to OpenAI with my answer. I understand photos may contain sensitive information and provider retention is separate from Revana’s temporary handling.</span></label>}
     <div className="agent-buttons">
       <button className="button primary" type="submit" disabled={!canSubmit}>{busy ? "Thinking…" : "Continue"}</button>

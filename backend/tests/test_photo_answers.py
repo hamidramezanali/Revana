@@ -138,7 +138,7 @@ def test_photos_with_choices_and_text_and_discard_at_question_cap(agent, monkeyp
 
 @pytest.mark.parametrize(
     "invalid",
-    ["consent", "unsupported", "corrupt", "too_many", "skipped", "not_visual", "oversize"],
+    ["consent", "unsupported", "corrupt", "too_many", "skipped", "oversize"],
 )
 def test_invalid_photo_answers_never_call_provider_or_save(agent, invalid):
     client, calls = agent
@@ -156,12 +156,6 @@ def test_invalid_photo_answers_never_call_provider_or_save(agent, invalid):
         extras = {"skipped": True}
     if invalid == "oversize":
         extras = {"photos": ["x" * 2_000_001]}
-    if invalid == "not_visual":
-        access = headers["Authorization"].split()[1]
-        saved = agent_store.read(access)
-        saved.decision.questions[0].photo_mode = "none"
-        agent_store.save(access, saved, saved.revision)
-        journey = client.get("/v1/agent/session", headers=headers).json()
     before = len(calls)
     result = submit(client, headers, journey, **extras)
     assert result.status_code == 422
@@ -253,3 +247,18 @@ def test_body_limit_and_deleted_profile_cannot_be_restored(agent):
     assert client.get("/v1/agent/status").status_code == 200
     fresh_headers, fresh = start(client)
     assert fresh_headers != headers and fresh["events"] == [] and fresh["plans"] == []
+
+
+@pytest.mark.parametrize("with_text", [False, True])
+def test_photos_allowed_on_every_question_including_legacy_none(agent, monkeypatch, with_text):
+    client, _ = agent
+    headers, journey = start(client)
+    assert journey["decision"]["questions"][0]["photo_mode"] == "none"
+    captured = []
+    fake_reading(monkeypatch, captured)
+    response = submit(client, headers, journey, answer="My skin feels tight." if with_text else "")
+    assert response.status_code == 200, response.text
+    assert response.json()["events"][-1]["photo_count"] == 1
+    assert response.json()["events"][-1]["photo_notes"]["confirmed"] is False
+    assert captured[0][0]["photo_mode"] == "none"
+    assert captured[0][0]["answer"] == ("My skin feels tight." if with_text else "")

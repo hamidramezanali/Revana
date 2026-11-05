@@ -167,3 +167,13 @@ Live skin/hair interpretation and physical phone camera behavior are not clinica
 or device validated. The selected gpt-6.1-terra supports image input according to
 [official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
 Image payload format follows the [Responses image guide](https://developers.openai.com/api/docs/guides/images-vision?api-mode=responses).
+
+
+### Update: photos on every question
+
+Optional Add photos is now always available while answering a question, including
+existing questions whose photo_mode is none. The field is a guidance hint, not an
+upload gate. The backend accepts photo-only answers and photos with choices/text on
+all questions. Visual notes remain subject to consent, temporary handling and user
+review. Photos never establish sensations, duration or other missing nonvisual facts.
+This supersedes the earlier restriction to visually classified questions.
