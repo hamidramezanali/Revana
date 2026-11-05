@@ -32,6 +32,7 @@ from app.agent_models import (
 from app.config import get_settings
 from app.errors import ErrorResponse
 from app.plan_revision import build_revision, current_preferences
+from app.suggestions import board_for, generate_batch
 
 router = APIRouter(
     prefix="/agent",
@@ -65,6 +66,12 @@ def coaching_context(journey: Journey) -> dict:
     context = journey.model_dump(mode="json")
     # Do not prime the model with unselected suggestions from the previous question.
     context.pop("decision", None)
+    board = context.pop("suggestion_board", None)
+    if board:
+        context["action_exploration"] = {
+            "kept": board["kept"],
+            "not_for_me": [a for a in board["seen"] if a["id"] in board["rejected_ids"]],
+        }
     return context
 
 
@@ -251,8 +258,11 @@ def complete_action(body: CompletionRequest, access: Access) -> Journey:
     if not journey.plans:
         raise HTTPException(409, "Create a plan before recording progress.")
     current = journey.plans[-1]
-    if body.action_id not in {action.id for action in current.plan.actions}:
-        raise HTTPException(422, "This action is not part of your current plan.")
+    available_ids = {action.id for action in current.plan.actions}
+    if journey.suggestion_board is not None:
+        available_ids.update(action.id for action in journey.suggestion_board.kept)
+    if body.action_id not in available_ids:
+        raise HTTPException(422, "This action is not part of your plan or kept list.")
     journey.completions = [
         item
         for item in journey.completions
@@ -360,4 +370,60 @@ def discard_proposal(body: RevisionRequest, access: Access) -> Journey:
     journey.proposal = None
     journey.decision = Decision(summary=journey.plans[-1].plan.summary, ready=True, questions=[])
     journey.mode = "assessment"
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/suggestion-choice", response_model=Journey, operation_id="chooseAgentSuggestion")
+def suggestion_choice(body: ActionPreferenceRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans:
+        raise HTTPException(409, "Create your initial plan first.")
+    board = board_for(journey)
+    available = {a.id: a for a in [*board.suggestions, *board.kept]}
+    if body.action_id not in available:
+        raise HTTPException(422, "This suggestion is no longer available.")
+    action = available[body.action_id]
+    if (
+        body.choice == "keep"
+        and len(board.kept) >= 24
+        and action.id not in {a.id for a in board.kept}
+    ):
+        raise HTTPException(409, "Your kept list is full. Remove an action before adding another.")
+    board.suggestions = [a for a in board.suggestions if a.id != action.id]
+    board.kept = [a for a in board.kept if a.id != action.id]
+    board.rejected_ids = [value for value in board.rejected_ids if value != action.id]
+    if body.choice == "keep":
+        board.kept.append(action)
+    elif body.choice == "not_for_me":
+        board.rejected_ids.append(action.id)
+    else:
+        board.suggestions.append(action)
+    journey.suggestion_board = board
+    # Keep legacy plan preferences consistent when choosing an original plan action.
+    current = journey.plans[-1]
+    if action.id in {a.id for a in current.plan.actions}:
+        journey.action_preferences = [
+            item
+            for item in journey.action_preferences
+            if not (item.plan_version == current.version and item.action_id == action.id)
+        ]
+        if body.choice != "clear":
+            journey.action_preferences.append(
+                ActionPreference(
+                    plan_version=current.version, action_id=action.id, choice=body.choice
+                )
+            )
+        journey.proposal = None
+    # Exploration choices never overwrite or accept a plan revision.
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/suggestions", response_model=Journey, operation_id="generateAgentSuggestions")
+def suggestions(body: ReshuffleRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans:
+        raise HTTPException(409, "Create your initial plan first.")
+    journey.suggestion_board = generate_batch(
+        journey, coaching_context(journey), body.message.strip()
+    )
     return store.save(access, journey, body.revision)

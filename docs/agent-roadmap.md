@@ -175,3 +175,24 @@ bound model context and local storage. Export and begin a new journey when full.
 Question/plan generation sends the selected goals, answers, preferences and saved plan
 context to OpenAI. API keys never enter browser responses. All non-2xx API responses use
 the repository error envelope without submitted values or upstream response bodies.
+
+
+## Separate kept list and suggestion batches (2026-11-05)
+
+Today and My plan now split chosen actions into Your kept list and unchosen ideas into
+Suggestions. Compact badge-sized choices save or dismiss immediately, without implying
+completion. Get new suggestions calls `/v1/agent/suggestions` for 1-4 fresh actions;
+`/v1/agent/suggestion-choice` moves an action into/out of the kept list or dismisses it.
+Each batch replaces only the suggestion pool, never the kept list or accepted plan.
+Existing journey choices migrate lazily on the first mutation without deleting plans.
+Check-in proposals still require acceptance and are separate from exploration.
+
+The request includes original answers, constraints, kept actions, explicit rejections,
+previously shown ideas and optional feedback. The server rejects exact title/detail
+repeats, assigns IDs, preserves kept objects, and saves only after successful generation
+with revision checks. Semantic novelty still needs model evaluation. Current local
+bounds are 24 kept actions and 50 batches per journey. Previously shown suggestions
+are retained locally for repeat avoidance; this is not the planned retention redesign.
+Synthetic integration tests cover persistence, migration, repeat/failure/concurrent
+protection, requests without votes and requests when all existing actions are kept.
+No live model-quality evaluation was performed for this checkpoint.

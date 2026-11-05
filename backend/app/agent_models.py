@@ -162,6 +162,21 @@ class ReshuffleDraft(Plan):
     actions: list[ReplacementAction] = Field(max_length=4)
 
 
+class SuggestionBatch(Model):
+    actions: list[Action] = Field(min_length=1, max_length=4)
+    safety_notes: list[str] = Field(min_length=1, max_length=8)
+
+
+class SuggestionBoard(Model):
+    # Separate from accepted plan versions; defaults migrate existing journeys lazily.
+    suggestions: list[Action] = Field(default_factory=list, max_length=28)
+    kept: list[Action] = Field(default_factory=list, max_length=24)
+    seen: list[Action] = Field(default_factory=list, max_length=204)
+    rejected_ids: list[str] = Field(default_factory=list, max_length=204)
+    rounds: int = Field(default=0, ge=0, le=50)
+    safety_notes: list[str] = Field(default_factory=list, max_length=8)
+
+
 class Completion(Model):
     plan_version: int
     action_id: str
@@ -202,6 +217,7 @@ class Journey(Model):
     completions: list[Completion] = Field(default_factory=list)
     action_preferences: list[ActionPreference] = Field(default_factory=list)
     plan_feedback: list[PlanFeedback] = Field(default_factory=list)
+    suggestion_board: SuggestionBoard | None = None
 
 
 class SessionCreated(Model):

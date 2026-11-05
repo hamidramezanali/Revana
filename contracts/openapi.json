@@ -552,6 +552,16 @@
             "default": 0,
             "title": "Revision",
             "type": "integer"
+          },
+          "suggestion_board": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SuggestionBoard"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -876,6 +886,60 @@
           "consent"
         ],
         "title": "StartRequest",
+        "type": "object"
+      },
+      "SuggestionBoard": {
+        "additionalProperties": false,
+        "properties": {
+          "kept": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "maxItems": 24,
+            "title": "Kept",
+            "type": "array"
+          },
+          "rejected_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 204,
+            "title": "Rejected Ids",
+            "type": "array"
+          },
+          "rounds": {
+            "default": 0,
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Rounds",
+            "type": "integer"
+          },
+          "safety_notes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Safety Notes",
+            "type": "array"
+          },
+          "seen": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "maxItems": 204,
+            "title": "Seen",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "maxItems": 28,
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "title": "SuggestionBoard",
         "type": "object"
       }
     },
@@ -2216,6 +2280,218 @@
           }
         },
         "summary": "Status",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/suggestion-choice": {
+      "post": {
+        "operationId": "chooseAgentSuggestion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggestion Choice",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/suggestions": {
+      "post": {
+        "operationId": "generateAgentSuggestions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReshuffleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggestions",
         "tags": [
           "agent"
         ]
