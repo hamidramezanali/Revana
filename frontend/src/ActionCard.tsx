@@ -20,7 +20,7 @@ export function ActionCard({ action, choice, busy = false, onChoice, completed =
       {completed && <span className="focus-action-tag">Completed</span>}
     </div>
     {onChoice && <div className="focus-action-choices" role="group" aria-label={`Preference for ${action.title}`}>
-      <button type="button" disabled={busy} aria-pressed={choice === "keep"} aria-label={`Keep it: ${action.title}`} className={choice === "keep" ? "selected keep" : ""} onClick={() => onChoice(choice === "keep" ? "clear" : "keep")}>Keep it</button>
+      <button type="button" disabled={busy} aria-pressed={choice === "keep"} aria-label={`Keep it: ${action.title}`} className={choice === "keep" ? "selected keep" : ""} onClick={() => onChoice(choice === "keep" ? "clear" : "keep")}>{choice === "keep" ? "Kept" : "Keep it"}</button>
       <button type="button" disabled={busy} aria-pressed={choice === "not_for_me"} aria-label={`Not for me: ${action.title}`} className={choice === "not_for_me" ? "selected reject" : ""} onClick={() => onChoice(choice === "not_for_me" ? "clear" : "not_for_me")}>Not for me</button>
     </div>}
     <details className="focus-action-details">

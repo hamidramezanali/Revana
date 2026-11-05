@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { QuestionCard } from "./QuestionCard";
-import { PlanActions } from "./PlanActions";
+import { PlanActions, actionLists } from "./PlanActions";
 import { ActionCard, type ActionChoice } from "./ActionCard";
 import { PlanView } from "./PlanView";
 import { Brand, Button, Icon, SafetyStrip } from "./ui";
@@ -90,6 +90,8 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
   const plan = version.plan;
   useEffect(() => { setPlanMessage(""); }, [version.version]);
   const completed = journey.completions.filter(item => item.plan_version === version.version).map(item => item.action_id);
+  const keptActions = actionLists(journey).kept;
+  const keptCompleted = keptActions.filter(action => completed.includes(action.id)).length;
   const review = new Date(version.created_at);
   review.setDate(review.getDate() + plan.review_days);
   const draft = () => run(async () => {
@@ -97,11 +99,11 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
     setChecking(false);
   });
   const chooseAction = (actionId: string, choice: ActionChoice) => run(async () => {
-    update(await agentRequest<Journey>("action-preferences", { revision: journey.revision, action_id: actionId, choice }));
+    update(await agentRequest<Journey>("suggestion-choice", { revision: journey.revision, action_id: actionId, choice }));
   });
   const reshuffle = (message: string) => run(async () => {
-    update(await agentRequest<Journey>("reshuffle", { revision: journey.revision, message }));
-    setChecking(false); window.scrollTo({ top: 0, behavior: "auto" });
+    update(await agentRequest<Journey>("suggestions", { revision: journey.revision, message }));
+    setPlanMessage("");
   });
   const completeAction = (actionId: string) => run(async () => {
     update(await agentRequest<Journey>("actions", { revision: journey.revision, action_id: actionId, completed: !completed.includes(actionId) }));
@@ -116,7 +118,7 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
     <main className="dash-main"><section className="dash-hero"><div><span className="eyebrow">YOUR PERSONAL PLAN · VERSION {version.version}</span><h1>Your next useful steps.</h1><p>{plan.summary}</p></div><div className="review-card"><span>NEXT REVIEW</span><strong>{review.toLocaleDateString()}</strong><small>Check in sooner if something changes.</small></div></section>
       {journey.proposal && <section className="plan-proposal" aria-labelledby="proposal-heading"><span className="eyebrow">PROPOSED UPDATE</span><h2 id="proposal-heading">Your refreshed plan</h2><p>{journey.proposal.changes}</p><div className="focus-action-list">{journey.proposal.actions.map(action => <ActionCard key={action.id} action={action} badge={(journey.action_preferences ?? []).some(item => item.plan_version === version.version && item.action_id === action.id && item.choice === "keep") ? "Kept unchanged" : "Suggested"} />)}</div><div className="agent-buttons"><Button className="primary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("accept", { revision: journey.revision })))}>Accept updated plan</Button><Button className="secondary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("discard-proposal", { revision: journey.revision })))}>Keep current plan</Button></div><div className="proposal-safety">{journey.proposal.safety_notes.map((text, index) => <p key={index}>{text}</p>)}</div></section>}
       {checking ? <AdaptiveQuestions journey={journey} update={update} busy={busy} run={run} onFinish={draft} /> : <div className="dash-grid"><div>
-        {tab === "Today" && <><div className="section-title"><h2>{plan.actions.length} focused {plan.actions.length === 1 ? "action" : "actions"}</h2><span className="progress-text">{completed.length}/{plan.actions.length} complete</span></div>{actionSection}</>}
+        {tab === "Today" && <><div className="section-title"><h2>Your actions & ideas</h2><span className="progress-text">{keptCompleted}/{keptActions.length} kept actions complete</span></div>{actionSection}</>}
         {tab === "My plan" && <PlanView key={version.version} journey={journey} busy={busy} onCheckin={message => run(async () => {
           update(await agentRequest<Journey>("checkins", { revision: journey.revision, message }));
           setChecking(true);

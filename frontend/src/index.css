@@ -545,8 +545,8 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 .focus-action-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
 .focus-action-badges span { max-width: 100%; display: inline-block; overflow: hidden; padding: 5px 9px; border-radius: 20px; background: var(--cream); color: #575951; font-size: 12px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .focus-action-badges .focus-action-tag { background: var(--sage); color: var(--forest); }
-.focus-action-choices { display: flex; gap: 9px; }
-.focus-action-choices button { min-height: 44px; flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: white; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.focus-action-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.focus-action-choices button { min-height: 30px; border: 1px solid var(--line); border-radius: 20px; padding: 5px 11px; background: white; color: var(--ink); font-size: 12px; line-height: 18px; font-weight: 600; cursor: pointer; }
 .focus-action-choices .selected.keep { border-color: var(--forest); background: var(--forest); color: white; }
 .focus-action-choices .selected.reject { border-color: #8b5341; background: var(--blush); color: #6d3e2f; }
 .focus-action.preference-keep { border-color: var(--sage-deep); }
@@ -581,5 +581,14 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
   .focus-action { padding: 17px; }
   .focus-action h3 { font-size: 20px; }
   .plan-refresh, .plan-proposal { padding: 17px; }
-  .focus-action-choices button { padding: 9px; }
+  .focus-action-choices button { padding: 5px 11px; }
 }
+
+.action-list-section { margin-bottom: 26px; }
+.action-list-section .section-title { margin-bottom: 8px; }
+.action-list-intro, .action-list-empty { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.action-list-intro { margin-bottom: 14px; }
+.action-list-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 14px; }
+.action-list-count { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 3px 9px; border-radius: 20px; background: var(--sage); color: var(--forest); font: 600 12px/1.5 "DM Sans", sans-serif; }
+.suggestion-safety { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.suggestion-safety summary { cursor: pointer; padding: 8px 0; }
