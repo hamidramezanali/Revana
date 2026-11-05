@@ -27,8 +27,12 @@ selection, exclusive answers, optional additional text and explicit skips. The b
 validates choices against the active question and passes chosen labels plus text to
 subsequent questions and the single overall plan. Unselected suggestions are excluded
 from model context. Legacy saved text-only questions remain readable and answerable.
-The six-question cap is a ceiling; the agent can finish early. Mobile option controls
-are the next UI checkpoint. This does not implement profile consolidation, payment or
+The six-question cap is a ceiling; the agent can finish early. The mobile UI now
+shows native single/multiple-choice controls before an optional short text box. Each
+new question clears the previous draft; failed requests preserve it for retry.
+Question rationale is expandable to keep the primary screen concise. Existing active
+text-only questions offer “Show suggested answers” to add choices without restarting
+the assessment, changing its question or consuming the question budget. This does not implement profile consolidation, payment or
 reviewed evidence retrieval.
 
 ## Target release

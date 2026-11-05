@@ -24,8 +24,10 @@ removing history UI alone is insufficient. Do not claim raw data is removed befo
 conversion, cleanup and retention tests pass. Evidence-backed claims require traceable
 reviewed sources. A capable model or stronger prompt alone does not establish quality.
 
-The separate product-role instruction file is planned at
-`backend/app/prompts/coach.md`; this AGENTS.md remains developer guidance.
+The product-role instructions now live in `backend/app/prompts/coach.md`, loaded and
+packaged by the backend; this AGENTS.md remains developer guidance. New adaptive
+questions offer 3-6 choices with suitable single/multiple selection and optional text.
+Only selected choices and typed answers are reports; suggestions are not profile facts.
 Sweden/Scandinavia first; keep locale/country/timezone/currency/units separate. English
 is acceptable initially. Voice and photos are later scope.
 

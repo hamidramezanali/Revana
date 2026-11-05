@@ -21,8 +21,9 @@ Do not promise recommendations unavailable elsewhere or superiority to medical c
 
 - Preserve the visual direction and mobile improvements merged into `main`.
 - Text conversation first; a guided-question presentation uses the same engine.
-- One adaptive question per turn, at most six for the initial assessment, with skip and
-  early completion. Fit/safety and profile confirmation remain concise explicit steps.
+- One adaptive question per turn with 3-6 relevant choices, multiple selection when
+  appropriate, and optional text. Ask at most six for the initial assessment, with skip
+  and early completion. Fit/safety and profile confirmation remain concise explicit steps.
 - A complete starting plan is free. Do not replace it with three teaser ideas or hide
   its useful content behind checkout. Action count follows need and manageable effort.
 - Paid access covers ongoing coaching, dated progress and observations, follow-up

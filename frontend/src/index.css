@@ -509,3 +509,30 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 .plan-preferences label { display: grid; gap: 6px; margin-top: 12px; color: var(--muted); font-size: 13px; }
 .plan-preferences select { min-height: 44px; padding: 10px; color: var(--ink); font-size: 14px; }
 .plan-view .agent-buttons { margin-top: 16px; }
+
+
+/* Option-first adaptive questions: keep choices readable and tappable on a phone. */
+.adaptive-question-page h2 { font-size: clamp(28px, 5vw, 36px); line-height: 1.16; }
+.question-explanation { margin: 0 0 22px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.question-explanation summary { cursor: pointer; color: var(--sage-deep); }
+.question-explanation p { margin: 8px 0 0; }
+.agent-question-card { width: 100%; }
+.answer-options { min-width: 0; margin: 0 0 20px; padding: 0; border: 0; }
+.answer-options legend { margin-bottom: 12px; color: var(--muted); font-size: 14px; }
+.answer-options-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.answer-option { min-height: 58px; display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: white; color: var(--ink); cursor: pointer; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.answer-option.selected { border-color: var(--forest); background: var(--sage); }
+.answer-option:focus-within { outline: 3px solid rgba(185,111,87,.28); outline-offset: 2px; }
+.answer-option input { flex: 0 0 20px; width: 20px; height: 20px; margin: 0; accent-color: var(--forest); }
+.answer-option span { min-width: 0; }
+.answer-options:disabled .answer-option { cursor: wait; opacity: .65; }
+.answer-extra { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; }
+.agent-question-card textarea { width: 100%; min-height: 80px; padding: 12px; resize: vertical; font-size: 16px; line-height: 1.5; }
+.agent-question-card .agent-buttons { margin-bottom: 0; }
+.adaptive-question-page > .agent-buttons { margin-top: 12px; }
+@media (max-width: 640px) {
+  .answer-options-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .answer-option { min-height: 56px; }
+  .agent-question-card .button { min-height: 46px; font-size: 14px; }
+  .adaptive-question-page > .agent-buttons .button { min-height: 44px; }
+}

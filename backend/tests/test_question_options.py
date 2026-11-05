@@ -7,7 +7,7 @@ from test_agent import agent as agent_fixture
 from test_agent import example_plan, plan, start
 
 from app import agent_provider, agent_store
-from app.agent_models import Decision, GeneratedDecision, Plan, Question
+from app.agent_models import Decision, GeneratedDecision, GeneratedQuestion, Plan, Question
 
 agent = agent_fixture
 
@@ -158,3 +158,50 @@ def test_duplicate_or_blank_option_labels_are_rejected():
                     {"id": "two", "label": label, "exclusive": False},
                 ],
             )
+
+
+def test_legacy_question_gets_options_without_losing_answers_or_consuming_question(
+    agent, monkeypatch
+):
+    client, _ = agent
+    headers, _journey = start(client)
+    access = headers["Authorization"].split()[1]
+    saved = agent_store.read(access)
+    saved.decision.questions[0].options = []
+    agent_store.save(access, saved, saved.revision)
+    before = client.get("/v1/agent/session", headers=headers).json()
+    question = before["decision"]["questions"][0]
+    calls = []
+
+    def options(task, context, output):
+        calls.append(context)
+        return GeneratedQuestion(
+            id="generated",
+            text="A changed wording must not overwrite the question.",
+            why="A rationale",
+            selection_mode="multiple",
+            options=[
+                {"id": str(i), "label": label, "exclusive": False}
+                for i, label in enumerate(["Cleanser", "Moisturizer", "Another step"])
+            ],
+        )
+
+    monkeypatch.setattr(agent_provider, "generate", options)
+    result = client.post(
+        "/v1/agent/question-options", headers=headers, json={"revision": before["revision"]}
+    )
+    assert result.status_code == 200
+    after = result.json()
+    upgraded = after["decision"]["questions"][0]
+    assert upgraded["text"] == question["text"]
+    assert upgraded["id"] == question["id"]
+    assert len(upgraded["options"]) == 3
+    assert after["assessment_count"] == before["assessment_count"]
+    assert after["events"] == before["events"]
+    assert (
+        client.post(
+            "/v1/agent/question-options", headers=headers, json={"revision": after["revision"]}
+        ).json()
+        == after
+    )
+    assert len(calls) == 1

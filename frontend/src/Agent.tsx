@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { QuestionCard } from "./QuestionCard";
 import { PlanView } from "./PlanView";
 import { Brand, Button, Icon, SafetyStrip } from "./ui";
 
-import type { ApiJourney, ApiContext } from "./api.generated";
+import type { ApiJourney, ApiContext, ApiAnswerRequest } from "./api.generated";
 export type Goal = ApiContext["goals"][number];
 export type Journey = ApiJourney;
 
@@ -38,29 +39,27 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
   journey: Journey; update: (journey: Journey) => void; onFinish: () => void;
   busy: boolean; run: (task: () => Promise<void>) => void;
 }) {
-  const [answer, setAnswer] = useState("");
   const question = journey.decision.questions[0];
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { headingRef.current?.focus(); }, [question?.id]);
   const count = journey.mode === "assessment" ? journey.assessment_count : journey.checkin_count;
   const max = journey.mode === "assessment" ? 6 : 3;
-  const submit = (value: string) => run(async () => {
+  const loadOptions = () => run(async () => update(await agentRequest<Journey>("question-options", { revision: journey.revision })));
+  const submit = (payload: Pick<ApiAnswerRequest, "answer" | "selected_option_ids" | "skipped">) => run(async () => {
     const next = await agentRequest<Journey>("answers", {
-      revision: journey.revision, question_id: question.id, answer: value,
+      revision: journey.revision, question_id: question.id, ...payload,
     });
-    update(next); setAnswer("");
+    update(next);
   });
-  return <div className="question-page wide-question">
-    <span className="eyebrow">{journey.mode === "assessment" ? "UNDERSTAND YOUR ROUTINE" : "YOUR FOLLOW-UP"} · {count} OF AT MOST {max} ANSWERED</span>
-    <h2>{question ? "One step at a time." : "We have a useful starting point."}</h2>
-    <p className="prompt-status" aria-live="polite">{journey.decision.summary}</p>
-    {question && <div className="form-sections"><section><span className="form-number">{count + 1}</span><div>
-      <label htmlFor="agent-answer">{question.text}</label><p>{question.why}</p>
-      <textarea id="agent-answer" key={question.id} maxLength={2000} value={answer} disabled={busy} onChange={e => setAnswer(e.target.value)} placeholder="Tell us in your own words…" />
-    </div></section></div>}
-    <div className="agent-buttons">
-      {question && <><Button className="primary" disabled={busy || !answer.trim()} onClick={() => submit(answer.trim())}>{busy ? "Thinking…" : "Continue"}</Button><Button className="secondary" disabled={busy} onClick={() => submit("Skipped; do not assume an answer.")}>Skip question</Button></>}
-      <Button className={question ? "secondary" : "primary"} disabled={busy} onClick={onFinish}>{journey.mode === "assessment" ? "Continue to fit & safety" : "Draft an updated plan"}</Button>
-    </div>
-    <p className="agent-small">Each answer shapes the next question. You can finish early; missing information stays uncertain.</p>
+  return <div className="question-page wide-question adaptive-question-page">
+    <span className="eyebrow">{journey.mode === "assessment" ? "GETTING TO KNOW YOU" : "YOUR FOLLOW-UP"} · {question ? `QUESTION ${count + 1} · UP TO ${max}` : `${count} ANSWERED`}</span>
+    <h2 ref={headingRef} tabIndex={-1}>{question ? question.text : "Your starting point is ready."}</h2>
+    {question ? <>
+      <details className="question-explanation"><summary>Why we ask</summary><p>{question.why}</p></details>
+      <QuestionCard key={question.id} question={question} busy={busy} onSubmit={submit} onLoadOptions={loadOptions} />
+    </> : <p className="prompt-status" role="status">{journey.decision.summary}</p>}
+    <div className="agent-buttons"><Button className={question ? "secondary" : "primary"} disabled={busy} onClick={onFinish}>{journey.mode === "assessment" ? "Continue to fit & safety" : "Draft an updated plan"}</Button></div>
+    <p className="agent-small">Your answers shape the next question. We stop when there’s enough to help, with no more than {max} questions. You can finish early.</p>
   </div>;
 }
 
@@ -107,7 +106,7 @@ export function AgentDashboard({ journey, update, busy, run, onDelete }: {
           update(await agentRequest<Journey>("checkins", { revision: journey.revision, message }));
           setChecking(true);
         })} />}
-        {tab === "Insights" && <div className="insights-view"><h2>What we’re learning</h2><p>Observations, not arbitrary wellness scores.</p><h3>Reported by you</h3><ul>{plan.reported.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Working hypotheses</h3><ul>{plan.hypotheses.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Still uncertain</h3><ul>{plan.uncertainties.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Your answers & check-ins</h3>{journey.events.map((e, i) => <details key={i}><summary>{e.question}</summary><p>{e.answer}</p></details>)}</div>}
+        {tab === "Insights" && <div className="insights-view"><h2>What we’re learning</h2><p>Observations, not arbitrary wellness scores.</p><h3>Reported by you</h3><ul>{plan.reported.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Working hypotheses</h3><ul>{plan.hypotheses.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Still uncertain</h3><ul>{plan.uncertainties.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Your answers & check-ins</h3>{journey.events.map((e, i) => <details key={i}><summary>{e.question}</summary><p>{e.skipped ? "Skipped" : [e.selected_options?.join(", "), e.answer].filter(Boolean).join(" — ")}</p></details>)}</div>}
       </div><aside><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
         update(await agentRequest<Journey>("checkins", { revision: journey.revision, message: message.trim() }));
         setMessage(""); setChecking(true);

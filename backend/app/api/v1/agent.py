@@ -16,6 +16,7 @@ from app.agent_models import (
     Decision,
     Event,
     GeneratedDecision,
+    GeneratedQuestion,
     Journey,
     Plan,
     PlanRequest,
@@ -249,4 +250,30 @@ def complete_action(body: CompletionRequest, access: Access) -> Journey:
                 completed_at=datetime.now(UTC),
             )
         )
+    return store.save(access, journey, body.revision)
+
+
+@router.post(
+    "/question-options", response_model=Journey, operation_id="upgradeAgentQuestionOptions"
+)
+def upgrade_question_options(body: RevisionRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.decision.questions:
+        raise HTTPException(409, "There is no active question.")
+    question = journey.decision.questions[0]
+    if question.options:
+        return journey
+    context = coaching_context(journey)
+    context["current_question"] = {"text": question.text, "why": question.why}
+    generated = provider.generate(
+        "Add 3-6 short probable answer options to this existing question. Keep its exact "
+        "meaning; do not ask a new question. Choose single/multiple selection appropriately "
+        "and mark exclusive choices. Use the goals, description and all previous answers.",
+        context,
+        GeneratedQuestion,
+    )
+    for option in generated.options:
+        option.id = uuid4().hex
+    question.options = generated.options
+    question.selection_mode = generated.selection_mode
     return store.save(access, journey, body.revision)
