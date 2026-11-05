@@ -12,7 +12,9 @@ It configures routing and builds; it does not enable the hosted coaching runtime
 - Set the project Root Directory to the repository root (`.`), not `frontend` or
   `backend`. Enable including files outside service roots if Vercel exposes that
   setting: Vite imports the tracked `.figma/make/site.json` from the repository root.
-- Set Framework Preset to **Services**. The root configuration also declares it.
+- Set the project Framework Preset to **Services** in the Vercel dashboard.
+  Do not add a top-level `framework` property alongside `services` in `vercel.json`;
+  framework values belong to each service (`fastapi` and `vite`).
 - Leave project-wide build/install/output overrides unset; the frontend service
   declares its frozen pnpm install, build script and `dist` output directory.
 - Keep Node.js aligned with CI (22.x). Vercel detects pnpm from the committed lockfile.
