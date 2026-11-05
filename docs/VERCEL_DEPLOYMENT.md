@@ -59,6 +59,39 @@ Keep `REVANA_OPENAI_API_KEY` and `REVANA_OPENAI_MODEL` server-side. Do not copy 
 local `.env`, SQLite database, real profiles or photos into GitHub or deployment files.
 A key alone does not satisfy the hosted readiness gate.
 
+## Importing OpenAI environment variables
+
+The backend already reads process environment variables through its `REVANA_` settings
+prefix. No frontend key, code change, or `vercel.json` secret value is required.
+
+The repository-root `.env.example` is an import template with an empty key and the
+selected Terra model. To prepare an actual import file from this computer's existing
+backend `.env` (or process environment), run in PowerShell from the repository root:
+
+```powershell
+.\backend\.venv\Scripts\python.exe backend/scripts/export_vercel_env.py
+```
+
+This creates `.env.vercel.local` at the repository root, containing only:
+
+- `REVANA_OPENAI_API_KEY` (the existing local value, never printed)
+- `REVANA_OPENAI_MODEL` (the existing local value)
+
+The generated file contains a real secret and is ignored by Git. Do not force-add it,
+share its contents, or place it in `frontend/`. The helper excludes local database,
+origin and development-mode settings so these cannot accidentally configure hosting.
+
+In Vercel Project Settings > Environment Variables, use the `.env` import control to
+import this local file. Select Production for `main`; optionally configure Preview
+separately for protected feature deployments. Mark the API key as Secret/sensitive.
+Do not prefix either variable with `VITE_` or expose it through Vite's `define`/`envPrefix`.
+Vercel Services may share project environment variables, so server-only usage must
+also be enforced by the frontend build: these names are not exported to the browser.
+Redeploy after saving variables for them to apply to the next deployment.
+
+This step stages credentials only; the hosted runtime gate described above remains.
+The helper does not upload anything to Vercel. Actual dashboard import is separate.
+
 ## Validation and remaining external checks
 
 Validate the JSON against the current published Vercel schema, build the frontend,
