@@ -54,6 +54,12 @@ def agent(monkeypatch, tmp_path):
                     id="provider-id",
                     text=f"What is your routine detail {len(context['events']) + 1}?",
                     why="Avoid suggesting duplicate steps.",
+                    options=[
+                        {"id": "cleanser", "label": "Cleanser", "exclusive": False},
+                        {"id": "moisturizer", "label": "Moisturizer", "exclusive": False},
+                        {"id": "unsure", "label": "Not sure", "exclusive": True},
+                    ],
+                    selection_mode="multiple",
                 )
             ],
         )

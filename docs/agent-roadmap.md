@@ -14,10 +14,22 @@ This update changes the delivery plan; it does not implement the new behavior be
   expandable details are integrated with check-ins. Suggested actions are not completions.
 - Export/delete and browser resume exist. API/client contracts are generated and checked.
 - The current code still saves raw answer events, sends journey context to the provider,
-  has no dedicated product-role prompt file, no hosted user accounts and no payment gates.
+  has no hosted user accounts and no payment gates. Coaching instructions now live in
+  `backend/app/prompts/coach.md` and are packaged with the backend.
   Historical answers can be displayed/exported. Removing those paths is upcoming work.
 - Live clinical recommendation quality is not established by synthetic integration tests.
   Public hosting remains blocked pending authorization, storage and operational gates.
+
+## Selectable-question backend checkpoint (2026-11-05)
+
+The question contract now supports 3-6 generated options, appropriate single/multiple
+selection, exclusive answers, optional additional text and explicit skips. The backend
+validates choices against the active question and passes chosen labels plus text to
+subsequent questions and the single overall plan. Unselected suggestions are excluded
+from model context. Legacy saved text-only questions remain readable and answerable.
+The six-question cap is a ceiling; the agent can finish early. Mobile option controls
+are the next UI checkpoint. This does not implement profile consolidation, payment or
+reviewed evidence retrieval.
 
 ## Target release
 

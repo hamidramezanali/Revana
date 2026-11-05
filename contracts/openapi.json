@@ -103,12 +103,40 @@
         "title": "AgentStatus",
         "type": "object"
       },
+      "AnswerOption": {
+        "additionalProperties": false,
+        "properties": {
+          "exclusive": {
+            "title": "Exclusive",
+            "type": "boolean"
+          },
+          "id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "exclusive"
+        ],
+        "title": "AnswerOption",
+        "type": "object"
+      },
       "AnswerRequest": {
         "additionalProperties": false,
         "properties": {
           "answer": {
+            "default": "",
             "maxLength": 2000,
-            "minLength": 1,
             "title": "Answer",
             "type": "string"
           },
@@ -122,12 +150,24 @@
             "minimum": 0.0,
             "title": "Revision",
             "type": "integer"
+          },
+          "selected_option_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Selected Option Ids",
+            "type": "array"
+          },
+          "skipped": {
+            "default": false,
+            "title": "Skipped",
+            "type": "boolean"
           }
         },
         "required": [
           "revision",
-          "question_id",
-          "answer"
+          "question_id"
         ],
         "title": "AnswerRequest",
         "type": "object"
@@ -328,6 +368,18 @@
           "question": {
             "title": "Question",
             "type": "string"
+          },
+          "selected_options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Selected Options",
+            "type": "array"
+          },
+          "skipped": {
+            "default": false,
+            "title": "Skipped",
+            "type": "boolean"
           }
         },
         "required": [
@@ -598,6 +650,23 @@
             "maxLength": 80,
             "minLength": 1,
             "title": "Id",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerOption"
+            },
+            "maxItems": 6,
+            "title": "Options",
+            "type": "array"
+          },
+          "selection_mode": {
+            "default": "multiple",
+            "enum": [
+              "single",
+              "multiple"
+            ],
+            "title": "Selection Mode",
             "type": "string"
           },
           "text": {

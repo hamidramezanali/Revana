@@ -15,6 +15,7 @@ from app.agent_models import (
     CompletionRequest,
     Decision,
     Event,
+    GeneratedDecision,
     Journey,
     Plan,
     PlanRequest,
@@ -54,6 +55,13 @@ def load(access: str, revision: int) -> Journey:
     return journey
 
 
+def coaching_context(journey: Journey) -> dict:
+    context = journey.model_dump(mode="json")
+    # Do not prime the model with unselected suggestions from the previous question.
+    context.pop("decision", None)
+    return context
+
+
 def decide(journey: Journey) -> Decision:
     limit = MAX_QUESTIONS if journey.mode == "assessment" else MAX_CHECKIN_QUESTIONS
     count = journey.assessment_count if journey.mode == "assessment" else journey.checkin_count
@@ -66,9 +74,12 @@ def decide(journey: Journey) -> Decision:
     decision = provider.generate(
         f"Decide the next question or finish now. {limit - count} questions remain in this "
         "cycle. Return ready=true with no questions when enough is known. Otherwise ask "
-        "exactly one question. Use a concise summary of what the user actually reported.",
-        journey.model_dump(mode="json"),
-        Decision,
+        "exactly one focused question with 3-6 short answer options. Choose single or "
+        "multiple selection appropriately. Ask only for missing information that changes "
+        "the plan; use the initial description and ALL answers. Stop early rather than "
+        "filling the remaining quota. Use a concise summary of actual user reports.",
+        coaching_context(journey),
+        GeneratedDecision,
     )
     if decision.ready:
         decision.questions = []
@@ -81,6 +92,8 @@ def decide(journey: Journey) -> Decision:
         if question.text.strip().casefold() in previous:
             raise HTTPException(502, "The agent repeated an answered question. Please retry.")
         question.id = uuid4().hex
+        for option in question.options:
+            option.id = uuid4().hex
     return decision
 
 
@@ -117,9 +130,22 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
     if not journey.decision.questions or journey.decision.questions[0].id != body.question_id:
         raise HTTPException(409, "This question is no longer active.")
     question = journey.decision.questions[0]
+    available = {option.id: option for option in question.options}
+    if any(option_id not in available for option_id in body.selected_option_ids):
+        raise HTTPException(422, "Choose from the current question's options.")
+    selected = [available[option_id] for option_id in body.selected_option_ids]
+    if len(selected) > 1 and (
+        question.selection_mode == "single" or any(option.exclusive for option in selected)
+    ):
+        raise HTTPException(422, "These options cannot be selected together.")
     journey.events.append(
         Event(
-            kind="answer", question=question.text, answer=body.answer, created_at=datetime.now(UTC)
+            kind="answer",
+            question=question.text,
+            answer=body.answer.strip(),
+            selected_options=[option.label for option in selected],
+            skipped=body.skipped,
+            created_at=datetime.now(UTC),
         )
     )
     if journey.mode == "assessment":
@@ -141,10 +167,12 @@ def plan(body: PlanRequest, access: Access) -> Journey:
     if journey.proposal is not None:
         raise HTTPException(409, "Accept or start another check-in before generating again.")
     generated = provider.generate(
-        "Create an overall personal plan from this journey. Respect skipped/unknown answers. "
+        "Create ONE coherent personal plan using the initial goals/description, ALL "
+        "answer events (selected_options plus any additional answer text), and preferences. "
+        "Unselected options are not user reports. Respect skipped/unknown answers. "
         "For a revision, explain changes from the latest accepted plan. Do not fabricate facts. "
         "If safety constraints prevent specific advice, prioritize professional guidance.",
-        journey.model_dump(mode="json"),
+        coaching_context(journey),
         Plan,
     )
     if journey.plans:

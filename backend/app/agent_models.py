@@ -31,10 +31,28 @@ class StartRequest(Model):
     consent: Literal[True]
 
 
+class AnswerOption(Model):
+    id: str = Field(min_length=1, max_length=80)
+    label: str = Field(min_length=1, max_length=120)
+    exclusive: bool
+
+
 class Question(Model):
     id: str = Field(min_length=1, max_length=80)
     text: str = Field(min_length=1, max_length=500)
     why: str = Field(min_length=1, max_length=500)
+    # Defaults preserve saved journeys from before selectable questions were added.
+    options: list[AnswerOption] = Field(default_factory=list, max_length=6)
+    selection_mode: Literal["single", "multiple"] = "multiple"
+
+    @model_validator(mode="after")
+    def distinct_options(self):
+        if len({option.id for option in self.options}) != len(self.options):
+            raise ValueError("Option IDs must be unique.")
+        labels = {option.label.strip().casefold() for option in self.options}
+        if "" in labels or len(labels) != len(self.options):
+            raise ValueError("Option labels must be distinct and nonempty.")
+        return self
 
 
 class Decision(Model):
@@ -43,10 +61,33 @@ class Decision(Model):
     questions: list[Question] = Field(max_length=1)
 
 
+class GeneratedQuestion(Question):
+    # All output properties must be required for the strict provider schema.
+    options: list[AnswerOption] = Field(min_length=3, max_length=6)
+    selection_mode: Literal["single", "multiple"] = Field(...)
+
+
+class GeneratedDecision(Decision):
+    questions: list[GeneratedQuestion] = Field(max_length=1)
+
+
 class AnswerRequest(Model):
     revision: int = Field(ge=0)
     question_id: str = Field(min_length=1, max_length=80)
-    answer: str = Field(min_length=1, max_length=2000)
+    answer: str = Field(default="", max_length=2000)
+    selected_option_ids: list[str] = Field(default_factory=list, max_length=6)
+    skipped: bool = False
+
+    @model_validator(mode="after")
+    def meaningful_answer(self):
+        if self.skipped:
+            if self.answer.strip() or self.selected_option_ids:
+                raise ValueError("A skipped question cannot include answers.")
+        elif not self.answer.strip() and not self.selected_option_ids:
+            raise ValueError("Choose an option or add an answer.")
+        if len(set(self.selected_option_ids)) != len(self.selected_option_ids):
+            raise ValueError("Selected option IDs must be distinct.")
+        return self
 
 
 class RevisionRequest(Model):
@@ -112,6 +153,8 @@ class Event(Model):
     question: str
     answer: str
     created_at: datetime
+    selected_options: list[str] = Field(default_factory=list)
+    skipped: bool = False
 
 
 class Journey(Model):
