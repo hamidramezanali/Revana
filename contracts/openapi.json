@@ -200,6 +200,19 @@
             "title": "Answer",
             "type": "string"
           },
+          "photo_consent": {
+            "default": false,
+            "title": "Photo Consent",
+            "type": "boolean"
+          },
+          "photos": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Photos",
+            "type": "array"
+          },
           "question_id": {
             "maxLength": 80,
             "minLength": 1,
@@ -425,6 +438,23 @@
             "title": "Kind",
             "type": "string"
           },
+          "photo_count": {
+            "default": 0,
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Photo Count",
+            "type": "integer"
+          },
+          "photo_notes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhotoNotes"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "title": "Question",
             "type": "string"
@@ -569,6 +599,74 @@
           "decision"
         ],
         "title": "Journey",
+        "type": "object"
+      },
+      "PhotoNotes": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "observations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Observations",
+            "type": "array"
+          },
+          "uncertainties": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "observations",
+          "uncertainties"
+        ],
+        "title": "PhotoNotes",
+        "type": "object"
+      },
+      "PhotoNotesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "discard": {
+            "default": false,
+            "title": "Discard",
+            "type": "boolean"
+          },
+          "event_index": {
+            "maximum": 104.0,
+            "minimum": 0.0,
+            "title": "Event Index",
+            "type": "integer"
+          },
+          "observations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Observations",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "event_index"
+        ],
+        "title": "PhotoNotesRequest",
         "type": "object"
       },
       "Plan": {
@@ -784,6 +882,17 @@
             "maxItems": 6,
             "title": "Options",
             "type": "array"
+          },
+          "photo_mode": {
+            "default": "none",
+            "enum": [
+              "none",
+              "products",
+              "skin",
+              "hair"
+            ],
+            "title": "Photo Mode",
+            "type": "string"
           },
           "selection_mode": {
             "default": "multiple",
@@ -1587,6 +1696,112 @@
           }
         ],
         "summary": "Discard Proposal",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/photo-notes": {
+      "post": {
+        "operationId": "reviewAgentPhotoNotes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoNotesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Review Photo Notes",
         "tags": [
           "agent"
         ]

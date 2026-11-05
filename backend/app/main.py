@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import router as v1_router
+from app.body_limit import AgentBodyLimit
 from app.config import get_settings
 from app.errors import register_error_handlers
 
@@ -54,6 +55,7 @@ def create_app() -> FastAPI:
         response.headers["Cache-Control"] = "no-store"
         return response
 
+    app.add_middleware(AgentBodyLimit)
     register_error_handlers(app)
     app.include_router(v1_router)
     return app

@@ -180,6 +180,7 @@ def test_legacy_question_gets_options_without_losing_answers_or_consuming_questi
             text="A changed wording must not overwrite the question.",
             why="A rationale",
             selection_mode="multiple",
+            photo_mode="none",
             options=[
                 {"id": str(i), "label": label, "exclusive": False}
                 for i, label in enumerate(["Cleanser", "Moisturizer", "Another step"])

@@ -44,6 +44,7 @@ class Question(Model):
     # Defaults preserve saved journeys from before selectable questions were added.
     options: list[AnswerOption] = Field(default_factory=list, max_length=6)
     selection_mode: Literal["single", "multiple"] = "multiple"
+    photo_mode: Literal["none", "products", "skin", "hair"] = "none"
 
     @model_validator(mode="after")
     def distinct_options(self):
@@ -65,6 +66,7 @@ class GeneratedQuestion(Question):
     # All output properties must be required for the strict provider schema.
     options: list[AnswerOption] = Field(min_length=3, max_length=6)
     selection_mode: Literal["single", "multiple"] = Field(...)
+    photo_mode: Literal["none", "products", "skin", "hair"] = Field(...)
 
 
 class GeneratedDecision(Decision):
@@ -77,14 +79,18 @@ class AnswerRequest(Model):
     answer: str = Field(default="", max_length=2000)
     selected_option_ids: list[str] = Field(default_factory=list, max_length=6)
     skipped: bool = False
+    photos: list[str] = Field(default_factory=list, max_length=3)
+    photo_consent: bool = False
 
     @model_validator(mode="after")
     def meaningful_answer(self):
         if self.skipped:
-            if self.answer.strip() or self.selected_option_ids:
+            if self.answer.strip() or self.selected_option_ids or self.photos:
                 raise ValueError("A skipped question cannot include answers.")
-        elif not self.answer.strip() and not self.selected_option_ids:
+        elif not self.answer.strip() and not self.selected_option_ids and not self.photos:
             raise ValueError("Choose an option or add an answer.")
+        if self.photos and (not self.photo_consent or any(len(p) > 2_000_000 for p in self.photos)):
+            raise ValueError("Photo consent and supported size are required.")
         if len(set(self.selected_option_ids)) != len(self.selected_option_ids):
             raise ValueError("Selected option IDs must be distinct.")
         return self
@@ -92,6 +98,27 @@ class AnswerRequest(Model):
 
 class RevisionRequest(Model):
     revision: int = Field(ge=0)
+
+
+class PhotoReading(Model):
+    observations: list[str] = Field(max_length=6)
+    uncertainties: list[str] = Field(min_length=1, max_length=4)
+
+
+class PhotoNotes(PhotoReading):
+    confirmed: bool = False
+
+
+class PhotoNotesRequest(RevisionRequest):
+    event_index: int = Field(ge=0, le=104)
+    observations: list[str] = Field(default_factory=list, max_length=6)
+    discard: bool = False
+
+    @model_validator(mode="after")
+    def bounded_notes(self):
+        if any(not item.strip() or len(item) > 500 for item in self.observations):
+            raise ValueError("Use up to six short nonempty observations.")
+        return self
 
 
 class PlanRequest(RevisionRequest):
@@ -201,6 +228,8 @@ class Event(Model):
     created_at: datetime
     selected_options: list[str] = Field(default_factory=list)
     skipped: bool = False
+    photo_count: int = Field(default=0, ge=0, le=3)
+    photo_notes: PhotoNotes | None = None
 
 
 class Journey(Model):

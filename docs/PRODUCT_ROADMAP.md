@@ -33,7 +33,7 @@ Do not promise recommendations unavailable elsewhere or superiority to medical c
 - Sweden and Scandinavia first; globally usable data and language foundations.
 - Retain existing goal support, while positioning skin/hair and relevant lifestyle as
   the primary experience. This is not positioned as a dedicated fitness coach.
-- Adults first. Voice, photo assessment, native apps and professional-service discovery
+- Adults first. Voice, native apps and professional-service discovery
   are later additions, not prerequisites for this release.
 
 ## Mobile journey
@@ -184,3 +184,23 @@ Each checkpoint gets relevant validation, a focused commit and a GitHub push. Pr
 reviewable pull requests per coherent slice; do not collect unrelated work in one large
 commit. A push is not authorization to merge or deploy. Update current-state docs as
 each slice lands; never present a planned feature as shipped.
+
+
+## Optional questionnaire photos and restarting (2026-11-05)
+
+Relevant product, skin and hair/scalp questions may offer up to three optional JPG,
+PNG or WebP photos. Choices, text, photos or combinations are accepted; nonvisual
+questions still need text/choices or an explicit skip. Images are context, not a
+clinical assessment. The six-question ceiling still applies. The user must review,
+correct or discard visual observations before the next question or plan generation.
+Notes remain distinct from reported symptoms, routines and causal hypotheses.
+
+Photos are re-encoded from pixels to remove metadata, sent to the configured OpenAI
+model only after explicit photo consent, and not written to journey storage, exports
+or image files by the app. Reviewed notes and photo counts are saved. Provider retention
+is separate. This does not implement the broader care-profile/raw-chat retention work.
+
+Profile settings are reachable from the dashboard header and My plan. Delete profile
+& start over requires confirmation, deletes this journey from the local backend,
+forgets its browser token, and returns to direction/goals and a new assessment.
+Deletion does not remove existing exports, backups or previously transmitted provider data.

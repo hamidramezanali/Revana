@@ -134,3 +134,36 @@ Validation: TypeScript and Vite production build; browser navigation, restoratio
 phone-width layout checks. No provider requests or saved-plan mutations are required
 for navigation. The requested in-app preview is left at 390 by 844 pixels; this is
 viewport emulation, not a physical iOS/Android browser test.
+
+
+## Questionnaire photos and profile restart (2026-11-05)
+
+Questions now expose photo_mode (none/products/skin/hair); generated questions must
+choose it explicitly. Legacy questions default to none. Optional photos can accompany
+choices/text or answer a visual question alone. Up to three photos are accepted, each
+at most 1.5 MB after resizing; the browser accepts original JPG/PNG/WebP under 10 MB
+and resizes to a 1536-pixel longest edge. The backend validates base64, actual format,
+still-image/pixel bounds, strips metadata by re-encoding, and limits aggregate request
+bodies to 6.1 MB. No URLs, SVG, animated or undecodable images are accepted.
+
+The Responses adapter sends temporary input_image content with store:false. It does
+not upload Files or persist original images. A structured PhotoReading is saved as
+unconfirmed photo_notes alongside a photo count, separately from the user's answer.
+The next decision and plan are gated until `/v1/agent/photo-notes` confirms edited
+observations or discards them. Confirmation does not consume another question. A
+failed extraction, confirmation generation or revision conflict leaves saved state
+unchanged. On photo-only discard the event becomes an explicit skip. User-reviewed
+notes remain uncertain visual observations, not diagnoses or assumed product use.
+Existing raw chat retention, provider retention and backups are separate concerns.
+
+Profile settings and My plan expose Delete profile & start over. A native confirmation
+dialog explains local deletion and exports/backups/provider limits. Only successful
+DELETE clears the browser capability and profile state and returns to the first step.
+Cancel keeps the journey. A failed delete retains the profile for retry. Stale old
+plan routes are guarded after restart. Local key/model configuration is unchanged.
+
+Validation uses generated images, temporary SQLite and mocked provider responses.
+Live skin/hair interpretation and physical phone camera behavior are not clinically
+or device validated. The selected gpt-6.1-terra supports image input according to
+[official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
+Image payload format follows the [Responses image guide](https://developers.openai.com/api/docs/guides/images-vision?api-mode=responses).

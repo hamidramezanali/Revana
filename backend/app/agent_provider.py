@@ -12,10 +12,26 @@ from app.config import get_settings
 POLICY = files("app").joinpath("prompts/coach.md").read_text(encoding="utf-8")
 
 
-def generate[T: BaseModel](task: str, context: dict, output: type[T]) -> T:
+def generate[T: BaseModel](
+    task: str, context: dict, output: type[T], *, images: list[str] | None = None
+) -> T:
     settings = get_settings()
     if not settings.openai_api_key or not settings.openai_model:
         raise HTTPException(503, "Configure the backend OpenAI key and model to use the agent.")
+    model_input: str | list = json.dumps(context, ensure_ascii=False)
+    if images:
+        model_input = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": model_input},
+                    *[
+                        {"type": "input_image", "image_url": value, "detail": "high"}
+                        for value in images
+                    ],
+                ],
+            }
+        ]
     try:
         with httpx.Client(timeout=45) as client:
             response = client.post(
@@ -26,7 +42,7 @@ def generate[T: BaseModel](task: str, context: dict, output: type[T]) -> T:
                     "store": False,
                     "max_output_tokens": 4500,
                     "instructions": POLICY + "\n" + task,
-                    "input": json.dumps(context, ensure_ascii=False),
+                    "input": model_input,
                     "text": {
                         "format": {
                             "type": "json_schema",

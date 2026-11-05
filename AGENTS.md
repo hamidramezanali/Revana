@@ -29,7 +29,9 @@ packaged by the backend; this AGENTS.md remains developer guidance. New adaptive
 questions offer 3-6 choices with suitable single/multiple selection and optional text.
 Only selected choices and typed answers are reports; suggestions are not profile facts.
 Sweden/Scandinavia first; keep locale/country/timezone/currency/units separate. English
-is acceptable initially. Voice and photos are later scope.
+is acceptable initially. Voice is later scope. Relevant questionnaire photos are now
+optional: process temporarily, strip metadata, and require review of visual notes before
+continuing. Never persist raw images or confuse photo observations with user reports.
 
 ## Repository
 
