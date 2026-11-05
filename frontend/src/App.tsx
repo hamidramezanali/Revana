@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Brand, Button, Icon, SafetyStrip, type IconName } from "./ui";
 import { AdaptiveQuestions, AgentAnalysis, AgentDashboard, AgentError, agentRequest, forgetToken, savedToken, startJourney, type Journey } from "./Agent";
 
+import { AppDialog } from "./ProfileSettings";
 import { navigate, useScreenNavigation, type Screen } from "./navigation";
 type Goal = "skin" | "hair" | "body" | "energy" | "other";
 
@@ -129,7 +130,7 @@ function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (
         </section>
         <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
       </div>
-      <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved on this computer’s backend and sent to OpenAI when generating questions or plans. Photo uploads are not supported.</span></div>
+      <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved on this computer’s backend and sent to OpenAI when generating questions or plans. Some questions allow optional photos. Photos are processed temporarily; reviewed visual notes can be saved.</span></div>
       <Button className="primary continue" onClick={next}>Connect the dots <Icon name="arrow" /></Button>
     </div>
   );
@@ -190,12 +191,12 @@ function App() {
   const deleteJourney = () => void run(async () => {
     await agentRequest("session", undefined, "DELETE");
     forgetToken(); setJourney(null); setProfile(initialProfile); setConsent(false);
-    setDeleteConfirm(false); setScreen("welcome");
+    setDeleteConfirm(false); setError(""); navigate("timeline", true);
   });
   if (restoring) return <main className="question-page"><p role="status">Restoring your journey…</p></main>;
   return <>
     {error && <div className="agent-banner"><AgentError error={error} /><Button className="secondary" disabled={busy} onClick={() => window.location.reload()}>Reload saved journey</Button>{!journey && savedToken() && <><p className="agent-small">If this backend no longer has your journey, you can forget this browser link and start again. This does not delete data from another backend or a backup.</p><Button className="secondary" disabled={busy} onClick={() => { forgetToken(); setError(""); setScreen("welcome"); }}>Forget browser link and start again</Button></>}</div>}
-    {deleteConfirm && <div className="agent-banner" role="alert"><p>Delete this saved journey, all answers and plan versions? Export first if you want a copy.</p><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(false)}>Keep journey</Button> <Button className="primary" disabled={busy} onClick={deleteJourney}>Delete permanently</Button></div>}
+    {deleteConfirm && <AppDialog title="Delete profile and start over?" busy={busy} onClose={() => setDeleteConfirm(false)}><p>This permanently deletes your current answers, photo notes, plans, kept actions and progress from this backend. You’ll start again from the first questions.</p><p>Export first if you want a copy. Existing exports, backups and data already sent to OpenAI are separate.</p><div className="agent-buttons"><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(false)}>Keep my profile</Button><Button className="danger" disabled={busy} onClick={deleteJourney}>{busy ? "Deleting…" : "Delete & start over"}</Button></div>{error && <AgentError error={error} />}</AppDialog>}
     {screen === "dashboard" && journey && journey.plans.length > 0 ? <AgentDashboard journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onDelete={() => setDeleteConfirm(true)} onBack={() => setScreen("analysis")} />
     : screen === "analysis" && journey && journey.plans.length > 0 ? <AgentAnalysis journey={journey} onPlan={() => setScreen("dashboard")} onBack={() => setScreen("welcome")} />
     : <OnboardingShell screen={screen} setScreen={setScreen}>
@@ -206,7 +207,7 @@ function App() {
         setJourney(await startJourney({ goals: profile.goals.length ? profile.goals : ["other"], description: profile.ownWords.slice(0, 2000), target_date: profile.targetDate }));
       })}>{busy ? "Preparing your first question…" : "Start my assessment"}</Button></div> : <AdaptiveQuestions journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onFinish={() => setScreen("safety")} />)}
       {screen === "safety" && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}
-      {journey && !journey.plans.length && <div className="agent-banner"><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(true)}>Delete assessment and start again</Button></div>}
+      {journey && !journey.plans.length && <div className="agent-banner"><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(true)}>Delete profile & start over</Button></div>}
     </OnboardingShell>}
   </>;
 }
