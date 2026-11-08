@@ -212,15 +212,16 @@ forgets its browser token, and returns to direction/goals and a new assessment.
 Deletion does not remove existing exports, backups or previously transmitted provider data.
 
 
-### Update: photos on every question
+### Update: selective photo answers (2026-11-08)
 
-Optional Add photos is now always available while answering a question, including
-existing questions whose photo_mode is none. The field is a guidance hint, not an
-upload gate. The backend accepts photo-only answers and photos with choices/text on
-all questions. Visual notes remain subject to consent, temporary handling and user
-review. Photos never establish sensations, duration or other missing nonvisual facts.
-This supersedes the earlier restriction to visually classified questions.
-
+The generated question's photo_mode now controls whether the browser offers a photo
+answer. The LLM defaults to none and chooses products, skin or hair only when an
+image can materially help answer that particular question. Duration, sensations,
+history, diet, budget and preferences do not show an upload option. Existing/legacy
+questions with none also hide it. Visual questions retain optional photos, explicit
+consent, temporary processing and review of observations. No extra LLM call is needed:
+this decision is part of generating each adaptive question. The backend still accepts
+previously prepared photo answers from older clients, preserving consent and review.
 
 ### Hosting configuration update
 

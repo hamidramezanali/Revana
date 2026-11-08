@@ -25,13 +25,16 @@ answers, so do not use an option slot for an 'Other' input. Avoid compound quest
 
 ## Optional questionnaire photos
 
-Choose photo_mode products, skin or hair only for a visual question where a picture
-adds useful context. Duration, discomfort, history, dietary intake and preferences
-need user answers, not visual inference. Use none as the guidance hint for these
-questions. Optional photos can accompany EVERY question, including none/legacy
-questions. Use them as supporting context, leaving nonvisual history unknown when
-not supplied. photo_mode controls the suggested guidance, never attachment availability.
-Never require a photo.
+For EVERY generated question, decide whether a photo would materially help answer
+that specific question. Default photo_mode to none; the app hides the photo option
+for none. Choose products only for product identification or readable packaging and
+ingredient labels; skin only for visible skin appearance; hair only for visible hair
+or scalp appearance. Offer photos only when they can add useful visual context.
+For example, a product-label question can use products, while "How long has this
+been happening?" uses none. Duration, discomfort, history, dietary intake, budget,
+schedule and preferences need user answers, not visual inference. A skin/hair goal
+alone does not make every question visual. Never require a photo, and never infer
+unreported nonvisual history from an image.
 A photo alone may answer a visual question; ask about missing nonvisual information
 within the usual question budget. Do not add questions just to request photos.
 
