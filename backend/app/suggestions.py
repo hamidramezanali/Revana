@@ -1,18 +1,28 @@
 """Independent suggestion batches and a durable user-selected list."""
 
+import re
 from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app import agent_provider as provider
-from app.agent_models import CoachTurn, Journey, SuggestionBatch, SuggestionBoard, SuggestionRequest
+from app import workflow
+from app.agent_models import (
+    CoachResponse,
+    CoachTurn,
+    Journey,
+    SuggestionBatch,
+    SuggestionBoard,
+    SuggestionRequest,
+)
 from app.plan_revision import current_preferences, normalized
 
 
 def board_for(journey: Journey) -> SuggestionBoard:
     if journey.suggestion_board is not None:
         return journey.suggestion_board
+    if not journey.plans:
+        return SuggestionBoard()
     current = journey.plans[-1].plan
     choices = {item.action_id: item.choice for item in current_preferences(journey)}
     return SuggestionBoard(
@@ -38,6 +48,7 @@ def conversation_context(board: SuggestionBoard) -> list[dict]:
 
 
 def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) -> SuggestionBoard:
+    workflow.begin(journey)
     board = board_for(journey).model_copy(deep=True)
     question = board.pending_question if request.question_id else None
     selected = []
@@ -71,7 +82,15 @@ def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) 
         "selected_answers": [option.label for option in selected],
         "skipped": request.skipped,
     }
-    batch = provider.generate(
+    context = workflow.context_for(journey, context)
+    turn_source = uuid4().hex
+    journey.workflow.report_source = turn_source
+    context["reports_by_source"][f"turn-{turn_source}"] = "\n".join(
+        [*[option.label for option in selected], request.message.strip()]
+    )
+    journey.workflow.stages.append("coach")
+    coach = workflow.stage(
+        "coach",
         "Respond to the person's LATEST message and selected answers in suggestion_request "
         "as the primary conversational request. Earlier goals and the accepted plan are "
         "background; follow explicit changes in direction while retaining relevant safety "
@@ -94,8 +113,43 @@ def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) 
         "with repeats. Never claim suggestions were completed. Include applicable safety "
         "notes. No replaces_action_id is needed.",
         context,
-        SuggestionBatch,
+        CoachResponse,
     )
+    workflow.absorb(journey, coach, context)
+    journey.research_intent = getattr(coach, "research", None)
+    workflow.research(journey, journey.research_intent)
+    ready = getattr(coach, "ready_for_plan", bool(coach.actions or not coach.questions))
+    if ready:
+        batch = workflow.plan(
+            journey,
+            "Offer specific useful action alternatives answering the current request. Honor requested breadth, including ten when requested. Do not ask questions; the coach handles them. Explain coherent priorities and two sensible starts when useful. Populate reply/actions/safety_notes; questions must be empty.",
+            {**context, "coach_response": coach.model_dump(mode="json")},
+            SuggestionBatch,
+        )
+        batch.questions = coach.questions
+        if journey.workflow.review and not journey.workflow.review.approved:
+            batch.reply = (
+                journey.workflow.review.public_summary
+                + "\n\nI could not yet produce options that pass the checks for your request. "
+                + " ".join(journey.workflow.review.issues)
+                + " Please clarify what matters most or ask for another approach."
+            )
+    else:
+        batch = coach
+        if workflow.visible_actions(journey):
+            workflow.review(journey, context, coach)
+    if batch.actions and journey.workflow.review and journey.workflow.review.approved:
+        checked = {
+            c.action_id for c in journey.workflow.review.action_checks if c.status == "compatible"
+        }
+        shown = sum(action.id in checked for action in batch.actions)
+        withheld = len(batch.actions) - shown
+        if withheld:
+            batch.reply = (
+                journey.workflow.review.public_summary
+                + f"\n\n{shown} reviewed alternatives are available below. {withheld} additional options need clarification or refinement and are withheld. The highlighted options are possible starting points; you do not need to do everything at once."
+            )
+    batch.reply = re.sub(r"\bsource-\d+\b:?\s*", "", batch.reply)
     protected = [*board.kept, *[a for a in board.seen if a.id in board.rejected_ids]]
     titles = {normalized(a.title) for a in protected}
     details = {normalized(a.detail) for a in protected}
@@ -104,7 +158,6 @@ def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) 
             raise HTTPException(502, "The coach repeated a previous suggestion. Please retry.")
         titles.add(normalized(action.title))
         details.add(normalized(action.detail))
-        action.id = uuid4().hex
     if batch.actions:
         board.suggestions = batch.actions
     board.seen.extend(a.model_copy(deep=True) for a in batch.actions)
@@ -112,6 +165,8 @@ def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) 
     board.rounds += 1
     board.conversation.append(
         CoachTurn(
+            source_id=turn_source,
+            event_count=len(journey.events),
             created_at=datetime.now(UTC),
             message=request.message.strip(),
             selected_answers=[option.label for option in selected],

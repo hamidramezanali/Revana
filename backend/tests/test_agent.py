@@ -6,8 +6,8 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app import agent_provider, agent_store
-from app.agent_models import Decision, Plan, Question
+from app import agent_provider, agent_store, workflow
+from app.agent_models import ActionCheck, Decision, Plan, Question, ReviewResult
 from app.config import get_settings
 from app.main import create_app
 
@@ -48,6 +48,32 @@ def agent(monkeypatch, tmp_path, request):
         monkeypatch.setenv("REVANA_DATABASE_URL", os.environ["REVANA_TEST_DATABASE_URL"])
     get_settings.cache_clear()
     calls = []
+
+    # Legacy endpoint regressions use a deterministic compatible reviewer. Dedicated
+    # workflow tests restore the real orchestrator and verify provider role payloads.
+    def compatible_review(journey, context, draft):
+        actions = {a.id: a for a in workflow.visible_actions(journey)}
+        actions.update({a.id: a for a in getattr(draft, "actions", [])})
+        result = ReviewResult(
+            approved=True,
+            issues=[],
+            correction="",
+            limitations=[],
+            action_checks=[
+                ActionCheck(
+                    action_id=value,
+                    status="compatible",
+                    reason="Synthetic compatible action",
+                    source_ids=[],
+                )
+                for value in actions
+            ],
+            suggested_starts=[],
+        )
+        journey.workflow.review = result
+        return result
+
+    monkeypatch.setattr(workflow, "review", compatible_review)
 
     def generate(task, context, output):
         calls.append((task, context))

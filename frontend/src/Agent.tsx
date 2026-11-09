@@ -123,13 +123,13 @@ export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }:
     update(await agentRequest<Journey>("suggestion-choice", { revision: journey.revision, action_id: actionId, choice }));
   });
   const reshuffle = (message: string, answer?: CoachAnswer) => run(async () => {
-    update(await agentRequest<Journey>("suggestions", { revision: journey.revision, message, ...answer }));
+    update(await agentRequest<Journey>("coach", { revision: journey.revision, message, ...(answer ? {question_id: answer.question_id, selected_option_ids: answer.selected_option_ids, skipped: answer.skipped} : {}) }));
     setPlanMessage("");
   });
   const completeAction = (actionId: string) => run(async () => {
     update(await agentRequest<Journey>("actions", { revision: journey.revision, action_id: actionId, completed: !completed.includes(actionId) }));
   });
-  const actionSection = <PlanActions journey={journey} busy={busy} note={planMessage} onNoteChange={setPlanMessage} onChoice={chooseAction} onReshuffle={reshuffle} onComplete={completeAction} />;
+  const actionSection = <PlanActions journey={journey} busy={busy} note={planMessage} onNoteChange={setPlanMessage} onChoice={chooseAction} onReshuffle={reshuffle} onComplete={completeAction} onProfileEdit={edit => run(async () => update(await agentRequest<Journey>("profile", {...edit, revision: journey.revision})))} />;
   const exportJourney = () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify(journey, null, 2)], { type: "application/json" }));
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = "revana-journey.json"; anchor.click();

@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app import agent_provider as provider
+from app import workflow
 from app.agent_models import Action, ActionPreference, Journey, Plan, ReshuffleDraft
 
 
@@ -43,7 +43,8 @@ def build_revision(journey: Journey, context: dict, message: str) -> Plan:
             "message": message,
         },
     }
-    draft = provider.generate(
+    draft = workflow.plan(
+        journey,
         "Draft ONE revised personal plan using the user's goals, ALL answers, constraints, "
         "current plan and revision_request. Return only replacement actions in actions; "
         "the application inserts keep_unchanged actions verbatim. Each replacement must "
@@ -58,6 +59,7 @@ def build_revision(journey: Journey, context: dict, message: str) -> Plan:
         ReshuffleDraft,
     )
     replacements: dict[str, Action] = {}
+    id_mapping = {}
     rejected_titles = {normalized(action.title) for action in rejected}
     rejected_details = {normalized(action.detail) for action in rejected}
     kept_titles = {normalized(action.title) for action in kept}
@@ -77,6 +79,7 @@ def build_revision(journey: Journey, context: dict, message: str) -> Plan:
             action.id = source.id
         else:
             action.id = uuid4().hex
+        id_mapping[replacement.id] = action.id
         replacements[source_id] = action
     actions = [
         action.model_copy(deep=True)
@@ -89,4 +92,6 @@ def build_revision(journey: Journey, context: dict, message: str) -> Plan:
         raise HTTPException(
             502, "The coach could not suggest a suitable revised plan. Please retry."
         )
-    return Plan.model_validate({**draft.model_dump(exclude={"actions"}), "actions": actions})
+    workflow.remap_checks(journey, id_mapping)
+    result = Plan.model_validate({**draft.model_dump(exclude={"actions"}), "actions": actions})
+    return workflow.require_usable_plan(journey, result)

@@ -6,7 +6,13 @@ from test_agent import agent as agent_fixture
 from test_agent import plan, start
 
 from app import agent_provider, agent_store
-from app.agent_models import ActionPreference, ReplacementAction, ReshuffleDraft
+from app.agent_models import (
+    ActionPreference,
+    CoachResponse,
+    ReplacementAction,
+    ResearchIntent,
+    ReshuffleDraft,
+)
 
 agent = agent_fixture
 
@@ -35,6 +41,8 @@ def setup_plan(client):
             ),
         ]
     )
+    saved.suggestion_board.suggestions = deepcopy(saved.plans[-1].plan.actions)
+    saved.suggestion_board.seen = deepcopy(saved.plans[-1].plan.actions)
     agent_store.save(access, saved, journey["revision"])
     return headers, client.get("/v1/agent/session", headers=headers).json()
 
@@ -107,6 +115,17 @@ def test_reshuffle_keeps_exact_action_and_sends_problem_preferences_and_message(
     captured = []
 
     def generate(task, context, output):
+        if output is CoachResponse:
+            return CoachResponse(
+                reply="Your revision request is clear.",
+                questions=[],
+                actions=[],
+                safety_notes=["Respect reported limits."],
+                facts=[],
+                conflicts=[],
+                research=ResearchIntent(needed=False, query="", kind="evidence"),
+                ready_for_plan=True,
+            )
         captured.append(context)
         assert output is ReshuffleDraft
         return draft_for(journey)

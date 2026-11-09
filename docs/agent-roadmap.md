@@ -28,6 +28,12 @@ This is synthetic UI validation, not a live-provider quality or real-device asse
 
 ## Current baseline
 
+- Staged coach checkpoint (2026-11-09): separate actual coach/research/planner/reviewer
+  requests, one-repair enforcement, shared sourced/editable profile and conservative
+  action review, unified conversation and explicit fit checkpoint. See
+  [STAGED_COACH_WORKFLOW.md](STAGED_COACH_WORKFLOW.md) for implemented/deferred matrix,
+  live exploratory findings and exact local checkout. Not merged or deployed.
+
 - 2026-11-09 conversation checkpoint: latest messages and selected answers lead coach
   replies; a visible composer supports adaptive selectable follow-ups, explanations
   and practical action alternatives. No fixed question/choice/action-count quota.

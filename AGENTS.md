@@ -25,8 +25,12 @@ conversion, cleanup and retention tests pass. Evidence-backed claims require tra
 reviewed sources. A capable model or stronger prompt alone does not establish quality.
 
 The product-role instructions now live in `backend/app/prompts/coach.md`, loaded and
-packaged by the backend; this AGENTS.md remains developer guidance. New adaptive
-questions offer as many relevant choices as needed, with suitable single/multiple selection
+packaged by the backend; this AGENTS.md remains developer guidance. Coaching
+requests use `workflow.py` and separate common/coach/planner/reviewer/researcher prompts.
+Stages must remain wired to actual context and provider requests; prompt files alone
+are not an implementation. Preserve sourced profile corrections and action-review ID
+links. Missing checks mean needs-review, not compatible. See docs/STAGED_COACH_WORKFLOW.md.
+Questions offer as many relevant choices as needed, with suitable single/multiple selection
 and optional text. Coach responses may explain, ask a question, or offer action alternatives.
 Provide concise public rationale, never private chain-of-thought.
 Only selected choices and typed answers are reports; suggestions are not profile facts.

@@ -21,8 +21,8 @@ function Icon({ name, size = 20, className = "" }: { name: IconName; size?: numb
   return <svg aria-hidden="true" className={className} fill="none" height={size} viewBox="0 0 24 24" width={size}><g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7">{paths[name]}</g></svg>;
 }
 
-function Button({ children, className = "", disabled, onClick }: { children: React.ReactNode; className?: string; disabled?: boolean; onClick?: () => void }) {
-  return <button className={`button ${className}`} disabled={disabled} onClick={onClick} type="button">{children}</button>;
+function Button({ children, className = "", disabled, onClick, type = "button" }: { children: React.ReactNode; className?: string; disabled?: boolean; onClick?: () => void; type?: "button" | "submit" }) {
+  return <button className={`button ${className}`} disabled={disabled} onClick={onClick} type={type}>{children}</button>;
 }
 
 function Brand() {

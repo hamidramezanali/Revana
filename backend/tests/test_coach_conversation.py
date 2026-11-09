@@ -8,7 +8,7 @@ from test_plan_preferences import setup_plan
 from test_suggestions import batch, more, pick
 
 from app import agent_provider, agent_store
-from app.agent_models import Decision, GeneratedQuestion, Plan, SuggestionBatch
+from app.agent_models import CoachResponse, Decision, GeneratedQuestion, Plan, SuggestionBatch
 
 agent = agent_fixture
 
@@ -68,7 +68,7 @@ def test_latest_message_and_choices_drive_conversation_without_replacing_plan(ag
     captured = []
 
     def generate(task, context, output):
-        assert output is SuggestionBatch
+        assert output in {CoachResponse, SuggestionBatch}
         captured.append((task, context))
         if len(captured) == 1:
             return clarification()
@@ -184,7 +184,7 @@ def test_skip_and_free_text_pivot_are_explicit_and_conversation_reaches_plan(age
         captured.append(context)
         if output is Plan:
             return example_plan()
-        if output is SuggestionBatch:
+        if output in {CoachResponse, SuggestionBatch}:
             return batch(journey)
         return Decision(summary="Enough is known.", ready=True, questions=[])
 

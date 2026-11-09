@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -71,6 +72,50 @@ class GeneratedQuestion(Question):
 
 class GeneratedDecision(Decision):
     questions: list[GeneratedQuestion] = Field(max_length=1)
+
+
+FactCategory = Literal["goal", "allergy", "limitation", "preference"]
+FactStatus = Literal["reported", "hypothesis", "unknown", "needs_review"]
+
+
+class FactCandidate(Model):
+    category: FactCategory
+    value: str = Field(min_length=1, max_length=400)
+    source_id: str
+    quote: str = Field(min_length=1, max_length=2000)
+    status: FactStatus
+    supersedes_id: str | None
+
+
+class ProfileFact(Model):
+    id: str
+    category: FactCategory
+    value: str
+    source_id: str
+    quote: str
+    status: FactStatus
+    active: bool = True
+
+
+class ProfileEdit(Model):
+    revision: int = Field(ge=0)
+    fact_id: str | None = None
+    category: FactCategory
+    value: str = Field(min_length=1, max_length=400)
+    status: FactStatus = "reported"
+    active: bool = True
+
+
+class ResearchIntent(Model):
+    needed: bool
+    query: str = Field(max_length=200)
+    kind: Literal["evidence", "product", "service"]
+
+
+class CoachDecision(GeneratedDecision):
+    facts: list[FactCandidate]
+    conflicts: list[str]
+    research: ResearchIntent
 
 
 class AnswerRequest(Model):
@@ -235,7 +280,69 @@ class SuggestionBatch(Model):
     safety_notes: list[str] = Field(min_length=1, max_length=8)
 
 
+class CoachResponse(SuggestionBatch):
+    facts: list[FactCandidate]
+    conflicts: list[str]
+    research: ResearchIntent
+    ready_for_plan: bool
+
+
+class ResearchSource(Model):
+    id: str
+    title: str
+    url: str
+    retrieved_at: datetime
+    kind: Literal["evidence", "product", "service"]
+    applicability: str
+    uncertainty: str
+
+
+class ResearchResult(Model):
+    status: Literal["not_needed", "retrieved", "unavailable", "limited"] = "not_needed"
+    summary: str = "No web research requested."
+    sources: list[ResearchSource] = Field(default_factory=list)
+
+
+class ActionCheck(Model):
+    action_id: str
+    status: Literal["compatible", "incompatible", "needs_review"]
+    reason: str
+    source_ids: list[str]
+
+
+class ReviewResult(Model):
+    approved: bool
+    public_summary: str = Field(min_length=1, max_length=4000)
+    issues: list[str]
+    correction: str
+    limitations: list[str]
+    action_checks: list[ActionCheck]
+    suggested_starts: list[str]
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_previous_review(cls, data):
+        if isinstance(data, dict) and "public_summary" not in data:
+            data = {
+                **data,
+                "public_summary": "This saved review predates the public explanation. Check the listed limitations and action checks.",
+            }
+        return data
+
+
+class WorkflowState(Model):
+    stages: list[str] = Field(default_factory=list)
+    research: ResearchResult = Field(default_factory=ResearchResult)
+    review: ReviewResult | None = None
+    status: Literal["ready", "needs_review", "retry"] = "ready"
+    message: str = ""
+    report_source: str = ""
+
+
 class CoachTurn(Model):
+    source_id: str = Field(default_factory=lambda: uuid4().hex)
+    event_count: int | None = None
+    purpose: Literal["conversation", "preferences"] = "conversation"
     created_at: datetime
     message: str
     selected_answers: list[str]
@@ -272,9 +379,12 @@ class PlanVersion(Model):
     version: int
     created_at: datetime
     plan: Plan
+    research: ResearchResult = Field(default_factory=ResearchResult)
+    review: ReviewResult | None = None
 
 
 class Event(Model):
+    source_id: str = Field(default_factory=lambda: uuid4().hex)
     kind: Literal["answer", "checkin"]
     question: str
     answer: str
@@ -301,6 +411,11 @@ class Journey(Model):
     action_preferences: list[ActionPreference] = Field(default_factory=list)
     plan_feedback: list[PlanFeedback] = Field(default_factory=list)
     suggestion_board: SuggestionBoard | None = None
+    profile: list[ProfileFact] = Field(default_factory=list)
+    profile_revision: int = 0
+    profile_conflicts: list[str] = Field(default_factory=list)
+    workflow: WorkflowState = Field(default_factory=WorkflowState)
+    research_intent: ResearchIntent | None = None
 
 
 class SessionCreated(Model):

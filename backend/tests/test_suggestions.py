@@ -6,7 +6,7 @@ from test_agent import agent as agent_fixture
 from test_plan_preferences import choose, setup_plan
 
 from app import agent_provider, agent_store
-from app.agent_models import SuggestionBatch
+from app.agent_models import CoachResponse, SuggestionBatch
 
 agent = agent_fixture
 
@@ -68,7 +68,7 @@ def test_fresh_batches_preserve_kept_exactly_and_include_feedback(agent, monkeyp
     captured = []
 
     def generate(task, context, output):
-        assert output is SuggestionBatch
+        assert output in {CoachResponse, SuggestionBatch}
         captured.append(context)
         return batch(journey, str(len(captured)))
 
@@ -130,7 +130,7 @@ def test_invalid_or_failed_batches_never_lose_choices(agent, monkeypatch, failur
             result.actions.append(result.actions[0].model_copy())
         if failure == "provider":
             raise HTTPException(502, "Unavailable")
-        if failure == "concurrent":
+        if failure == "concurrent" and args[0].startswith("[stage:coach]"):
             assert pick(client, headers, journey, "routine", "keep").status_code == 200
         return result
 

@@ -22,6 +22,15 @@ application. Planned product behavior is specified in [PRODUCT_ROADMAP.md](PRODU
 
 ## Adaptive agent
 
+### Staged workflow checkpoint (2026-11-09)
+
+The implemented path now routes coach -> optional real web retrieval -> planner ->
+reviewer, with at most one repair. A shared editable sourced profile, conservative
+current-action rechecks, coherent initial/dashboard conversation and explicit fit
+review are wired into API requests and UI. See [the implementation/limits matrix](STAGED_COACH_WORKFLOW.md)
+for route coverage, retrieval boundaries, failure behavior and validation limits.
+This supersedes the earlier single-prompt runtime descriptions below.
+
 ### Conversation-led coaching (2026-11-09)
 
 The latest user message and selected answers lead the response; earlier goals and
