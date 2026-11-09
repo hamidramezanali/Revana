@@ -1,154 +1,231 @@
-# Revana Product and Technical Roadmap
+> Current deployment update (2026-11-05): temporary public Vercel testing has been
+> explicitly approved. Hosted mode now requires Postgres, supports same-origin API
+> requests and preserves per-journey bearer access. Account sign-in and deployment
+> privacy are deferred. This supersedes historical local-only/guard checkpoints below.
+> See [the current deployment guide](VERCEL_DEPLOYMENT.md).
 
-## Product direction
+# Revana product plan
 
-Revana helps a person turn their own goals and context into a small, adaptable plan, then understand what they actually tried and how it felt. Improve the frontend gradually; build a trustworthy data and service foundation before adding complex analytics or automation.
+Updated 2026-11-05. This is the current product specification. It supersedes the earlier
+prototype proposal, including its separate-repository layout and deferred monetization.
+See [architecture.md](architecture.md) for current runtime facts and
+[agent-roadmap.md](agent-roadmap.md) for implementation checkpoints and launch instructions.
 
-The product timeline has three distinct records:
+## Product promise
 
-1. **Today:** actions suggested by the current plan.
-2. **Coming weeks:** future planned actions, grouped by week and versioned.
-3. **What happened:** actions the user reports completing, skipping, changing, or reflecting on.
+Revana is a mobile-first personal beauty and wellbeing coach focused on skin, hair and
+supporting lifestyle habits. It learns a person's situation through a short text
+conversation, builds an editable care profile, and creates a useful overall plan.
+Paid coaching records progress and adapts that plan to the person's reported outcomes.
 
-A planned action is never evidence that the user completed it. Keep plans and user-reported activity separate in storage, APIs, copy, and visualizations.
+The advantage is relevant, evidence-backed personalization and continuity. Novelty,
+long answers and a confident tone are not measures of recommendation quality.
+Familiar advice is appropriate when justified by the profile; generic lists are not.
+Do not promise recommendations unavailable elsewhere or superiority to medical care.
 
-## Repository and service boundaries
+## Agreed scope
 
-Maintain two independently developed and deployed projects:
+- Preserve the visual direction and mobile improvements merged into `main`.
+- Text conversation first; a guided-question presentation uses the same engine.
+- One adaptive question per turn with 3-6 relevant choices, multiple selection when
+  appropriate, and optional text. Ask at most six for the initial assessment, with skip
+  and early completion. Fit/safety and profile confirmation remain concise explicit steps.
+- A complete starting plan is free. Do not replace it with three teaser ideas or hide
+  its useful content behind checkout. Action count follows need and manageable effort.
+- Paid access covers ongoing coaching, dated progress and observations, follow-up
+  assessments and revised plans. The original plan remains readable without payment.
+- Persist a care profile, accepted plans and eligible structured outcomes. Do not offer
+  an older-chat screen or keep verbatim conversations as permanent coaching memory.
+- Sweden and Scandinavia first; globally usable data and language foundations.
+- Retain existing goal support, while positioning skin/hair and relevant lifestyle as
+  the primary experience. This is not positioned as a dedicated fitness coach.
+- Adults first. Voice, native apps and professional-service discovery
+  are later additions, not prerequisites for this release.
 
-- **Frontend (this repository):** React, TypeScript, Vite, and Tailwind CSS. Owns the experience, client-side input handling, and API client. It must not access the database or hold model/provider secrets.
-- **Backend (a separate repository/project to create):** Python, FastAPI, PostgreSQL, authentication-token verification, data access, research retrieval, recommendation orchestration, and versioned HTTP APIs.
+## Mobile journey
 
-Document the API contract with OpenAPI. The frontend consumes only the backend API. Keep environment-specific URLs and public client configuration in frontend environment variables; keep database credentials, OAuth secrets, and LLM credentials on the backend or their trusted provider.
+1. Open the app and start a secure guest profile with a short explanation of processing.
+2. Describe a concern in text or choose a starting topic. No email wall before value.
+3. Answer targeted questions; subsequent questions use the evolving facts and unknowns.
+4. Review a compact profile: reported concerns, current routine, constraints and goals.
+   Correct misunderstandings and confirm the facts used for the plan.
+5. Receive a complete personal plan, including priorities, practical actions and review
+   timing. Present evidence and reasoning through expandable detail.
+6. Offer a clear subscription for tracking how the plan works and adapting it over time.
+7. Verify an email to recover the profile, continue across devices and manage payment.
+   Link the existing guest records; do not create an empty replacement account.
+8. On return, show the profile and plan; paid users can start a fresh check-in using
+   saved structured memory. Do not reopen a historical transcript.
 
-## Suggested initial technology stack
+The main destinations are Coach, My plan and Profile; paid progress is visible within
+the plan or a dedicated progress view after mobile usability testing. Use one-column
+layouts, readable type, large controls and keyboard-safe composers. Show the next
+useful action before long explanation. Support desktop without compromising phones.
 
-| Area | Recommendation | Reason / guardrail |
+## The persistent care profile
+
+| Record | Required meaning |
+|---|---|
+| Concern | Specific user-reported problem; area, onset/duration when supplied, relevant observations, current status |
+| Goal | Desired outcome and the user's own description of what improvement means |
+| Current routine | Reported products, habits and relevant environment; unknowns remain unknown |
+| Constraints | Reported sensitivities, limitations, budget, effort and preferences |
+| Working understanding | Hypotheses, their supporting facts and unresolved questions; never saved as confirmed diagnoses |
+| Plan | Accepted version, selected actions, rationale, evidence references, timing, review criteria and limitations |
+| Outcome | Dated user-reported completion, observation, reaction or difficulty, linked to an action/version where possible |
+
+Facts need a stable ID, source kind, confirmation status, observed/reported date and
+revision history. Preserve conflicts for clarification rather than silently overwriting
+them. A recommendation, hypothesis or generated summary is not a user-reported fact.
+Users can inspect, correct and remove what Revana remembers. Collect only information
+needed for the stated goal; do not turn the profile into an unsolicited medical record.
+
+## Conversation lifecycle and model context
+
+Conversation text is temporary working context. Extract structured candidate facts and
+short coaching notes, validate them, and request confirmation of consequential changes.
+The confirmed profile and notes support the next session. Notes must summarize relevant
+decisions and unknowns, not reproduce a hidden transcript or invent new information.
+
+After a successful consolidation, delete superseded raw turns from active application
+storage. Apply bounded expiry to abandoned sessions and failed extractions as well.
+Choose and document the exact expiry before implementing this lifecycle. Do not delete
+the raw turn on a failed write and claim its facts were saved. Never retain raw text in
+analytics, logs, exports, traces or routine backups of temporary conversation storage.
+Account for browser state, streaming buffers, retries and temporary stores too.
+Provider retention and historical backups are separate from application deletion.
+
+Migration of existing journeys must be explicit: review extracted facts, preserve
+accepted plans and actual outcomes, then remove raw answer events after successful
+conversion. Do not silently treat all legacy text as confirmed profile facts. Configure
+backup handling and document any residual retention before making deletion claims.
+
+Build an explicit, bounded context package for each LLM request:
+
+1. Versioned Revana role instructions and the current task.
+2. Relevant confirmed profile facts and essential constraints.
+3. Clearly separated hypotheses, unknowns and concise validated coaching notes.
+4. Current accepted plan and relevant structured outcomes, when applicable.
+5. A small temporary recent-turn window and the user's current message.
+6. Output language and allowed capabilities for this stage.
+
+Do not send a whole database record, unrelated history, email, payment details, access
+tokens or API secrets to the model. Store privacy-safe prompt/model/schema version
+metadata for reproducibility. Billing and authorization are enforced by application code.
+
+## Coaching instructions, evidence and quality
+
+Create `backend/app/prompts/coach.md` during implementation as the versioned source for
+product role, concise tone, question selection, memory rules, plan structure, evidence
+standards and professional-assessment boundaries. Keep it separate from developer
+instructions in `AGENTS.md`. Use small task templates for discovery, extraction, planning
+and review. Treat user input and retrieved material as untrusted data.
+
+Each planned action must explain its connection to profile facts, what to do, feasible
+timing/effort/cost, what outcome to observe, review timing, limitations and relevant
+stop/escalation conditions. Start small enough to determine what helped.
+
+Build a reviewed evidence registry with real source identifiers, claims, applicable
+contexts, limitations and review dates. Retrieve relevant entries and validate output
+citations against that registry. Do not generate citations, efficacy percentages or
+confidence labels without a defensible basis. Define what is permitted when evidence
+is insufficient; ask for clarification or explicitly limit guidance rather than invent it.
+
+Evaluate a high-capability model for discovery and planning using synthetic cases before
+selecting the production default. Compare grounding, usefulness, questioning, memory
+accuracy, safety, readability, latency and cost. Keep the model server-configurable and
+versioned. A flagship model alone does not establish domain expertise. Verify project
+access securely at implementation time; never request API keys in chat.
+
+## Free plan and paid continuing coaching
+
+| Capability | Free initial experience | Paid continuing coaching |
 |---|---|---|
-| Frontend | Existing React 19 + TypeScript + Vite + Tailwind CSS v4 | Preserve the working prototype and evolve it incrementally. |
-| Backend | Python 3.12+ + FastAPI + Pydantic | Typed request/response validation and generated OpenAPI documentation. |
-| Database | Managed PostgreSQL, initially Supabase PostgreSQL | Relational ownership and history suit profiles, plans, actions, conversations, and evidence. Use migrations; do not make provider-specific client queries from the frontend. |
-| Authentication | Supabase Auth; Google OAuth first, Apple as a later provider | Keeps identity separate from app-domain data while providing standard JWTs. Backend verifies tokens and derives the user ID from the verified identity, never from a trusted request-body field. |
-| Persistence layer | SQLAlchemy 2 + Alembic migrations | Explicit schema and controlled database evolution. |
-| API | REST with versioned paths (`/v1/...`) and OpenAPI | Simple browser integration and a stable contract between separate repositories. |
-| LLM integration | Backend-only provider adapter with structured output validation | Allows provider changes, safe key handling, timeouts, observability, and deterministic fallback behavior. |
-| Research | Curated source registry and reviewed recommendation rules first; PostgreSQL full-text search initially | Keep each recommendation traceable to reviewed sources. Add vector retrieval only when a demonstrated retrieval need exists. |
-| Hosting | Choose managed services after a small deployment spike | Confirm region, backups, OAuth callback support, data-processing terms, pricing, and operational ownership before selecting production vendors. |
+| Initial assessment, profile confirmation and full starting plan | Included | Included |
+| Read existing profile/plan, correct/remove facts, export/delete data | Included | Included |
+| Dated progress and observation tracking | No ongoing tracking | Included |
+| Follow-up coaching and personalized plan revisions | No ongoing coaching | Included within disclosed usage limits |
+| Basic response to a reported adverse reaction or urgent concern | Never blocked by checkout | Never blocked by checkout |
 
-Supabase is a starting recommendation, not a requirement. Before production, confirm data residency, backup/restore, access-control, retention, and regulatory needs. Consider a separately operated PostgreSQL service if those requirements or operational constraints call for it.
+Persisting an initial profile is distinct from recording longitudinal progress. Correcting
+a profile does not automatically generate a new free plan. Do not interpret unpaid user
+input as a paid progress record or secretly discard a paid mutation while showing success.
+Explain subscription status and available actions clearly.
 
-Google-first is suitable for the first web release. Add Apple sign-in when the iOS/native product is planned or user demand justifies it; confirm current Apple platform and store-review requirements before shipping. Keep email recovery and account deletion in scope even if social sign-in is the first path.
+Use one subscription initially, with clear price, billing cadence and usage allowance.
+Implement hosted checkout, verified/idempotent webhooks, server-side entitlements,
+cancellation, failed-payment handling and a billing portal. Checkout redirects alone
+never grant access. Cancellation must not hide existing plans or prevent export/deletion.
+Select price, provider and treatment of expired subscriptions before the billing slice;
+do not hardcode assumed commercial or tax terms into the model.
 
-## Core domain model
+## Hosted, regional and language foundations
 
-Use UUID primary keys, UTC timestamps, explicit ownership, and database migrations. Store the user's IANA timezone for local-day and weekly grouping. Validate enums and lengths in the API and database. Prefer archive/deletion policies that are explicit and user-accessible.
+Keep the React/FastAPI monorepo and generated OpenAPI/client contracts. Replace local
+capability-only access and SQLite with secure guest/account sessions, per-resource
+ownership, durable hosted Postgres and migrations before public use. The current local
+deployment restriction stays until those controls pass their release gates.
 
-### User and profile
+Implement recovery through verified email, guest-to-account linking and revocation;
+internal user IDs are identifiers, not credentials. Protect sensitive profile data and
+define consent, retention, deletion, backups and vendor handling before real-user beta.
+Existing Auth0 direction is the starting point; verify guest-linking and email flows
+before committing to a provider-specific implementation. Any change needs an explicit
+architecture decision, not an incidental frontend dependency.
 
-- `users`: internal user ID, identity-provider subject, created/updated timestamps, account status.
-- `profiles`: user ID, display name (optional), timezone, locale, preferences, onboarding completion state.
-- `profile_facts`: user ID, category, value or structured JSON, source (`user_reported` or `derived`), confirmed-at, created/updated timestamps.
-- `consents`: user ID, consent type, policy/version, granted/revoked timestamps.
+Store locale, country, timezone, currency and units separately. Externalize UI strings;
+English is acceptable initially, Swedish and further translations can follow. Country
+can inform climate, practical availability and examples but is not evidence of a user's
+personal habits. Voice can later feed text into the same profile and context pipeline;
+raw audio retention is not required by this design.
 
-Goals, concerns, routines, sensitivities, budget, and effort preferences are profile facts or typed profile fields. Clearly distinguish user-entered facts from derived/inferred values; derived values must include their basis and must not silently overwrite user input.
+## Success and delivery discipline
 
-### Plans and timeline
+Measure assessment completion, perceived plan usefulness, profile correction frequency,
+evidence validity, paid conversion, successful follow-up, and cost per useful plan.
+Use privacy-safe events without recording concerns or message content in analytics.
 
-- `plans`: user ID, version, status (`draft`, `active`, `superseded`, `archived`), start/end dates, generation metadata, created-at.
-- `planned_actions`: plan ID, stable action ID, title, instructions, cadence, scheduled dates, rationale, evidence references, confidence/limitations, safety flags.
-- `activity_events`: user ID, optional planned-action ID, event type (`completed`, `skipped`, `modified`, `observation`), occurred-at, optional note, optional structured outcome, created-at.
+Implement in the small checkpoints listed in [agent-roadmap.md](agent-roadmap.md).
+Each checkpoint gets relevant validation, a focused commit and a GitHub push. Prefer
+reviewable pull requests per coherent slice; do not collect unrelated work in one large
+commit. A push is not authorization to merge or deploy. Update current-state docs as
+each slice lands; never present a planned feature as shipped.
 
-The same activity event model should support an action done outside the plan by allowing a null planned-action ID. Record edits as events or preserve an audit history; do not silently erase user history.
 
-### Conversations and evidence
+## Optional questionnaire photos and restarting (2026-11-05)
 
-- `conversations`: user ID, optional plan ID, title, created/updated timestamps.
-- `messages`: conversation ID, role, content, created-at, optional related action; preserve whether content was user-entered or model-generated.
-- `evidence_sources`: citation, publisher, publication date, URL/identifier, review date, status.
-- `recommendation_evidence`: planned-action ID, evidence-source ID, claim/relationship, retrieval metadata.
-- `generation_runs`: plan ID, model/provider and prompt version, input snapshot/reference, validation status, safety-review outcome, failure/fallback reason. Avoid retaining unnecessary sensitive prompts or raw model traces.
+Relevant product, skin and hair/scalp questions may offer up to three optional JPG,
+PNG or WebP photos. Choices, text, photos or combinations are accepted; nonvisual
+questions still need text/choices or an explicit skip. Images are context, not a
+clinical assessment. The six-question ceiling still applies. The user must review,
+correct or discard visual observations before the next question or plan generation.
+Notes remain distinct from reported symptoms, routines and causal hypotheses.
 
-Conversations and profile data may be sensitive. Apply least privilege, user-scoped authorization, retention limits, export/deletion flows, and explicit consent. Do not collect health or appearance data without a clear product need and transparent explanation.
+Photos are re-encoded from pixels to remove metadata, sent to the configured OpenAI
+model only after explicit photo consent, and not written to journey storage, exports
+or image files by the app. Reviewed notes and photo counts are saved. Provider retention
+is separate. This does not implement the broader care-profile/raw-chat retention work.
 
-## API boundary (initial proposal)
+Profile settings are reachable from the dashboard header and My plan. Delete profile
+& start over requires confirmation, deletes this journey from the local backend,
+forgets its browser token, and returns to direction/goals and a new assessment.
+Deletion does not remove existing exports, backups or previously transmitted provider data.
 
-- `GET /v1/me` — current authenticated profile summary.
-- `PUT /v1/me/profile` — create/update user-provided profile information.
-- `GET /v1/plans/current` — current plan and planned actions.
-- `POST /v1/plans` — request a plan draft; backend persists a version and returns validation/safety status.
-- `POST /v1/activity-events` — record a completion, skip, modification, or observation.
-- `GET /v1/activity-events` — fetch a paginated timeline, filterable by date and action.
-- `GET|POST /v1/conversations` and `POST /v1/conversations/{id}/messages` — user-owned conversation history.
-- `GET /v1/account/export` and `DELETE /v1/account` — user data portability and deletion workflows.
 
-Use pagination for history, idempotency for retryable writes, consistent error shapes, and authorization checks on every user-owned resource. Derive ownership from the verified token, not a caller-supplied user ID.
+### Update: selective photo answers (2026-11-08)
 
-## Recommendation and research rules
+The generated question's photo_mode now controls whether the browser offers a photo
+answer. The LLM defaults to none and chooses products, skin or hair only when an
+image can materially help answer that particular question. Duration, sensations,
+history, diet, budget and preferences do not show an upload option. Existing/legacy
+questions with none also hide it. Visual questions retain optional photos, explicit
+consent, temporary processing and review of observations. No extra LLM call is needed:
+this decision is part of generating each adaptive question. The backend still accepts
+previously prepared photo answers from older clients, preserving consent and review.
 
-1. Begin with a reviewed, versioned set of recommendations and an evidence registry.
-2. Retrieve only sources that match the user's goal and context; record the sources, review date, and claim used.
-3. Ask the backend LLM adapter for a schema-constrained draft, not an unstructured prescription.
-4. Validate the draft against the schema, allowed action catalog, safety constraints, and evidence policy before saving or showing it.
-5. If generation fails or evidence is insufficient, return a clear deterministic fallback or ask for clarification; never fabricate citations or hide failure.
-6. Explain why an action is suggested, what is uncertain, and how the user can decline or adapt it.
-7. Treat symptom escalation and medical questions conservatively; the product does not diagnose or replace qualified care.
+### Hosting configuration update
 
-## Phased delivery plan
-
-### Phase 0 — Product and contract foundation
-
-- Confirm target platform, data categories, consent, retention, and account deletion expectations.
-- Finalize the data model and OpenAPI conventions; create the separate backend repository.
-- Agree on a versioned API contract and shared examples before wiring live requests.
-- Keep current frontend defaults as clearly labeled prototype fallback data.
-
-### Phase 1 — Backend foundation
-
-- Set up FastAPI, PostgreSQL, SQLAlchemy, Alembic, configuration/secrets management, CI, and health checks.
-- Implement token verification and a user-scoped `/v1/me` endpoint.
-- Add schema validation, structured error responses, request IDs, and authorization tests.
-
-### Phase 2 — Profile and user-reported activity
-
-- Persist onboarding/profile data and support user edits.
-- Store completed, skipped, modified, and observed actions as distinct activity events.
-- Add export/deletion behavior and basic retention policy before production data collection.
-
-### Phase 3 — Plans and timeline
-
-- Persist versioned weekly plans and planned actions separately from activity events.
-- Build the frontend timeline progressively: today, coming weeks, and reported history.
-- Add empty, loading, error, and offline states; let users revise or reject actions.
-
-### Phase 4 — Evidence-backed recommendations
-
-- Curate sources and rules first; connect the backend LLM only behind a validated service boundary.
-- Track generation versions, evidence links, validation results, and fallbacks.
-- Evaluate usefulness, safety, unsupported claims, demographic coverage, and failure behavior before wider rollout.
-
-### Phase 5 — Conversations, authentication expansion, and insight
-
-- Add persisted conversations with clear AI labeling and user control over retention.
-- Launch Google OAuth first; add Apple sign-in after platform and account-linking requirements are confirmed.
-- Add trend visualizations only when sufficient user-reported events exist; show date ranges, missing data, and uncertainty.
-
-## Product decisions still to resolve
-
-- Initial launch platform (web only vs. planned iOS app) and account-linking behavior.
-- Which profile facts are necessary for the first useful plan, and which should not be collected.
-- Data retention periods, export format, deletion behavior, and backup deletion expectations.
-- Hosting region and provider terms for database, auth, and model processing.
-- Whether conversations are retained, summarized, or user-deletable individually.
-- Evidence-review owner and cadence; sources allowed for recommendations.
-- Which outcomes can be measured safely without claiming causation.
-- Expected scale, budget, uptime, and support/incident ownership.
-
-## Product and data-flow visuals
-
-### App experience: plan versus reported progress
-
-![Revana timeline product concept showing today's suggested actions, the upcoming weeks, and separately reported activity.](./images/revana-timeline-concept.svg)
-
-### Data collection and service boundaries
-
-![Revana data flow separating user-reported profile and activity from backend-generated plans, with authentication, evidence, and the LLM kept behind the backend.](./images/revana-data-flow.svg)
+The GitHub deployment layout is now one Vercel Services project with Vite and FastAPI
+services under the repository root, sharing same-origin `/v1` routing. This replaces
+the earlier two-project layout; the hosted identity, storage and operational gates
+still apply. Configuration details are in [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).

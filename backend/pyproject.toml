@@ -1,0 +1,35 @@
+[project]
+name = "revana-backend"
+version = "0.1.0"
+description = "Revana API"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "httpx>=0.27",
+  "Pillow>=12.0,<13",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.6",
+  "uvicorn[standard]>=0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.8",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.setuptools.package-data]
+app = ["prompts/*.md", "migrations/*.sql"]
+
+[tool.vercel]
+entrypoint = "app.main:app"
