@@ -28,6 +28,16 @@ This is synthetic UI validation, not a live-provider quality or real-device asse
 
 ## Current baseline
 
+- 2026-11-09: goal-specific fit/safety options replace the fixed allergy list.
+  During assessment or an unfinished check-in, earlier answers can be edited;
+  dependent later questions are regenerated without changing accepted plan history.
+  Bokadirekt discovery is researched and documented in architecture.md, not connected.
+  Validation: 93 backend tests passed, one skipped; Ruff, generated-contract checks,
+  TypeScript and production build passed. Synthetic browser checks at 390px/1280px
+  covered editing/cancel, regenerated questions, fit-choice retry, exclusive choices,
+  back navigation, retained draft text and no horizontal overflow or page errors.
+  Live model relevance and real marketplace results have not been validated.
+
 - React/TypeScript mobile-responsive UI and FastAPI `/v1/agent` API in one repository.
 - One generated question per turn; caps of six assessment and three check-in questions.
 - Server-side structured provider adapter, bounded inputs and revision conflict checks.

@@ -38,10 +38,11 @@ def test_selections_and_text_reach_every_followup_and_plan(agent):
     assert event["selected_options"] == ["Cleanser", "Moisturizer"]
     assert event["answer"] == "Only in the evening."
     assert event["skipped"] is False
-    assert calls[-1][1]["events"][0] == event
+    reported_event = {key: value for key, value in event.items() if key != "question_snapshot"}
+    assert calls[-1][1]["events"][0] == reported_event
     assert "decision" not in calls[-1][1]
     assert plan(client, headers, journey).status_code == 200
-    assert calls[-1][1]["events"][0] == event
+    assert calls[-1][1]["events"][0] == reported_event
     assert calls[-1][1]["preferences"]["sensitivities"] == ["Sensitive skin"]
     assert "ONE coherent personal plan" in calls[-1][0]
     assert "decision" not in calls[-1][1]

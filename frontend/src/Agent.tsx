@@ -48,27 +48,39 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
   journey: Journey; update: (journey: Journey) => void; onFinish: () => void;
   busy: boolean; run: (task: () => Promise<void>) => void;
 }) {
-  const question = journey.decision.questions[0];
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const editingEvent = editingIndex === null ? null : journey.events[editingIndex];
+  const question = editingEvent ? editingEvent.question_snapshot ?? {
+    id: `legacy-${editingIndex}`, text: editingEvent.question,
+    why: "Update your answer so the next question can adapt.", options: [],
+    selection_mode: "multiple" as const, photo_mode: "none" as const,
+  } : journey.decision.questions[0];
   const pendingPhoto = journey.events.some(event => event.photo_notes && !event.photo_notes.confirmed);
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { headingRef.current?.focus(); }, [question?.id, pendingPhoto]);
   const count = journey.mode === "assessment" ? journey.assessment_count : journey.checkin_count;
   const max = journey.mode === "assessment" ? 6 : 3;
+  const cycleStart = journey.mode === "checkin" ? journey.events.reduce((start, event, index) => event.kind === "checkin" ? index + 1 : start, journey.events.length) : 0;
+  const editable = journey.events.map((event, index) => ({event, index})).filter(({event, index}) => event.kind === "answer" && index >= cycleStart);
   const loadOptions = () => run(async () => update(await agentRequest<Journey>("question-options", { revision: journey.revision })));
   const submit = (payload: Pick<ApiAnswerRequest, "answer" | "selected_option_ids" | "skipped" | "photos" | "photo_consent">) => run(async () => {
     const next = await agentRequest<Journey>("answers", {
       revision: journey.revision, question_id: question.id, ...payload,
+      ...(editingIndex === null ? {} : {event_index: editingIndex}),
     });
     update(next);
+    setEditingIndex(null);
   });
   return <div className="question-page wide-question adaptive-question-page">
-    <span className="eyebrow">{journey.mode === "assessment" ? "GETTING TO KNOW YOU" : "YOUR FOLLOW-UP"} · {question ? `QUESTION ${count + 1} · UP TO ${max}` : `${count} ANSWERED`}</span>
+    <span className="eyebrow">{journey.mode === "assessment" ? "GETTING TO KNOW YOU" : "YOUR FOLLOW-UP"} · {editingEvent ? "UPDATE AN ANSWER" : question ? `QUESTION ${count + 1} · UP TO ${max}` : `${count} ANSWERED`}</span>
     <h2 ref={headingRef} tabIndex={-1}>{pendingPhoto ? "Check what I noticed." : question ? question.text : "Your starting point is ready."}</h2>
     {pendingPhoto ? <PhotoReview key={journey.events.length} journey={journey} busy={busy} onReview={(eventIndex, observations, discard) => run(async () => update(await agentRequest<Journey>("photo-notes", {revision: journey.revision, event_index: eventIndex, observations, discard})))} /> : question ? <>
       <details className="question-explanation"><summary>Why we ask</summary><p>{question.why}</p></details>
-      <QuestionCard key={question.id} question={question} busy={busy} onSubmit={submit} onLoadOptions={loadOptions} />
+      {editingEvent && <><p>Changing this answer replaces the later questions in this round, so they can adapt to your update.</p>{!!editingEvent.photo_count && <p>Your earlier photo notes for this answer will be replaced. Attach photos again if you want to use them.</p>}<Button className="secondary" disabled={busy} onClick={() => setEditingIndex(null)}>Cancel editing</Button></>}
+      <QuestionCard key={`${question.id}-${editingIndex}`} question={question} busy={busy} onSubmit={submit} onLoadOptions={editingEvent ? undefined : loadOptions} editing={!!editingEvent} initialAnswer={editingEvent ? {selected_options: editingEvent.selected_options, answer: editingEvent.question_snapshot ? editingEvent.answer : [...editingEvent.selected_options, editingEvent.answer].filter(Boolean).join(" — ")} : undefined} />
     </> : <p className="prompt-status" role="status">{journey.decision.summary}</p>}
-    <div className="agent-buttons"><Button className={question ? "secondary" : "primary"} disabled={busy || pendingPhoto} onClick={onFinish}>{journey.mode === "assessment" ? "Continue to fit & safety" : "Draft an updated plan"}</Button></div>
+    {!editingEvent && <div className="agent-buttons">{!!editable.length && <Button className="secondary" disabled={busy || pendingPhoto} onClick={() => setEditingIndex(editable[editable.length - 1].index)}>← Previous question</Button>}<Button className={question ? "secondary" : "primary"} disabled={busy || pendingPhoto} onClick={onFinish}>{journey.mode === "assessment" ? "Continue to fit & safety" : "Draft an updated plan"}</Button></div>}
+    {!!editable.length && <details className="question-explanation" open={editingEvent ? true : undefined}><summary>Review or change earlier answers</summary>{editable.map(({event, index}) => <section key={index}><h3>{event.question}</h3><p>{event.skipped ? "Skipped" : [event.selected_options.join(", "), event.answer].filter(Boolean).join(" — ") || "Photo answer"}</p><Button className="secondary" disabled={busy || pendingPhoto} onClick={() => setEditingIndex(index)}>Change answer {index - cycleStart + 1}</Button></section>)}</details>}
     <p className="agent-small">Your answers shape the next question. We stop when there’s enough to help, with no more than {max} questions. You can finish early.</p>
   </div>;
 }

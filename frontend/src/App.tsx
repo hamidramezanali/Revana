@@ -4,6 +4,7 @@ import { AdaptiveQuestions, AgentAnalysis, AgentDashboard, AgentError, agentRequ
 
 import { AppDialog } from "./ProfileSettings";
 import { navigate, useScreenNavigation, type Screen } from "./navigation";
+import type { ApiFitOptions } from "./api.generated";
 type Goal = "skin" | "hair" | "body" | "energy" | "other";
 
 function scrollToTop() {
@@ -104,29 +105,46 @@ function Goals({ profile, setProfile, next }: { profile: Profile; setProfile: (p
   );
 }
 
-function Safety({ profile, setProfile, next }: { profile: Profile; setProfile: (p: Profile) => void; next: () => void }) {
-  const options = ["No known allergies or reactions", "Food allergies or dietary restrictions", "Sensitive skin or scalp", "Ingredient reactions", "Medication or ongoing medical care", "Pregnant or breastfeeding"];
+function Safety({ profile, setProfile, next, journey, onBack }: { profile: Profile; setProfile: (p: Profile) => void; next: () => void; journey: Journey; onBack: () => void }) {
+  const [fit, setFit] = useState<ApiFitOptions | null>(null);
+  const [fitError, setFitError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setFit(null); setFitError("");
+    void agentRequest<ApiFitOptions>("fit-options", {revision: journey.revision}).then(result => {
+      if (!cancelled) setFit(result);
+    }).catch(() => {
+      if (!cancelled) setFitError("We couldn’t load tailored choices. You can retry or describe relevant limits below.");
+    });
+    return () => { cancelled = true; };
+  }, [journey.revision, attempt]);
+  const none = "No known allergies or limitations";
+  const unsure = "Not sure yet";
+  const options = [none, ...new Set([...(fit?.options ?? []), ...profile.sensitivities].filter(item => item !== none && item !== unsure)), unsure];
   const toggle = (item: string) => setProfile({ ...profile, sensitivities: profile.sensitivities.includes(item)
     ? profile.sensitivities.filter(x => x !== item)
-    : item === options[0] ? [item] : [...profile.sensitivities.filter(x => x !== options[0]), item] });
+    : item === none || item === unsure ? [item] : [...profile.sensitivities.filter(x => x !== none && x !== unsure), item] });
   return (
     <div className="question-page wide-question">
       <span className="eyebrow">YOUR BOUNDARIES · 4 OF 4</span>
       <h2>Anything we should keep in mind?</h2>
       <p>You can skip sensitive questions. Your preferences help shape your plan.</p>
+      <Button className="secondary" onClick={onBack}>← Back to questions</Button>
       <div className="safety-sections">
         <section className="safety-card">
           <h3>Anything we should account for?</h3>
-          <div className="goal-grid safety-options">{options.map((item, index) => {
+          {!fit && !fitError && <p role="status">Tailoring these choices to your goals and answers…</p>}
+          {fitError && <p role="status">{fitError} <button type="button" className="button secondary" onClick={() => setAttempt(value => value + 1)}>Retry choices</button></p>}
+          <div className="goal-grid safety-options">{options.map((item) => {
             const selected = profile.sensitivities.includes(item);
-            const icons: IconName[] = ["check", "heart", "skin", "info", "heart", "user"];
-            return <button aria-pressed={selected} className={selected ? "selected" : ""} key={item} onClick={() => toggle(item)} type="button"><span className="goal-icon"><Icon name={icons[index]} size={17} /></span><strong>{item}</strong><i>{selected && <Icon name="check" size={15} />}</i></button>;
+            return <button aria-pressed={selected} className={selected ? "selected" : ""} key={item} onClick={() => toggle(item)} type="button"><span className="goal-icon"><Icon name={item === none ? "check" : "info"} size={17} /></span><strong>{item}</strong><i>{selected && <Icon name="check" size={15} />}</i></button>;
           })}</div>
         </section>
         <section className="safety-card">
           <h3>Any other limitations or allergies?</h3>
           <label className="safety-notes-label" htmlFor="safety-limitations">Share anything else you’d like your plan to take into account</label>
-          <textarea id="safety-limitations" maxLength={800} onChange={event => setProfile({ ...profile, limitations: event.target.value })} placeholder="Ingredients you avoid, movement limitations, or anything you’d rather leave out…" value={profile.limitations} />
+          <textarea id="safety-limitations" maxLength={800} onChange={event => setProfile({ ...profile, limitations: event.target.value })} placeholder={fit?.limitations_hint ?? "Any limits or preferences relevant to the help you’re asking for…"} value={profile.limitations} />
         </section>
         <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
       </div>
@@ -206,7 +224,7 @@ function App() {
       {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana asks at most six questions, one at a time, based on each answer. You can skip any question or finish early.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved by this Revana deployment; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {
         setJourney(await startJourney({ goals: profile.goals.length ? profile.goals : ["other"], description: profile.ownWords.slice(0, 2000), target_date: profile.targetDate }));
       })}>{busy ? "Preparing your first question…" : "Start my assessment"}</Button></div> : <AdaptiveQuestions journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onFinish={() => setScreen("safety")} />)}
-      {screen === "safety" && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}
+      {screen === "safety" && journey && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} journey={journey} onBack={() => setScreen("details")} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}
       {journey && !journey.plans.length && <div className="agent-banner"><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(true)}>Delete profile & start over</Button></div>}
     </OnboardingShell>}
   </>;

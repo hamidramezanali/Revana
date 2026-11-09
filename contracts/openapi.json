@@ -203,6 +203,19 @@
             "title": "Answer",
             "type": "string"
           },
+          "event_index": {
+            "anyOf": [
+              {
+                "maximum": 104.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Index"
+          },
           "photo_consent": {
             "default": false,
             "title": "Photo Consent",
@@ -462,6 +475,16 @@
             "title": "Question",
             "type": "string"
           },
+          "question_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "selected_options": {
             "items": {
               "type": "string"
@@ -482,6 +505,32 @@
           "created_at"
         ],
         "title": "Event",
+        "type": "object"
+      },
+      "FitOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "limitations_hint": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Limitations Hint",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "required": [
+          "options",
+          "limitations_hint"
+        ],
+        "title": "FitOptions",
         "type": "object"
       },
       "HealthResponse": {
@@ -1699,6 +1748,112 @@
           }
         ],
         "summary": "Discard Proposal",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/fit-options": {
+      "post": {
+        "operationId": "getAgentFitOptions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FitOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Fit Options",
         "tags": [
           "agent"
         ]

@@ -4,14 +4,16 @@ import type { ApiAnswerRequest, ApiQuestion } from "./api.generated";
 
 type Answer = Pick<ApiAnswerRequest, "answer" | "selected_option_ids" | "skipped" | "photos" | "photo_consent">;
 
-export function QuestionCard({ question, busy, onSubmit, onLoadOptions }: {
+export function QuestionCard({ question, busy, onSubmit, onLoadOptions, initialAnswer, editing = false }: {
   question: ApiQuestion;
   busy: boolean;
   onSubmit: (answer: Answer) => void;
   onLoadOptions?: () => void;
+  initialAnswer?: { selected_options: string[]; answer: string };
+  editing?: boolean;
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [text, setText] = useState("");
+  const [selected, setSelected] = useState<string[]>(() => (question.options ?? []).filter(option => initialAnswer?.selected_options.includes(option.label)).map(option => option.id));
+  const [text, setText] = useState(() => initialAnswer?.answer ?? "");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoConsent, setPhotoConsent] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -46,7 +48,7 @@ export function QuestionCard({ question, busy, onSubmit, onLoadOptions }: {
     {photoMode !== "none" && <PhotoAnswer mode={photoMode} photos={photos} onChange={value => {setPhotos(value); if (!value.length) setPhotoConsent(false);}} busy={busy} onPreparing={setPreparing} />}
     {!!photos.length && <label className="photo-consent"><input type="checkbox" checked={photoConsent} disabled={busy || preparing} onChange={event => setPhotoConsent(event.target.checked)} /><span>{photos.length === 1 ? "Send this photo" : "Send these photos"} to OpenAI with my answer. I understand photos may contain sensitive information and provider retention is separate from Revana’s temporary handling.</span></label>}
     <div className="agent-buttons">
-      <button className="button primary" type="submit" disabled={!canSubmit}>{busy ? "Thinking…" : "Continue"}</button>
+      <button className="button primary" type="submit" disabled={!canSubmit}>{busy ? "Thinking…" : editing ? "Save answer & continue" : "Continue"}</button>
       <button className="button secondary" type="button" disabled={busy || preparing} onClick={() => onSubmit({ answer: "", selected_option_ids: [], skipped: true, photos: [], photo_consent: false })}>Skip question</button>
     </div>
   </form>;

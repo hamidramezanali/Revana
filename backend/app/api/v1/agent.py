@@ -17,6 +17,7 @@ from app.agent_models import (
     CompletionRequest,
     Decision,
     Event,
+    FitOptions,
     GeneratedDecision,
     GeneratedQuestion,
     Journey,
@@ -27,6 +28,7 @@ from app.agent_models import (
     PlanFeedback,
     PlanRequest,
     PlanVersion,
+    Question,
     ReshuffleRequest,
     RevisionRequest,
     SessionCreated,
@@ -71,6 +73,7 @@ def coaching_context(journey: Journey) -> dict:
     # Do not prime the model with unselected suggestions from the previous question.
     context.pop("decision", None)
     for event in context["events"]:
+        event.pop("question_snapshot", None)
         if event.get("photo_notes") and not event["photo_notes"]["confirmed"]:
             event.pop("photo_notes")
     board = context.pop("suggestion_board", None)
@@ -167,11 +170,33 @@ def get_session(access: Access) -> Journey:
 @router.post("/answers", response_model=Journey, operation_id="answerAgentQuestion")
 def answer(body: AnswerRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
-    if len(journey.events) >= 104:
+    if len(journey.events) >= 104 and body.event_index is None:
         raise HTTPException(409, "This journey is full. Export it before starting another.")
-    if not journey.decision.questions or journey.decision.questions[0].id != body.question_id:
-        raise HTTPException(409, "This question is no longer active.")
-    question = journey.decision.questions[0]
+    if journey.plans and (journey.mode != "checkin" or journey.proposal is not None):
+        raise HTTPException(409, "Start a check-in before changing answers.")
+    if body.event_index is not None:
+        cycle_start = 0
+        if journey.mode == "checkin":
+            cycle_start = max(
+                (i + 1 for i, event in enumerate(journey.events) if event.kind == "checkin"),
+                default=len(journey.events),
+            )
+        if not cycle_start <= body.event_index < len(journey.events):
+            raise HTTPException(409, "Only answers from this question cycle can be changed.")
+        event = journey.events[body.event_index]
+        if event.kind != "answer":
+            raise HTTPException(409, "This event is not an editable answer.")
+        question = event.question_snapshot or Question(
+            id=f"legacy-{body.event_index}",
+            text=event.question,
+            why="Update your answer so the next question can adapt.",
+        )
+        if question.id != body.question_id:
+            raise HTTPException(409, "This question is no longer active.")
+    else:
+        if not journey.decision.questions or journey.decision.questions[0].id != body.question_id:
+            raise HTTPException(409, "This question is no longer active.")
+        question = journey.decision.questions[0]
     available = {option.id: option for option in question.options}
     if any(option_id not in available for option_id in body.selected_option_ids):
         raise HTTPException(422, "Choose from the current question's options.")
@@ -211,6 +236,15 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
         ):
             raise HTTPException(502, "The coach could not summarize these photos. Please retry.")
         photo_notes = PhotoNotes(**reading.model_dump())
+    if body.event_index is not None:
+        # Later questions depended on the old answer. Replace them atomically only
+        # after validation/generation succeeds; accepted plans are never rewritten.
+        removed = len(journey.events) - body.event_index
+        journey.events = journey.events[: body.event_index]
+        if journey.mode == "assessment":
+            journey.assessment_count -= removed
+        else:
+            journey.checkin_count -= removed
     journey.events.append(
         Event(
             kind="answer",
@@ -220,6 +254,7 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
             skipped=body.skipped,
             photo_count=len(body.photos),
             photo_notes=photo_notes,
+            question_snapshot=question,
             created_at=datetime.now(UTC),
         )
     )
@@ -229,6 +264,26 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
         journey.checkin_count += 1
     journey.decision = decide(journey)
     return store.save(access, journey, body.revision)
+
+
+@router.post("/fit-options", response_model=FitOptions, operation_id="getAgentFitOptions")
+def fit_options(body: RevisionRequest, access: Access) -> FitOptions:
+    journey = load(access, body.revision)
+    return provider.generate(
+        "Prepare optional fit/safety choices for this person's intended plan. Read the "
+        "actual goals, description and ALL answers. Return 1-5 short constraint labels "
+        "only when they could change a plausible suggestion for THIS request, plus a "
+        "short limitations_hint with relevant examples for an optional free-text field. "
+        "For weight management or fitness, consider food allergies, dietary needs and "
+        "movement limitations; do not ask about skin/scalp or cosmetic ingredients unless "
+        "the user also raised that concern. For skin/hair products, consider relevant "
+        "ingredient reactions. Do not turn beauty positioning into unrelated questions. "
+        "Avoid asking again about constraints already reported. These labels are choices, "
+        "not user facts. Do not include Other, None or Not sure; the UI provides those. "
+        "Do not request diagnoses, medication names or detailed medical histories.",
+        coaching_context(journey),
+        FitOptions,
+    )
 
 
 @router.post("/plan", response_model=Journey, operation_id="generateAgentPlan")

@@ -22,6 +22,40 @@ application. Planned product behavior is specified in [PRODUCT_ROADMAP.md](PRODU
 
 ## Adaptive agent
 
+### Goal-specific fit and editable answers (2026-11-09)
+
+`POST /v1/agent/fit-options` uses the stated goals, description and recorded answers
+to generate optional constraint labels and a relevant limitations hint. The frontend
+no longer displays a fixed skin-oriented list for every goal. On failure, it offers
+retry and optional text input. Generated labels remain possibilities, never profile
+facts. Relevance is model-guided and requires live quality evaluation.
+
+Answer events now retain an optional question snapshot for editing; older events
+remain editable as text. Snapshots are removed from model context so unselected
+choices are not treated as reports. An answer request with `event_index` edits only
+the active unfinished cycle, drops dependent later answers, recounts the question
+budget and generates a new next question. Validation/provider failures leave the
+stored cycle intact. Editing replaces photo notes for that answer; raw photos cannot
+be restored. Accepted plan history cannot be edited through this route. Fit/safety
+has a Back to questions control before plan generation.
+
+### Bokadirekt discovery investigation (2026-11-09; not implemented)
+
+Public service listings can supply links for optional professional-service ideas.
+A future search step should use a relevant service category and a user-provided town
+or online preference, rather than sending private questionnaire answers to search.
+Match listings to the actual request, budget and relevant constraints, link the
+retrieved source, record retrieval time, and distinguish a listing from evidence of
+effectiveness or verified professional qualifications. Do not invent availability,
+prices or book appointments automatically. Failure to find a suitable service should
+leave the ordinary plan useful.
+
+The documented [Merchant API](https://external.api.portal.bokadirekt.se/index.html)
+provides authenticated access to a merchant's own salon data; this investigation did
+not establish a supported API for marketplace-wide discovery. Confirm partner access
+with Bokadirekt before building a whole-marketplace API integration. Search and
+outbound listing links are a separate possible implementation, not live booking.
+
 Direction and goal selection lead to a consent step, then one question per answer,
 with a hard cap of six adaptive assessment questions. Fit/safety controls precede
 plan generation. The analysis separates reported facts, hypotheses and uncertainties.
