@@ -141,12 +141,26 @@
             "type": "boolean"
           },
           "max_checkin_questions": {
-            "title": "Max Checkin Questions",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Checkin Questions"
           },
           "max_questions": {
-            "title": "Max Questions",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Questions"
           },
           "mode": {
             "default": "single-user-local",
@@ -206,7 +220,6 @@
           "event_index": {
             "anyOf": [
               {
-                "maximum": 104.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -244,7 +257,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
             "title": "Selected Option Ids",
             "type": "array"
           },
@@ -281,6 +293,54 @@
           "message"
         ],
         "title": "CheckInRequest",
+        "type": "object"
+      },
+      "CoachTurn": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "selected_answers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Selected Answers",
+            "type": "array"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "created_at",
+          "message",
+          "selected_answers",
+          "skipped",
+          "reply"
+        ],
+        "title": "CoachTurn",
         "type": "object"
       },
       "Completion": {
@@ -520,8 +580,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
-            "minItems": 1,
             "title": "Options",
             "type": "array"
           }
@@ -695,7 +753,6 @@
             "type": "boolean"
           },
           "event_index": {
-            "maximum": 104.0,
             "minimum": 0.0,
             "title": "Event Index",
             "type": "integer"
@@ -728,7 +785,6 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 4,
             "minItems": 1,
             "title": "Actions",
             "type": "array"
@@ -905,7 +961,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 10,
             "title": "Sensitivities",
             "type": "array"
           }
@@ -931,7 +986,6 @@
             "items": {
               "$ref": "#/components/schemas/AnswerOption"
             },
-            "maxItems": 6,
             "title": "Options",
             "type": "array"
           },
@@ -1052,25 +1106,39 @@
       "SuggestionBoard": {
         "additionalProperties": false,
         "properties": {
+          "conversation": {
+            "items": {
+              "$ref": "#/components/schemas/CoachTurn"
+            },
+            "title": "Conversation",
+            "type": "array"
+          },
           "kept": {
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 24,
             "title": "Kept",
             "type": "array"
+          },
+          "pending_question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rejected_ids": {
             "items": {
               "type": "string"
             },
-            "maxItems": 204,
             "title": "Rejected Ids",
             "type": "array"
           },
           "rounds": {
             "default": 0,
-            "maximum": 50.0,
             "minimum": 0.0,
             "title": "Rounds",
             "type": "integer"
@@ -1087,7 +1155,6 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 204,
             "title": "Seen",
             "type": "array"
           },
@@ -1095,12 +1162,57 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 28,
             "title": "Suggestions",
             "type": "array"
           }
         },
         "title": "SuggestionBoard",
+        "type": "object"
+      },
+      "SuggestionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Message",
+            "type": "string"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "selected_option_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Selected Option Ids",
+            "type": "array"
+          },
+          "skipped": {
+            "default": false,
+            "title": "Skipped",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "SuggestionRequest",
         "type": "object"
       }
     },
@@ -2771,7 +2883,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReshuffleRequest"
+                "$ref": "#/components/schemas/SuggestionRequest"
               }
             }
           },

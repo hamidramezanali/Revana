@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ProfileSettings } from "./ProfileSettings";
 import { PhotoReview } from "./PhotoReview";
 import { QuestionCard } from "./QuestionCard";
-import { PlanActions, actionLists } from "./PlanActions";
+import { PlanActions, actionLists, type CoachAnswer } from "./PlanActions";
 import { ActionCard, type ActionChoice } from "./ActionCard";
 import { PlanView } from "./PlanView";
 import { dashboardTabs, useDashboardNavigation } from "./navigation";
@@ -59,7 +59,6 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { headingRef.current?.focus(); }, [question?.id, pendingPhoto]);
   const count = journey.mode === "assessment" ? journey.assessment_count : journey.checkin_count;
-  const max = journey.mode === "assessment" ? 6 : 3;
   const cycleStart = journey.mode === "checkin" ? journey.events.reduce((start, event, index) => event.kind === "checkin" ? index + 1 : start, journey.events.length) : 0;
   const editable = journey.events.map((event, index) => ({event, index})).filter(({event, index}) => event.kind === "answer" && index >= cycleStart);
   const loadOptions = () => run(async () => update(await agentRequest<Journey>("question-options", { revision: journey.revision })));
@@ -72,7 +71,7 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
     setEditingIndex(null);
   });
   return <div className="question-page wide-question adaptive-question-page">
-    <span className="eyebrow">{journey.mode === "assessment" ? "GETTING TO KNOW YOU" : "YOUR FOLLOW-UP"} · {editingEvent ? "UPDATE AN ANSWER" : question ? `QUESTION ${count + 1} · UP TO ${max}` : `${count} ANSWERED`}</span>
+    <span className="eyebrow">{journey.mode === "assessment" ? "GETTING TO KNOW YOU" : "YOUR FOLLOW-UP"} · {editingEvent ? "UPDATE AN ANSWER" : question ? `QUESTION ${count + 1}` : `${count} ANSWERED`}</span>
     <h2 ref={headingRef} tabIndex={-1}>{pendingPhoto ? "Check what I noticed." : question ? question.text : "Your starting point is ready."}</h2>
     {pendingPhoto ? <PhotoReview key={journey.events.length} journey={journey} busy={busy} onReview={(eventIndex, observations, discard) => run(async () => update(await agentRequest<Journey>("photo-notes", {revision: journey.revision, event_index: eventIndex, observations, discard})))} /> : question ? <>
       <details className="question-explanation"><summary>Why we ask</summary><p>{question.why}</p></details>
@@ -81,7 +80,7 @@ export function AdaptiveQuestions({ journey, update, onFinish, busy, run }: {
     </> : <p className="prompt-status" role="status">{journey.decision.summary}</p>}
     {!editingEvent && <div className="agent-buttons">{!!editable.length && <Button className="secondary" disabled={busy || pendingPhoto} onClick={() => setEditingIndex(editable[editable.length - 1].index)}>← Previous question</Button>}<Button className={question ? "secondary" : "primary"} disabled={busy || pendingPhoto} onClick={onFinish}>{journey.mode === "assessment" ? "Continue to fit & safety" : "Draft an updated plan"}</Button></div>}
     {!!editable.length && <details className="question-explanation" open={editingEvent ? true : undefined}><summary>Review or change earlier answers</summary>{editable.map(({event, index}) => <section key={index}><h3>{event.question}</h3><p>{event.skipped ? "Skipped" : [event.selected_options.join(", "), event.answer].filter(Boolean).join(" — ") || "Photo answer"}</p><Button className="secondary" disabled={busy || pendingPhoto} onClick={() => setEditingIndex(index)}>Change answer {index - cycleStart + 1}</Button></section>)}</details>}
-    <p className="agent-small">Your answers shape the next question. We stop when there’s enough to help, with no more than {max} questions. You can finish early.</p>
+    <p className="agent-small">Your answers shape the next question. We ask only what helps and stop when there’s enough to guide you. You can skip or finish whenever you’re ready.</p>
   </div>;
 }
 
@@ -107,7 +106,6 @@ export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }:
   useEffect(() => { window.scrollTo({top: 0, behavior: "instant"}); pageHeading.current?.focus({preventScroll: true}); }, [tab]);
   const [planMessage, setPlanMessage] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [message, setMessage] = useState("");
   const [checking, setChecking] = useState(journey.mode === "checkin" && !journey.proposal);
   const version = journey.plans[journey.plans.length - 1];
   const plan = version.plan;
@@ -124,8 +122,8 @@ export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }:
   const chooseAction = (actionId: string, choice: ActionChoice) => run(async () => {
     update(await agentRequest<Journey>("suggestion-choice", { revision: journey.revision, action_id: actionId, choice }));
   });
-  const reshuffle = (message: string) => run(async () => {
-    update(await agentRequest<Journey>("suggestions", { revision: journey.revision, message }));
+  const reshuffle = (message: string, answer?: CoachAnswer) => run(async () => {
+    update(await agentRequest<Journey>("suggestions", { revision: journey.revision, message, ...answer }));
     setPlanMessage("");
   });
   const completeAction = (actionId: string) => run(async () => {
@@ -149,15 +147,12 @@ export function AgentDashboard({ journey, update, busy, run, onDelete, onBack }:
     <main className="dash-main"><section className="dash-hero"><div><span className="eyebrow">YOUR PERSONAL PLAN · VERSION {version.version}</span><h1 ref={pageHeading} tabIndex={-1}>{tab === "Today" ? "A little care, every day." : tab === "My plan" ? "Your personal plan." : tab === "Coach" ? "Let’s check in." : "Your understanding."}</h1>{tab === "Today" ? <details className="hero-summary"><summary>Your plan at a glance</summary><p>{plan.summary}</p></details> : tab === "Coach" ? <p>What’s changed since we last spoke?</p> : tab === "Insights" ? <p>What you shared, and what we’re still exploring.</p> : null}</div><div className="review-card"><Icon name="calendar" size={18} /><span>Next review</span><strong>{review.toLocaleDateString(undefined, {day: "numeric", month: "short"})}</strong></div></section>
       {journey.proposal && <section className="plan-proposal" aria-labelledby="proposal-heading"><span className="eyebrow">PROPOSED UPDATE</span><h2 id="proposal-heading">Your refreshed plan</h2><p>{journey.proposal.changes}</p><div className="focus-action-list">{journey.proposal.actions.map(action => <ActionCard key={action.id} action={action} badge={(journey.action_preferences ?? []).some(item => item.plan_version === version.version && item.action_id === action.id && item.choice === "keep") ? "Kept unchanged" : "Suggested"} />)}</div><div className="agent-buttons"><Button className="primary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("accept", { revision: journey.revision })))}>Accept updated plan</Button><Button className="secondary" disabled={busy} onClick={() => run(async () => update(await agentRequest<Journey>("discard-proposal", { revision: journey.revision })))}>Keep current plan</Button></div><div className="proposal-safety">{journey.proposal.safety_notes.map((text, index) => <p key={index}>{text}</p>)}</div></section>}
       {checking ? <AdaptiveQuestions journey={journey} update={update} busy={busy} run={run} onFinish={draft} /> : <div className={`dash-grid${tab === "Coach" ? " coach-active" : ""}`}><div className="dash-primary">
-        {tab === "Today" && <><div className="section-title"><h2>Your actions & ideas</h2><span className="progress-text">{keptCompleted}/{keptActions.length} kept actions complete</span></div>{actionSection}</>}
+        {(tab === "Today" || tab === "Coach") && <><div className="section-title"><h2>{tab === "Coach" ? "Your conversation & choices" : "Your actions & ideas"}</h2><span className="progress-text">{keptCompleted}/{keptActions.length} kept actions complete</span></div>{actionSection}</>}
         {tab === "My plan" && <><button type="button" className="plan-settings-link" onClick={() => setSettingsOpen(true)}>Profile settings · start over</button><PlanView key={version.version} journey={journey} busy={busy} onCheckin={message => run(async () => {
           update(await agentRequest<Journey>("checkins", { revision: journey.revision, message }));
           setChecking(true);
         })}>{actionSection}</PlanView></>}
         {tab === "Insights" && <div className="insights-view"><h2>What we’re learning</h2><p>Observations, not arbitrary wellness scores.</p><h3>Reported by you</h3><ul>{plan.reported.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Working hypotheses</h3><ul>{plan.hypotheses.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Still uncertain</h3><ul>{plan.uncertainties.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>Your answers & check-ins</h3>{journey.events.map((e, i) => <details key={i}><summary>{e.question}</summary><p>{e.skipped ? "Skipped" : [e.selected_options?.join(", "), e.answer].filter(Boolean).join(" — ") || (e.photo_count ? "Photo answer" : "")}</p>{e.photo_notes && <div><strong>Reviewed photo observations · not a diagnosis</strong><ul>{e.photo_notes.observations.map((note, index) => <li key={index}>{note}</li>)}</ul><p>{e.photo_notes.uncertainties.join(" ")}</p></div>}</details>)}</div>}
-      </div><aside className="coach-panel" aria-label="Coach and your data"><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Check in with Revana</strong><small>Live guidance based on your saved journey</small></div></div><p>Tell your agent what changed, what feels difficult, or what you want to explore. It may ask up to three questions before proposing an update.</p><textarea aria-label="Check-in or question" maxLength={2000} value={message} disabled={busy} onChange={e => setMessage(e.target.value)} placeholder="I have less time. My routine caused irritation. What else could help?" /><Button className="primary" disabled={busy || !message.trim()} onClick={() => run(async () => {
-        update(await agentRequest<Journey>("checkins", { revision: journey.revision, message: message.trim() }));
-        setMessage(""); setChecking(true);
-      })}>{busy ? "Thinking…" : "Ask my beauty agent"}</Button></section><details className="starting-point"><summary>Your data & settings</summary><p>Saved by this Revana deployment. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete profile & start over</Button></div></details></aside></div>}
+      </div><aside className="coach-panel" aria-label="Coach and your data"><section className="coach-card"><div className="coach-title"><span><Icon name="sparkle" /></span><div><strong>Your conversation leads</strong><small>Guidance shaped around what you ask</small></div></div><p>Explore options with your coach. To propose a change to your accepted plan, use the check-in in My plan.</p><Button className="primary" onClick={() => setTab("Coach")}>Open coach</Button></section><details className="starting-point"><summary>Your data & settings</summary><p>Saved by this Revana deployment. Your answers and plan context are sent to OpenAI when you ask the agent. Exported files contain your answers; store them privately.</p><div className="agent-buttons"><Button className="secondary" onClick={exportJourney}>Export journey</Button><Button className="secondary" disabled={busy} onClick={onDelete}>Delete profile & start over</Button></div></details></aside></div>}
     </main><SafetyStrip /></div>;
 }

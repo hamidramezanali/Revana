@@ -28,6 +28,19 @@ This is synthetic UI validation, not a live-provider quality or real-device asse
 
 ## Current baseline
 
+- 2026-11-09 conversation checkpoint: latest messages and selected answers lead coach
+  replies; a visible composer supports adaptive selectable follow-ups, explanations
+  and practical action alternatives. No fixed question/choice/action-count quota.
+  Clarifications preserve kept actions and current suggestions. Chat context informs
+  proposed plan revisions, which still require acceptance. Raw turns remain in the
+  existing journey lifecycle; retention consolidation is not implemented here.
+  Validation: 104 backend tests passed, one skipped; Ruff, generated-contract checks,
+  TypeScript and production build passed. Synthetic browser checks at 390px and
+  1280px covered visible chat, failed-request draft preservation, nine choices with
+  exclusive selection, eight selected answers, six alternative actions, preserved
+  kept actions, direction changes, reload and no page errors or horizontal overflow.
+  Live recommendation quality and provider behavior remain unverified.
+
 - 2026-11-09: goal-specific fit/safety options replace the fixed allergy list.
   During assessment or an unfinished check-in, earlier answers can be edited;
   dependent later questions are regenerated without changing accepted plan history.
@@ -39,7 +52,7 @@ This is synthetic UI validation, not a live-provider quality or real-device asse
   Live model relevance and real marketplace results have not been validated.
 
 - React/TypeScript mobile-responsive UI and FastAPI `/v1/agent` API in one repository.
-- One generated question per turn; caps of six assessment and three check-in questions.
+- One adaptive question per turn without fixed cycle or option counts; users can skip or finish.
 - Server-side structured provider adapter, bounded inputs and revision conflict checks.
 - Durable local SQLite journeys, accepted plan history, proposals and action completion.
 - Fit/safety preferences and limitations reach the provider; accepted plan summary and

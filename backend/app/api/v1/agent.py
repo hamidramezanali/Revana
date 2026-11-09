@@ -33,12 +33,13 @@ from app.agent_models import (
     RevisionRequest,
     SessionCreated,
     StartRequest,
+    SuggestionRequest,
 )
 from app.config import get_settings
 from app.errors import ErrorResponse
 from app.photo_inputs import sanitized_photos
 from app.plan_revision import build_revision, current_preferences
-from app.suggestions import board_for, generate_batch
+from app.suggestions import board_for, conversation_context, generate_batch
 
 router = APIRouter(
     prefix="/agent",
@@ -48,8 +49,6 @@ router = APIRouter(
 # Keep the generated contract stable across Python HTTPStatus wording changes.
 router.responses[422]["description"] = "Unprocessable Content"
 security = HTTPBearer(auto_error=False)
-MAX_QUESTIONS = 6
-MAX_CHECKIN_QUESTIONS = 3
 
 
 def token(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]) -> str:
@@ -82,29 +81,37 @@ def coaching_context(journey: Journey) -> dict:
             "kept": board["kept"],
             "not_for_me": [a for a in board["seen"] if a["id"] in board["rejected_ids"]],
         }
+        context["coach_conversation"] = conversation_context(journey.suggestion_board)
+        if journey.suggestion_board.conversation:
+            latest = journey.suggestion_board.conversation[-1]
+            context["current_request"] = {
+                "message": latest.message,
+                "selected_answers": latest.selected_answers,
+                "skipped": latest.skipped,
+            }
+            if journey.events and journey.events[-1].created_at > latest.created_at:
+                event = journey.events[-1]
+                context["current_request"] = {
+                    "message": event.answer,
+                    "selected_answers": event.selected_options,
+                    "skipped": event.skipped,
+                }
     return context
 
 
 def decide(journey: Journey) -> Decision:
-    limit = MAX_QUESTIONS if journey.mode == "assessment" else MAX_CHECKIN_QUESTIONS
-    count = journey.assessment_count if journey.mode == "assessment" else journey.checkin_count
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         return Decision(
             summary="Review the photo observations before continuing.", ready=False, questions=[]
         )
-    if count >= limit:
-        return Decision(
-            summary="Question limit reached. Ready to build or update your plan.",
-            ready=True,
-            questions=[],
-        )
     decision = provider.generate(
-        f"Decide the next question or finish now. {limit - count} questions remain in this "
-        "cycle. Return ready=true with no questions when enough is known. Otherwise ask "
-        "exactly one focused question with 3-6 short answer options. Choose single or "
+        "Decide the next question or finish now based on the latest request and answers. "
+        "Return ready=true with no questions when enough is known. Otherwise ask "
+        "one focused question with as many useful short answer options as needed. Choose single or "
         "multiple selection appropriately. Ask only for missing information that changes "
-        "the plan; use the initial description and ALL answers. Stop early rather than "
-        "filling the remaining quota. Use a concise summary of actual user reports. "
+        "the plan; use the initial description and ALL answers. There is no fixed turn "
+        "or option quota; stop when further questions would not improve the response. "
+        "Use a concise summary of actual user reports. "
         "Set photo_mode to products, skin or hair only when a photo can help answer this "
         "specific question; otherwise none. Never request photos for duration, pain, diet "
         "or other nonvisual history. Photos are always optional.",
@@ -144,8 +151,8 @@ def status() -> AgentStatus:
             raise HTTPException(503, "Set " + " and ".join(missing) + " in Vercel, then redeploy.")
     return AgentStatus(
         configured=bool(settings.openai_api_key and settings.openai_model),
-        max_questions=MAX_QUESTIONS,
-        max_checkin_questions=MAX_CHECKIN_QUESTIONS,
+        max_questions=None,
+        max_checkin_questions=None,
         mode="hosted" if settings.hosted else "single-user-local",
     )
 
@@ -170,8 +177,6 @@ def get_session(access: Access) -> Journey:
 @router.post("/answers", response_model=Journey, operation_id="answerAgentQuestion")
 def answer(body: AnswerRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
-    if len(journey.events) >= 104 and body.event_index is None:
-        raise HTTPException(409, "This journey is full. Export it before starting another.")
     if journey.plans and (journey.mode != "checkin" or journey.proposal is not None):
         raise HTTPException(409, "Start a check-in before changing answers.")
     if body.event_index is not None:
@@ -271,7 +276,7 @@ def fit_options(body: RevisionRequest, access: Access) -> FitOptions:
     journey = load(access, body.revision)
     return provider.generate(
         "Prepare optional fit/safety choices for this person's intended plan. Read the "
-        "actual goals, description and ALL answers. Return 1-5 short constraint labels "
+        "actual goals, description and ALL answers. Return relevant short constraint labels "
         "only when they could change a plausible suggestion for THIS request, plus a "
         "short limitations_hint with relevant examples for an optional free-text field. "
         "For weight management or fitness, consider food allergies, dietary needs and "
@@ -327,7 +332,7 @@ def checkin(body: CheckInRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if not journey.plans:
         raise HTTPException(409, "Create your initial plan first.")
-    if len(journey.events) >= 100 or len(journey.plans) >= 25:
+    if len(journey.plans) >= 25:
         raise HTTPException(
             409, "This local journey has reached its storage limit. Export it first."
         )
@@ -415,7 +420,7 @@ def upgrade_question_options(body: RevisionRequest, access: Access) -> Journey:
     context = coaching_context(journey)
     context["current_question"] = {"text": question.text, "why": question.why}
     generated = provider.generate(
-        "Add 3-6 short probable answer options to this existing question. Keep its exact "
+        "Add relevant short answer options to this existing question, with no fixed count. Keep its exact "
         "meaning; do not ask a new question. Choose single/multiple selection appropriately "
         "and mark exclusive choices. Use the goals, description and all previous answers.",
         context,
@@ -507,12 +512,6 @@ def suggestion_choice(body: ActionPreferenceRequest, access: Access) -> Journey:
     if body.action_id not in available:
         raise HTTPException(422, "This suggestion is no longer available.")
     action = available[body.action_id]
-    if (
-        body.choice == "keep"
-        and len(board.kept) >= 24
-        and action.id not in {a.id for a in board.kept}
-    ):
-        raise HTTPException(409, "Your kept list is full. Remove an action before adding another.")
     board.suggestions = [a for a in board.suggestions if a.id != action.id]
     board.kept = [a for a in board.kept if a.id != action.id]
     board.rejected_ids = [value for value in board.rejected_ids if value != action.id]
@@ -543,13 +542,11 @@ def suggestion_choice(body: ActionPreferenceRequest, access: Access) -> Journey:
 
 
 @router.post("/suggestions", response_model=Journey, operation_id="generateAgentSuggestions")
-def suggestions(body: ReshuffleRequest, access: Access) -> Journey:
+def suggestions(body: SuggestionRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if not journey.plans:
         raise HTTPException(409, "Create your initial plan first.")
-    journey.suggestion_board = generate_batch(
-        journey, coaching_context(journey), body.message.strip()
-    )
+    journey.suggestion_board = generate_batch(journey, coaching_context(journey), body)
     return store.save(access, journey, body.revision)
 
 

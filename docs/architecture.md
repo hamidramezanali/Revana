@@ -22,6 +22,38 @@ application. Planned product behavior is specified in [PRODUCT_ROADMAP.md](PRODU
 
 ## Adaptive agent
 
+### Conversation-led coaching (2026-11-09)
+
+The latest user message and selected answers lead the response; earlier goals and
+plans are supporting context. Relevant constraints and safety rules remain active.
+`POST /v1/agent/suggestions` now accepts an optional active question ID and selected
+choice IDs, or a plain new message to change direction. It validates choices against
+the saved question, and persists user messages, selected labels, explicit skips and
+coach replies separately from accepted plans and completed actions. Only selected
+answers reach model context; unselected question choices remain display metadata.
+Conversation context also informs subsequent check-ins and proposed plan revisions.
+A newer check-in takes precedence over an older chat message.
+
+The structured coach reply can explain, ask a focused question, offer actions, or
+combine them. Clarification-only replies preserve existing suggestions. More than
+three alternatives are supported. Fixed assessment/check-in turn caps, question-option
+caps, action-count caps and the old suggestion-round cap are removed; one question is
+shown at a time. Request sizes, field lengths, provider timeout/output tokens and
+revision checks still bound individual operations. This is not unlimited model capacity.
+The Today, Coach and My plan screens expose the composer before action lists, with
+selectable follow-ups, optional text, skip and a way to ask something else.
+
+Replies explain the recommendation and its uncertainty in public-facing language;
+private chain-of-thought is not requested or exposed. For unsafe or unrealistic
+deadlines, the role guidance asks for direct acknowledgement, a brief explanation,
+and practical safer alternatives rather than tracking-only advice. The
+[NHS weight-management guidance](https://www.nhs.uk/live-well/healthy-weight/managing-your-weight/tips-to-help-you-lose-weight/)
+supports gradual weight loss and discourages sudden loss through diets. Prompt rules
+and synthetic tests do not establish medical safety or live recommendation quality.
+
+Conversation turns use the existing journey storage/export/delete lifecycle. This
+checkpoint does not implement temporary-turn consolidation, expiry or payment gates.
+
 ### Goal-specific fit and editable answers (2026-11-09)
 
 `POST /v1/agent/fit-options` uses the stated goals, description and recorded answers
@@ -56,13 +88,12 @@ not establish a supported API for marketplace-wide discovery. Confirm partner ac
 with Bokadirekt before building a whole-marketplace API integration. Search and
 outbound listing links are a separate possible implementation, not live booking.
 
-Direction and goal selection lead to a consent step, then one question per answer,
-with a hard cap of six adaptive assessment questions. Fit/safety controls precede
-plan generation. The analysis separates reported facts, hypotheses and uncertainties.
-The dashboard supports follow-up check-ins with at most three questions and a proposed
-plan revision that must be accepted before replacing the current plan.
+Direction and goal selection lead to a consent step, then adaptive questions without
+a fixed cycle or option quota. Fit/safety controls precede plan generation. The analysis
+separates reported facts, hypotheses and uncertainties. Check-ins continue until enough
+is known or the user finishes; proposed plan revisions still require acceptance.
 
-The backend owns question budgets, active-question IDs, input bounds and revision
+The backend owns active-question IDs, input bounds and revision
 checks. LLM generation completes before database writes; failure leaves saved state
 unchanged. Atomic compare-and-swap writes reject stale/replayed mutations. Accepted
 plans remain versioned. The provider is replaceable in tests; demo responses are not

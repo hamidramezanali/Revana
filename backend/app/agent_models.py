@@ -21,7 +21,7 @@ class Context(Model):
 
 class Preferences(Model):
     limitations: str = Field(default="", max_length=800)
-    sensitivities: list[str] = Field(max_length=10)
+    sensitivities: list[str]
     budget: str = Field(max_length=100)
     effort: str = Field(max_length=100)
 
@@ -42,7 +42,7 @@ class Question(Model):
     text: str = Field(min_length=1, max_length=500)
     why: str = Field(min_length=1, max_length=500)
     # Defaults preserve saved journeys from before selectable questions were added.
-    options: list[AnswerOption] = Field(default_factory=list, max_length=6)
+    options: list[AnswerOption] = Field(default_factory=list)
     selection_mode: Literal["single", "multiple"] = "multiple"
     photo_mode: Literal["none", "products", "skin", "hair"] = "none"
 
@@ -64,7 +64,7 @@ class Decision(Model):
 
 class GeneratedQuestion(Question):
     # All output properties must be required for the strict provider schema.
-    options: list[AnswerOption] = Field(min_length=3, max_length=6)
+    options: list[AnswerOption] = Field(min_length=1)
     selection_mode: Literal["single", "multiple"] = Field(...)
     photo_mode: Literal["none", "products", "skin", "hair"] = Field(...)
 
@@ -76,10 +76,10 @@ class GeneratedDecision(Decision):
 class AnswerRequest(Model):
     revision: int = Field(ge=0)
     # Editing is limited to answers in the active, unfinished question cycle.
-    event_index: int | None = Field(default=None, ge=0, le=104)
+    event_index: int | None = Field(default=None, ge=0)
     question_id: str = Field(min_length=1, max_length=80)
     answer: str = Field(default="", max_length=2000)
-    selected_option_ids: list[str] = Field(default_factory=list, max_length=6)
+    selected_option_ids: list[str] = Field(default_factory=list)
     skipped: bool = False
     photos: list[str] = Field(default_factory=list, max_length=3)
     photo_consent: bool = False
@@ -103,7 +103,7 @@ class RevisionRequest(Model):
 
 
 class FitOptions(Model):
-    options: list[str] = Field(min_length=1, max_length=5)
+    options: list[str]
     limitations_hint: str = Field(min_length=1, max_length=300)
 
     @model_validator(mode="after")
@@ -126,7 +126,7 @@ class PhotoNotes(PhotoReading):
 
 
 class PhotoNotesRequest(RevisionRequest):
-    event_index: int = Field(ge=0, le=104)
+    event_index: int = Field(ge=0)
     observations: list[str] = Field(default_factory=list, max_length=6)
     discard: bool = False
 
@@ -152,6 +152,29 @@ class ActionPreferenceRequest(RevisionRequest):
 
 class ReshuffleRequest(RevisionRequest):
     message: str = Field(default="", max_length=1000)
+
+
+class SuggestionRequest(RevisionRequest):
+    message: str = Field(default="", max_length=2000)
+    question_id: str | None = Field(default=None, min_length=1, max_length=80)
+    selected_option_ids: list[str] = Field(default_factory=list)
+    skipped: bool = False
+
+    @model_validator(mode="after")
+    def valid_answer(self):
+        if len(set(self.selected_option_ids)) != len(self.selected_option_ids):
+            raise ValueError("Selected option IDs must be distinct.")
+        if self.selected_option_ids and self.question_id is None:
+            raise ValueError("Choose from an active question.")
+        if self.skipped and (
+            self.question_id is None or self.message.strip() or self.selected_option_ids
+        ):
+            raise ValueError("A skip needs a question and cannot contain an answer.")
+        if self.question_id and not (
+            self.skipped or self.message.strip() or self.selected_option_ids
+        ):
+            raise ValueError("Choose an option, add an answer or skip.")
+        return self
 
 
 class ActionPreference(Model):
@@ -186,7 +209,7 @@ class Plan(Model):
     hypotheses: list[str] = Field(max_length=8)
     uncertainties: list[str] = Field(max_length=8)
     safety_notes: list[str] = Field(min_length=1, max_length=8)
-    actions: list[Action] = Field(min_length=1, max_length=4)
+    actions: list[Action] = Field(min_length=1)
     review_days: int = Field(ge=1, le=30)
     changes: str = Field(min_length=1, max_length=1500)
 
@@ -202,22 +225,36 @@ class ReplacementAction(Action):
 
 
 class ReshuffleDraft(Plan):
-    actions: list[ReplacementAction] = Field(max_length=4)
+    actions: list[ReplacementAction]
 
 
 class SuggestionBatch(Model):
-    actions: list[Action] = Field(min_length=1, max_length=4)
+    reply: str = Field(min_length=1, max_length=4000)
+    questions: list[GeneratedQuestion] = Field(max_length=1)
+    actions: list[Action]
     safety_notes: list[str] = Field(min_length=1, max_length=8)
+
+
+class CoachTurn(Model):
+    created_at: datetime
+    message: str
+    selected_answers: list[str]
+    skipped: bool
+    reply: str
+    # Display/replay metadata only; unselected options never become model facts.
+    question: Question | None = None
 
 
 class SuggestionBoard(Model):
     # Separate from accepted plan versions; defaults migrate existing journeys lazily.
-    suggestions: list[Action] = Field(default_factory=list, max_length=28)
-    kept: list[Action] = Field(default_factory=list, max_length=24)
-    seen: list[Action] = Field(default_factory=list, max_length=204)
-    rejected_ids: list[str] = Field(default_factory=list, max_length=204)
-    rounds: int = Field(default=0, ge=0, le=50)
+    suggestions: list[Action] = Field(default_factory=list)
+    kept: list[Action] = Field(default_factory=list)
+    seen: list[Action] = Field(default_factory=list)
+    rejected_ids: list[str] = Field(default_factory=list)
+    rounds: int = Field(default=0, ge=0)
     safety_notes: list[str] = Field(default_factory=list, max_length=8)
+    conversation: list[CoachTurn] = Field(default_factory=list)
+    pending_question: Question | None = None
 
 
 class Completion(Model):
@@ -273,6 +310,6 @@ class SessionCreated(Model):
 
 class AgentStatus(Model):
     configured: bool
-    max_questions: int
-    max_checkin_questions: int
+    max_questions: int | None
+    max_checkin_questions: int | None
     mode: Literal["single-user-local", "hosted"] = "single-user-local"

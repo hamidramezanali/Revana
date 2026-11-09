@@ -147,3 +147,14 @@ button:disabled { opacity: .55; }
 @media (prefers-contrast: more) { :root { --muted: var(--ink); --line: oklch(55% .025 55); } }
 
 @media (max-width: 640px) { .onboarding-header .stepper { display: flex; } }
+
+.coach-conversation { margin-top: 0; }
+.coach-conversation h2 { font: 650 26px/1.3 var(--font-body); }
+.coach-conversation > label { display: block; margin-top: 20px; font-weight: 600; }
+.coach-turn { margin: 18px 0; overflow-wrap: anywhere; }
+.coach-turn p { white-space: pre-line; }
+.coach-user-message { padding: 14px 16px; background: var(--sage); border-radius: 16px; }
+.coach-reply { line-height: 1.65; }
+.coach-question { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.coach-question h3 { font: 600 21px/1.4 var(--font-body); }
+.coach-earlier summary { cursor: pointer; font-weight: 600; }

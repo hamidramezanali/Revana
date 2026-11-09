@@ -6,10 +6,10 @@ Start with `docs/PRODUCT_ROADMAP.md`, `docs/architecture.md` and `docs/agent-roa
 
 Revana is an interactive beauty and lifestyle agent. Keep the current visual direction
 and direction -> goals -> understanding -> fit/safety -> analysis -> plan workflow.
-Questions must adapt to every previous answer; the backend allows at most six initial
-adaptive questions and three follow-up questions per check-in. Users may skip or finish
-early. Separate explicit user reports, hypotheses and unknowns. Plan revisions require
-user acceptance and preserve accepted history.
+The latest message drives the next response, with earlier context and safety constraints
+preserved. Questions adapt to every answer without a fixed cycle or option count. Users
+may skip or finish whenever ready. Separate explicit user reports, hypotheses and
+unknowns. Plan revisions require user acceptance and preserve accepted history.
 
 ## Agreed next release (planned)
 
@@ -26,7 +26,9 @@ reviewed sources. A capable model or stronger prompt alone does not establish qu
 
 The product-role instructions now live in `backend/app/prompts/coach.md`, loaded and
 packaged by the backend; this AGENTS.md remains developer guidance. New adaptive
-questions offer 3-6 choices with suitable single/multiple selection and optional text.
+questions offer as many relevant choices as needed, with suitable single/multiple selection
+and optional text. Coach responses may explain, ask a question, or offer action alternatives.
+Provide concise public rationale, never private chain-of-thought.
 Only selected choices and typed answers are reports; suggestions are not profile facts.
 Sweden/Scandinavia first; keep locale/country/timezone/currency/units separate. English
 is acceptable initially. Voice is later scope. Relevant questionnaire photos are now

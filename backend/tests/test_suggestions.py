@@ -32,7 +32,12 @@ def batch(journey, suffix="new"):
     action.update(
         id="provider-id", title=f"Alternative {suffix}", detail=f"Different detail {suffix}"
     )
-    return SuggestionBatch(actions=[action], safety_notes=["Review persistent concerns."])
+    return SuggestionBatch(
+        reply="Here is an alternative that fits your latest request.",
+        questions=[],
+        actions=[action],
+        safety_notes=["Review persistent concerns."],
+    )
 
 
 def test_keep_moves_to_separate_persistent_list_without_completing_or_changing_plan(agent):
@@ -139,8 +144,8 @@ def test_invalid_or_failed_batches_never_lose_choices(agent, monkeypatch, failur
     assert pick(client, headers, journey, "unknown", "keep").status_code in (409, 422)
 
 
-def test_stale_missing_plan_and_round_limit_do_not_generate(agent, monkeypatch):
-    client, calls = agent
+def test_stale_revisions_do_not_generate_but_old_round_limit_no_longer_applies(agent, monkeypatch):
+    client, _calls = agent
     headers, journey = setup_plan(client)
     before = journey
     journey = pick(client, headers, journey, "observe", "keep").json()
@@ -150,9 +155,10 @@ def test_stale_missing_plan_and_round_limit_do_not_generate(agent, monkeypatch):
     saved.suggestion_board.rounds = 50
     agent_store.save(access, saved, saved.revision)
     journey = client.get("/v1/agent/session", headers=headers).json()
-    count = len(calls)
-    assert more(client, headers, journey).status_code == 409
-    assert len(calls) == count
+    monkeypatch.setattr(agent_provider, "generate", lambda *args: batch(journey))
+    result = more(client, headers, journey)
+    assert result.status_code == 200
+    assert result.json()["suggestion_board"]["rounds"] == 51
 
 
 def test_no_votes_needed_for_first_batch(agent, monkeypatch):
