@@ -75,6 +75,8 @@ class GeneratedDecision(Decision):
 
 class AnswerRequest(Model):
     revision: int = Field(ge=0)
+    # Editing is limited to answers in the active, unfinished question cycle.
+    event_index: int | None = Field(default=None, ge=0, le=104)
     question_id: str = Field(min_length=1, max_length=80)
     answer: str = Field(default="", max_length=2000)
     selected_option_ids: list[str] = Field(default_factory=list, max_length=6)
@@ -98,6 +100,20 @@ class AnswerRequest(Model):
 
 class RevisionRequest(Model):
     revision: int = Field(ge=0)
+
+
+class FitOptions(Model):
+    options: list[str] = Field(min_length=1, max_length=5)
+    limitations_hint: str = Field(min_length=1, max_length=300)
+
+    @model_validator(mode="after")
+    def distinct_options(self):
+        labels = {item.strip().casefold() for item in self.options}
+        if "" in labels or len(labels) != len(self.options):
+            raise ValueError("Fit options must be distinct and nonempty.")
+        if any(len(item) > 120 for item in self.options):
+            raise ValueError("Fit options must be short.")
+        return self
 
 
 class PhotoReading(Model):
@@ -230,6 +246,7 @@ class Event(Model):
     skipped: bool = False
     photo_count: int = Field(default=0, ge=0, le=3)
     photo_notes: PhotoNotes | None = None
+    question_snapshot: Question | None = None
 
 
 class Journey(Model):
