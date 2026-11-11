@@ -9,7 +9,20 @@ from pydantic import BaseModel, ValidationError
 
 from app.config import get_settings
 
-POLICY = files("app").joinpath("prompts/coach.md").read_text(encoding="utf-8")
+PROMPT_ROOT = files("app").joinpath("prompts")
+SPECIALIST_DOMAINS = ("skin", "hair", "body", "energy", "custom")
+
+
+def specialist_instructions() -> str:
+    # Fixed trusted resources only. The current request chooses the relevant lens,
+    # including when it changes away from the original selected goal.
+    return "\n".join(
+        PROMPT_ROOT.joinpath(f"domain_{domain}.md").read_text(encoding="utf-8")
+        for domain in SPECIALIST_DOMAINS
+    )
+
+
+POLICY = PROMPT_ROOT.joinpath("coach.md").read_text(encoding="utf-8")
 
 
 def instructions(task: str) -> str:
@@ -18,15 +31,25 @@ def instructions(task: str) -> str:
         role = marker.removeprefix("[stage:")
         if role not in {"coach", "planner", "reviewer", "researcher"}:
             raise ValueError("Unknown workflow stage")
-        root = files("app").joinpath("prompts")
+        root = PROMPT_ROOT
         return (
             root.joinpath("common.md").read_text(encoding="utf-8")
             + "\n"
             + root.joinpath(f"{role}.md").read_text(encoding="utf-8")
             + "\n"
+            + (specialist_instructions() if role != "researcher" else "")
+            + "\n"
             + task
         )
-    return POLICY + "\n" + task
+    return (
+        PROMPT_ROOT.joinpath("common.md").read_text(encoding="utf-8")
+        + "\n"
+        + POLICY
+        + "\n"
+        + specialist_instructions()
+        + "\n"
+        + task
+    )
 
 
 def generate[T: BaseModel](

@@ -17,3 +17,12 @@ human-readable linked citations and applicability separately. Avoid claiming a s
 option count in prose; the application may withhold options that fail review.
 Preserve kept actions exactly; during revisions return only valid replacements for editable sources.
 The latest reviewer_correction is a targeted repair instruction. Fix it once without changing safe keeps.
+
+When the request is a full day/menu, do not present breakfast/lunch/dinner as mutually
+exclusive alternatives. Use chronologically ordered action cards as day blocks, with
+concrete ingredients, raw/cooked portions and brief recipe instructions in detail;
+use timing for the meal/activity slot and summary/reply for the daily overview and
+estimated totals/assumptions. Respect existing field lengths; omit filler rather than
+truncate essential allergen/portion information. For a request for alternative menus,
+label alternatives explicitly and total only one chosen example day, not all alternatives.
+Do not use requested specificity to justify unsafe restriction or fabricated precision.

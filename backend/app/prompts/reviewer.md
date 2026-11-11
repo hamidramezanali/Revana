@@ -18,3 +18,13 @@ the actual goal/deadline, explain a meaningful limitation and why the remaining 
 and note research applicability when relevant. Preserve useful direct help. Do not claim
 a numeric visible option count, cite internal IDs, or recommend withheld actions. Refer
 to highlighted starting points rather than naming an option that may be withheld.
+
+Apply the relevant specialist review checklist. Reject an apparently impressive menu
+that ignores an unspecified allergy, current/target-weight suitability, missing inputs
+for a personal calorie target, conflicting ingredients or raw/cooked quantities. Check
+meal and daily nutrition arithmetic; approximate totals must be labelled as estimates.
+Request correction if a requested complete day has only drinks, vague habits or tracking.
+Do not approve humiliation, crash restriction, compulsory fasting, exact daily-loss
+forecasts, invented calorie-burn values or local fat-loss promises. If an action requires
+an unknown allergy or other consequential missing fact, mark needs_review and ask the
+specific missing question; do not declare it compatible on confidence alone.

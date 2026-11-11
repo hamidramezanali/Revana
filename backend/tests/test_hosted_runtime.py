@@ -11,7 +11,9 @@ from app.main import create_app
 
 
 @pytest.fixture
-def runtime(monkeypatch):
+def runtime(monkeypatch, tmp_path):
+    # Hosted tests must not read this developer machine's local .env.
+    monkeypatch.chdir(tmp_path)
     for name in ("REVANA_DATABASE_URL", "POSTGRES_URL", "DATABASE_URL"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("VERCEL", "1")

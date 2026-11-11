@@ -10,6 +10,16 @@ Updated 2026-11-05. Product definition: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md)
 Base implementation: `main`, including the merged mobile UI and local adaptive agent.
 This update changes the delivery plan; it does not implement the new behavior below.
 
+## Goal-specific coaching checkpoint (2026-11-11)
+
+Five specialist prompt modules now reach coach/planner/reviewer and legacy provider
+requests: skin, hair, body/nutrition, energy/lifestyle and custom goals. Guidance links
+intake to decisions and asks for specific routines or chronological day/menu plans,
+exact-allergen clarification and honest numerical estimates. Firm respectful coaching
+replaces generic filler; crash restriction, shaming and promised daily fat loss remain
+excluded. This is prompt/wiring work, not a validated BMI/nutrition calculator, allergy
+engine, structured menu UI or new booking integration. See [the checkpoint and limits](GOAL_SPECIFIC_COACHING.md).
+
 ## Warm personal coach design checkpoint (2026-11-05)
 
 Applied the selected C. Warm personal coach direction across onboarding, adaptive
