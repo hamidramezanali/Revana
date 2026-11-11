@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def local_agent_only(request: Request, call_next):
-        if request.url.path.startswith("/v1/agent"):
+        if request.url.path.startswith(("/v1/agent", "/v1/workspace")):
             if not settings.hosted and (
                 request.url.hostname not in {"localhost", "127.0.0.1", "::1", "testserver"}
                 or (

@@ -9,7 +9,7 @@ class AgentBodyLimit:
         self.limit = limit
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not scope["path"].startswith("/v1/agent"):
+        if scope["type"] != "http" or not scope["path"].startswith(("/v1/agent", "/v1/workspace")):
             return await self.app(scope, receive, send)
         chunks = []
         size = 0

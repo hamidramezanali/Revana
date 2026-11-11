@@ -259,3 +259,26 @@ def test_known_fields_not_reasked_and_failed_review_not_accepted(workspace, monk
     saved = agent_store.save(saved_token, saved, saved.revision)
     r = client.post("/v1/workspace/accept", headers=h, json={"revision": saved.revision})
     assert r.status_code == 409
+
+
+def test_workspace_preserves_network_origin_and_body_limits(workspace):
+    client, calls = workspace
+    r = client.post(
+        "/v1/workspace/goals",
+        headers={"origin": "https://unrelated.invalid"},
+        json={"message": "Lose weight", "consent": True},
+    )
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "origin_denied"
+    r = client.post(
+        "/v1/workspace/goals",
+        headers={"host": "public.invalid"},
+        json={"message": "Lose weight", "consent": True},
+    )
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "local_only"
+    r = client.post(
+        "/v1/workspace/run", content=b"x" * 4_000_001, headers={"content-type": "application/json"}
+    )
+    assert r.status_code == 413
+    assert calls == []
