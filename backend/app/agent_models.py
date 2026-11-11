@@ -568,6 +568,77 @@ class Event(Model):
     question_snapshot: Question | None = None
 
 
+class GoalQuestion(Model):
+    id: str = Field(default_factory=lambda: uuid4().hex)
+    key: Literal["baseline", "goal", "constraints", "routine", "products", "progress", "other"]
+    text: str = Field(min_length=1, max_length=300)
+    why: str = Field(max_length=300)
+    choices: list[str] = Field(default_factory=list, max_length=6)
+    fields: list[
+        Literal["height_cm", "weight_kg", "age", "daily_minutes", "monthly_budget_sek"]
+    ] = Field(default_factory=list, max_length=3)
+    multiple: bool = False
+    photo_mode: Literal["none", "products", "skin", "hair"] = "none"
+
+
+class RunStep(Model):
+    id: str
+    label: str
+    status: Literal["working", "done", "failed"]
+
+
+class GoalRun(Model):
+    id: str
+    status: Literal["running", "complete", "cancelled", "failed"]
+    started_at: datetime
+    steps: list[RunStep] = Field(default_factory=list)
+    error: str = ""
+
+
+class WorkingMessage(Model):
+    role: Literal["user", "assistant"]
+    text: str = Field(max_length=4000)
+
+
+class GoalWorkspace(Model):
+    title: str = Field(max_length=120)
+    objective: str = Field(max_length=2000)
+    phase: Literal["idle", "needs_input", "running", "review", "ready", "error", "cancelled"] = (
+        "idle"
+    )
+    reply: str = ""
+    question: GoalQuestion | None = None
+    answered_keys: list[str] = Field(default_factory=list)
+    messages: list[WorkingMessage] = Field(default_factory=list)
+    run: GoalRun | None = None
+    pending_draft: Plan | None = None
+
+
+class WorkspaceDraft(Plan):
+    reply: str = Field(min_length=1, max_length=1800)
+    facts: list[FactCandidate] = Field(max_length=12)
+    conflicts: list[str] = Field(max_length=6)
+    clarification: GoalQuestion | None = None
+
+
+class CreateGoal(Model):
+    message: str = Field(min_length=1, max_length=2000)
+    consent: Literal[True]
+    goals: list[Literal["skin", "hair", "body"]] = Field(default_factory=list, max_length=3)
+    reuse_profile: bool = True
+
+
+class WorkRequest(RevisionRequest):
+    message: str = Field(default="", max_length=2000)
+    question_id: str | None = None
+    choices: list[str] = Field(default_factory=list, max_length=6)
+    values: dict[str, float] = Field(default_factory=dict)
+    skipped: bool = False
+    photos: list[str] = Field(default_factory=list, max_length=3)
+    photo_consent: bool = False
+    action: Literal["continue", "plan", "retry"] = "continue"
+
+
 class Journey(Model):
     revision: int = 0
     context: Context
@@ -592,6 +663,7 @@ class Journey(Model):
     progress: list[ProgressEntry] = Field(default_factory=list)
     profile_confirmed_revision: int | None = None
     memory_consolidated: bool = False
+    workspace: GoalWorkspace | None = None
 
 
 class SessionCreated(Model):

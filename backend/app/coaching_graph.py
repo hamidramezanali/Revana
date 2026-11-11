@@ -79,6 +79,15 @@ def planner_node(state: State):
         draft.actions = [
             Action.model_validate(action) for action in state["context"]["keep_all_actions"]
         ]
+    if state["context"].get("workspace_kept_actions"):
+        from app.agent_models import Action
+
+        frozen = [Action.model_validate(a) for a in state["context"]["workspace_kept_actions"]]
+        ids = {a.id for a in frozen}
+        titles = {a.title.casefold() for a in frozen}
+        draft.actions = frozen + [
+            a for a in draft.actions if a.id not in ids and a.title.casefold() not in titles
+        ]
     return {"draft": draft}
 
 
@@ -179,6 +188,15 @@ def correction_node(state: State):
 
         draft.actions = [
             Action.model_validate(action) for action in state["context"]["keep_all_actions"]
+        ]
+    if state["context"].get("workspace_kept_actions"):
+        from app.agent_models import Action
+
+        frozen = [Action.model_validate(a) for a in state["context"]["workspace_kept_actions"]]
+        ids = {a.id for a in frozen}
+        titles = {a.title.casefold() for a in frozen}
+        draft.actions = frozen + [
+            a for a in draft.actions if a.id not in ids and a.title.casefold() not in titles
         ]
     return {"draft": draft}
 

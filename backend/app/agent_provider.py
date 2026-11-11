@@ -57,6 +57,7 @@ def generate[T: BaseModel](
         raise HTTPException(503, "Configure the backend OpenAI key and model to use the agent.")
     context = dict(context)
     timeout = context.pop("_stage_timeout", 45)
+    output_limit = min(8000, max(512, int(context.pop("_max_output_tokens", 8000))))
     try:
         model_input: str | list = json.dumps(context, ensure_ascii=False)
     except (TypeError, ValueError):
@@ -84,7 +85,7 @@ def generate[T: BaseModel](
                 json={
                     "model": settings.openai_model,
                     "store": False,
-                    "max_output_tokens": 8000,
+                    "max_output_tokens": output_limit,
                     "instructions": instructions(task),
                     "input": model_input,
                     "text": {

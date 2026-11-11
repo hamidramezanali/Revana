@@ -22,6 +22,8 @@ from app.agent_models import (
 from app.config import get_settings
 from app.research import retrieve
 
+_event_sink: ContextVar[object | None] = ContextVar("workspace_events", default=None)
+
 _deadline: ContextVar[float | None] = ContextVar("workflow_deadline", default=None)
 
 
@@ -81,9 +83,17 @@ def stage(role: str, task: str, context: dict, output):
         raise HTTPException(
             502, "The response took too long. Your saved choices remain available; retry."
         )
-    return provider.generate(
+    sink = _event_sink.get()
+    if sink:
+        sink({"type": "stage", "role": role, "status": "working"})
+    result = provider.generate(
         f"[stage:{role}] {task}", {**context, "_stage_timeout": min(45, remaining)}, output
     )
+    if sink:
+        sink({"type": "stage", "role": role, "status": "done"})
+        if role == "planner" and hasattr(result, "actions"):
+            sink({"type": "draft", "plan": result.model_dump(mode="json")})
+    return result
 
 
 def absorb(journey: Journey, result, context: dict) -> None:

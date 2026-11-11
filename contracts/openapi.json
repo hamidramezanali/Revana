@@ -713,6 +713,46 @@
         "title": "Context",
         "type": "object"
       },
+      "CreateGoal": {
+        "additionalProperties": false,
+        "properties": {
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "goals": {
+            "items": {
+              "enum": [
+                "skin",
+                "hair",
+                "body"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Goals",
+            "type": "array"
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "reuse_profile": {
+            "default": true,
+            "title": "Reuse Profile",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "consent"
+        ],
+        "title": "CreateGoal",
+        "type": "object"
+      },
       "Decision": {
         "additionalProperties": false,
         "properties": {
@@ -986,6 +1026,225 @@
         "title": "GoalEdit",
         "type": "object"
       },
+      "GoalQuestion": {
+        "additionalProperties": false,
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Choices",
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "enum": [
+                "height_cm",
+                "weight_kg",
+                "age",
+                "daily_minutes",
+                "monthly_budget_sek"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "enum": [
+              "baseline",
+              "goal",
+              "constraints",
+              "routine",
+              "products",
+              "progress",
+              "other"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "multiple": {
+            "default": false,
+            "title": "Multiple",
+            "type": "boolean"
+          },
+          "photo_mode": {
+            "default": "none",
+            "enum": [
+              "none",
+              "products",
+              "skin",
+              "hair"
+            ],
+            "title": "Photo Mode",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "why": {
+            "maxLength": 300,
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "text",
+          "why"
+        ],
+        "title": "GoalQuestion",
+        "type": "object"
+      },
+      "GoalRun": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "complete",
+              "cancelled",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/RunStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "started_at"
+        ],
+        "title": "GoalRun",
+        "type": "object"
+      },
+      "GoalWorkspace": {
+        "additionalProperties": false,
+        "properties": {
+          "answered_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Answered Keys",
+            "type": "array"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/WorkingMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "objective": {
+            "maxLength": 2000,
+            "title": "Objective",
+            "type": "string"
+          },
+          "pending_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Plan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase": {
+            "default": "idle",
+            "enum": [
+              "idle",
+              "needs_input",
+              "running",
+              "review",
+              "ready",
+              "error",
+              "cancelled"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalQuestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply": {
+            "default": "",
+            "title": "Reply",
+            "type": "string"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 120,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "objective"
+        ],
+        "title": "GoalWorkspace",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -1155,6 +1414,16 @@
           },
           "workflow": {
             "$ref": "#/components/schemas/WorkflowState"
+          },
+          "workspace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalWorkspace"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -2321,6 +2590,35 @@
         "title": "RevisionRequest",
         "type": "object"
       },
+      "RunStep": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "working",
+              "done",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "status"
+        ],
+        "title": "RunStep",
+        "type": "object"
+      },
       "SessionCreated": {
         "additionalProperties": false,
         "properties": {
@@ -2470,6 +2768,121 @@
         "title": "SuggestionRequest",
         "type": "object"
       },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WorkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "continue",
+            "enum": [
+              "continue",
+              "plan",
+              "retry"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Choices",
+            "type": "array"
+          },
+          "message": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Message",
+            "type": "string"
+          },
+          "photo_consent": {
+            "default": false,
+            "title": "Photo Consent",
+            "type": "boolean"
+          },
+          "photos": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Photos",
+            "type": "array"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "skipped": {
+            "default": false,
+            "title": "Skipped",
+            "type": "boolean"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "WorkRequest",
+        "type": "object"
+      },
       "WorkflowState": {
         "additionalProperties": false,
         "properties": {
@@ -2515,6 +2928,30 @@
           }
         },
         "title": "WorkflowState",
+        "type": "object"
+      },
+      "WorkingMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "WorkingMessage",
         "type": "object"
       }
     },
@@ -5431,6 +5868,260 @@
         "summary": "Get Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/workspace/accept": {
+      "post": {
+        "operationId": "acceptWorkspacePlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Plan",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/cancel": {
+      "post": {
+        "operationId": "cancelGoalRun",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Run",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/goals": {
+      "post": {
+        "operationId": "createGoalWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoal"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Goal",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/photo-review": {
+      "post": {
+        "operationId": "reviewWorkspacePhoto",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoNotesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Review Photo",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/run": {
+      "post": {
+        "operationId": "runGoalWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run Goal",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/state": {
+      "get": {
+        "operationId": "getGoalWorkspaceState",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get State",
+        "tags": [
+          "goal-workspace"
         ]
       }
     }
