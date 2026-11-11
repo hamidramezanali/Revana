@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
-import { agentRequest, type Journey } from "./Agent"
+import { agentRequest } from "./agentClient"
+import type {ApiJourney as Journey} from "./api.generated"
 
 import { ActionCard } from "./ActionCard"
 

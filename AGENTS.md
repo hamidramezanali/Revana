@@ -2,6 +2,15 @@
 
 Start with `docs/AGENTIC_COACH.md`, `docs/PRODUCT_ROADMAP.md`, `docs/architecture.md` and `docs/agent-roadmap.md`.
 
+## Current workspace (supersedes earlier layout guidance)
+
+Read `docs/GOAL_WORKSPACE.md` first. The user explicitly requested a goal-oriented
+Codex/VS Code-style workspace in place of staged intake. `frontend/src/GoalWorkspace.tsx`
+is the primary UI; `backend/app/goal_workspace.py` owns streamed work execution.
+Keep accepted plans visible during revisions. Persist a goal immediately, avoid repeated
+intake questions, expose real execution status and preserve cancellation/CAS guarantees.
+The earlier warm-layout and staged-flow descriptions below are historical context.
+
 ## Product goal
 
 Revana is an interactive beauty and lifestyle agent. Keep the warm visual direction and focus -> understanding -> profile review -> plan workflow.

@@ -1,3 +1,5 @@
+> Current release: see [Goal workspace](GOAL_WORKSPACE.md). It supersedes the staged intake UI and first-plan orchestration below.
+
 # Agentic coach implementation
 
 Updated 2026-11-11. Supersedes historical unlimited-question and duplicate-view notes.

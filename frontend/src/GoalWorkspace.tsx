@@ -1,0 +1,799 @@
+import { useEffect, useRef, useState } from "react";
+import type {
+  ApiJourney as Journey,
+  ApiPlan as Plan,
+  ApiSessionCreated,
+  ApiRunStep,
+} from "./api.generated";
+import { agentRequest, savedToken, forgetToken } from "./agentClient";
+import { PhotoAnswer } from "./PhotoAnswer";
+import { PhotoReview } from "./PhotoReview";
+import { AppDialog } from "./ProfileSettings";
+import { GoalArtifact, type View } from "./GoalViews";
+
+type GoalRef = { token: string; title: string };
+const fieldLabels: Record<string, string> = {
+  height_cm: "Height (cm)",
+  weight_kg: "Weight (kg)",
+  age: "Age (years)",
+  daily_minutes: "Minutes per day",
+  monthly_budget_sek: "Monthly budget (SEK)",
+};
+function refs(): GoalRef[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem("revana.goal.refs") || "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed
+          .filter(
+            (g): g is GoalRef =>
+              typeof g?.token === "string" && typeof g?.title === "string",
+          )
+          .slice(0, 20)
+      : [];
+  } catch {
+    return [];
+  }
+}
+async function request<T>(path: string, body?: unknown): Promise<T> {
+  const token = savedToken();
+  const response = await fetch(`/v1/workspace/${path}`, {
+    method: body === undefined ? "GET" : "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  if (!response.ok) {
+    const d = await response.json().catch(() => null);
+    throw new Error(
+      d?.error?.message ||
+        (typeof d?.detail === "string"
+          ? d.detail
+          : "The agent could not respond. Your saved plan is unchanged."),
+    );
+  }
+  return response.json();
+}
+export default function GoalWorkspace() {
+  const [journey, setJourney] = useState<Journey | null>(null);
+  const [goals, setGoals] = useState<GoalRef[]>(refs);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [error, setError] = useState("");
+  const [draft, setDraft] = useState<Plan | null>(null);
+  const [steps, setSteps] = useState<ApiRunStep[]>([]);
+  const [elapsed, setElapsed] = useState(0);
+  const [text, setText] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [choices, setChoices] = useState<string[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoConsent, setPhotoConsent] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [view, setView] = useState<View>("overview");
+  const [mobileAgent, setMobileAgent] = useState(true);
+  const [drawer, setDrawer] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const current = useRef<Journey | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const nonce = useRef(0);
+  const bottom = useRef<HTMLDivElement>(null);
+  const workspace = journey?.workspace;
+  const working = streaming || workspace?.run?.status === "running";
+  const blocked = busy || working;
+  const question = workspace?.question;
+  const pendingPhoto = journey?.events.some(
+    (e) => e.photo_notes && !e.photo_notes.confirmed,
+  );
+  function update(j: Journey) {
+    current.current = j;
+    setJourney(j);
+    const token = savedToken();
+    if (token) {
+      const title = j.workspace?.title || j.context.description || "My goal";
+      setGoals((old) => {
+        const next = [
+          { token, title },
+          ...old.filter((g) => g.token !== token),
+        ].slice(0, 20);
+        localStorage.setItem("revana.goal.refs", JSON.stringify(next));
+        return next;
+      });
+    }
+  }
+  useEffect(() => {
+    let active = true;
+    if (!savedToken()) {
+      setLoading(false);
+      return;
+    }
+    request<Journey>("state")
+      .then((j) => {
+        if (active) update(j);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!working) return;
+    const start = workspace?.run?.started_at
+      ? new Date(workspace.run.started_at).getTime()
+      : Date.now();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [working, workspace?.run?.id]);
+  useEffect(() => {
+    if (streaming || workspace?.run?.status !== "running") return;
+    const timer = setInterval(() => {
+      void request<Journey>("state")
+        .then(update)
+        .catch((e) => setError(e.message));
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [streaming, workspace?.run?.status]);
+  useEffect(() => {
+    setChoices([]);
+    setValues({});
+    setPhotos([]);
+    setPhotoConsent(false);
+  }, [question?.id]);
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ block: "nearest" });
+  }, [workspace?.messages.length, question?.id, steps.length]);
+  async function changeGoal(token?: string) {
+    if (blocked || loading) return;
+    const id = ++nonce.current;
+    setError("");
+    setDraft(null);
+    setSteps([]);
+    setText("");
+    setDrawer(false);
+    setView("overview");
+    setMobileAgent(true);
+    if (!token) {
+      current.current = null;
+      setJourney(null);
+      return;
+    }
+    localStorage.setItem("revana.journey.token", token);
+    setLoading(true);
+    current.current = null;
+    setJourney(null);
+    try {
+      const j = await request<Journey>("state");
+      if (id === nonce.current) update(j);
+    } catch (e) {
+      if (id === nonce.current) setError((e as Error).message);
+    } finally {
+      if (id === nonce.current) setLoading(false);
+    }
+  }
+  async function run(j: Journey, payload: Record<string, unknown> = {}) {
+    const id = ++nonce.current;
+    setStreaming(true);
+    setError("");
+    setDraft(null);
+    setSteps([]);
+    const abort = new AbortController();
+    controller.current = abort;
+    try {
+      const response = await fetch("/v1/workspace/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${savedToken()}`,
+        },
+        body: JSON.stringify({ revision: j.revision, ...payload }),
+        signal: abort.signal,
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.detail === "string"
+              ? data.detail
+              : "The agent could not start. Please retry."),
+        );
+      }
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Streaming is unavailable in this browser.");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      while (true) {
+        const part = await reader.read();
+        buffer += decoder.decode(part.value, { stream: !part.done });
+        let end: number;
+        while ((end = buffer.indexOf("\n\n")) >= 0) {
+          const block = buffer.slice(0, end);
+          buffer = buffer.slice(end + 2);
+          const line = block.split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+          const event = JSON.parse(line.slice(6));
+          if (id !== nonce.current) continue;
+          if (event.journey) update(event.journey);
+          if (event.type === "stage")
+            setSteps((old) =>
+              event.status === "working"
+                ? [
+                    ...old,
+                    {
+                      id: String(old.length),
+                      label:
+                        event.role === "planner"
+                          ? "Building your working plan"
+                          : event.role === "reviewer"
+                            ? "Checking safety, fit and effort"
+                            : "Understanding your update",
+                      status: "working",
+                    },
+                  ]
+                : old.map((s, i) =>
+                    i === old.length - 1 ? { ...s, status: "done" } : s,
+                  ),
+            );
+          if (event.type === "draft") setDraft(event.plan);
+          if (["complete", "cancelled", "error"].includes(event.type)) {
+            finished = true;
+            setDraft(null);
+            if (event.message) setError(event.message);
+          }
+        }
+        if (part.done) break;
+      }
+      if (!finished && id === nonce.current) {
+        update(await request<Journey>("state"));
+        setError(
+          "The connection ended. Your saved goal is available; check its status or retry.",
+        );
+      }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError" && id === nonce.current) {
+        setError((e as Error).message);
+        try {
+          update(await request<Journey>("state"));
+        } catch {
+          /* preserve saved view */
+        }
+      }
+    } finally {
+      if (id === nonce.current) {
+        setStreaming(false);
+        controller.current = null;
+      }
+    }
+  }
+  async function stop() {
+    try {
+      const j = await request<Journey>("cancel", {
+        revision: current.current?.revision,
+      });
+      nonce.current++;
+      controller.current?.abort();
+      controller.current = null;
+      setStreaming(false);
+      setDraft(null);
+      update(j);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function submit(skip = false) {
+    const j = current.current;
+    if (!j) {
+      if (!text.trim() || !consent) return;
+      setBusy(true);
+      setError("");
+      try {
+        const result = await request<ApiSessionCreated>("goals", {
+          message: text.trim(),
+          consent: true,
+          reuse_profile: true,
+        });
+        localStorage.setItem("revana.journey.token", result.token);
+        update(result.journey);
+        setText("");
+        setBusy(false);
+        if (!result.journey.workspace?.question)
+          void run(result.journey, { action: "plan" });
+      } catch (e) {
+        setError((e as Error).message);
+        setBusy(false);
+      }
+      return;
+    }
+    const payload = skip
+      ? { question_id: j.workspace?.question?.id, skipped: true }
+      : {
+          message: text.trim(),
+          question_id: j.workspace?.question?.id,
+          choices,
+          values: Object.fromEntries(
+            Object.entries(values)
+              .filter(([, v]) => v.trim())
+              .map(([k, v]) => [k, Number(v)]),
+          ),
+          photos,
+          photo_consent: photoConsent,
+        };
+    setText("");
+    setPhotos([]);
+    setPhotoConsent(false);
+    await run(j, payload);
+  }
+  async function mutate(fn: () => Promise<Journey>) {
+    setBusy(true);
+    setError("");
+    try {
+      update(await fn());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function openPlan() {
+    setView("plan");
+    setMobileAgent(false);
+  }
+  const selectedSteps = steps.length ? steps : workspace?.run?.steps || [];
+  const canSend =
+    !blocked &&
+    !preparing &&
+    !loading &&
+    (!journey
+      ? !!text.trim() && consent
+      : !!text.trim() ||
+        choices.length > 0 ||
+        Object.values(values).some((v) => v.trim()) ||
+        photos.length > 0) &&
+    (!photos.length || photoConsent);
+  return (
+    <div className={`goal-app ${mobileAgent ? "show-agent" : "show-artifact"}`}>
+      <header className="goal-topbar">
+        <button
+          className="goal-menu"
+          onClick={() => setDrawer(true)}
+          aria-label="Open goals"
+        >
+          ☰
+        </button>
+        <a
+          className="goal-wordmark"
+          href="#"
+          onClick={(e) => e.preventDefault()}
+        >
+          ◈ <strong>Revana</strong>
+          <span> / goal workspace</span>
+        </a>
+        <span className="goal-mode">Skin · Hair · Body</span>
+      </header>
+      {drawer && (
+        <AppDialog
+          title="Your goals"
+          onClose={() => setDrawer(false)}
+          busy={blocked}
+        >
+          <button
+            className="new-goal"
+            disabled={blocked || loading}
+            onClick={() => void changeGoal()}
+          >
+            ＋ New goal
+          </button>
+          <nav className="dialog-goals" aria-label="Choose saved goal">
+            {goals.map((g) => (
+              <button
+                key={g.token}
+                disabled={blocked || loading}
+                onClick={() => void changeGoal(g.token)}
+              >
+                {g.title}
+              </button>
+            ))}
+          </nav>
+        </AppDialog>
+      )}
+      <aside className="goal-sidebar">
+        <div className="sidebar-label">WORKSPACE</div>
+        <button
+          className="new-goal"
+          disabled={blocked || loading}
+          onClick={() => void changeGoal()}
+        >
+          ＋ New goal
+        </button>
+        <p className="sidebar-label goals-label">YOUR GOALS</p>
+        <nav aria-label="Saved goals">
+          {goals.map((g) => (
+            <button
+              key={g.token}
+              disabled={blocked || loading}
+              aria-current={
+                journey && savedToken() === g.token ? "page" : undefined
+              }
+              onClick={() => void changeGoal(g.token)}
+            >
+              <span>◇</span>
+              {g.title}
+            </button>
+          ))}
+          {!goals.length && (
+            <p className="sidebar-hint">
+              Your goals and accepted plans will live here.
+            </p>
+          )}
+        </nav>
+        <div className="sidebar-bottom">
+          <span>Personal lifestyle workspace</span>
+          <small>General guidance · not medical care</small>
+        </div>
+      </aside>
+      <GoalArtifact
+        journey={journey}
+        draft={draft}
+        steps={selectedSteps}
+        loading={loading}
+        busy={blocked}
+        working={working}
+        view={view}
+        onView={(v) => {
+          setView(v);
+          setMobileAgent(false);
+        }}
+        onExample={(s) => {
+          setText(s);
+          setMobileAgent(true);
+        }}
+        onAgent={() => setMobileAgent(true)}
+        onMutate={mutate}
+        onAccept={() =>
+          journey &&
+          void mutate(() =>
+            request<Journey>("accept", { revision: journey.revision }),
+          )
+        }
+        onDelete={() => setDeleting(true)}
+        onError={setError}
+      />
+      <section className="goal-agent" aria-label="Goal agent">
+        <header className="agent-panel-heading">
+          <div>
+            <span className={`agent-indicator ${working ? "active" : ""}`} />
+            <strong>Your agent</strong>
+          </div>
+          <span>{working ? `${elapsed}s` : "Goal → plan → progress"}</span>
+        </header>
+        <div className="agent-transcript">
+          <p className="agent-intro">
+            {journey
+              ? "Work on this goal. Keep what fits. Ask for changes."
+              : "Tell me the outcome you want. I’ll help turn it into a practical plan."}
+          </p>
+          {workspace?.messages.map((m, i) => (
+            <div className={`working-message ${m.role}`} key={i}>
+              <small>{m.role === "user" ? "YOU" : "REVANA"}</small>
+              <p>{m.text}</p>
+            </div>
+          ))}
+          {workspace?.reply &&
+            !workspace.messages.some((m) => m.text === workspace.reply) && (
+              <div className="working-message assistant">
+                <small>REVANA</small>
+                <p>{workspace.reply}</p>
+              </div>
+            )}
+          {working && (
+            <div className="agent-working" role="status">
+              <span className="agent-indicator active" />
+              {selectedSteps.at(-1)?.label || "Starting your agent"}
+              <span>{elapsed}s</span>
+              {elapsed > 35 && (
+                <small>
+                  This run is taking longer. You can stop it; your saved plan is
+                  safe.
+                </small>
+              )}
+            </div>
+          )}
+          {journey?.proposal && !working && (
+            <button className="draft-link" onClick={openPlan}>
+              ▤ Draft ready · Review plan →
+            </button>
+          )}
+          {error && (
+            <div className="workspace-error" role="alert">
+              <strong>Couldn’t finish</strong>
+              <p>{error}</p>
+              {journey && (
+                <button
+                  onClick={() =>
+                    void request<Journey>("state")
+                      .then(update)
+                      .then(() => setError(""))
+                      .catch((e) => setError(e.message))
+                  }
+                >
+                  Reload saved goal
+                </button>
+              )}
+            </div>
+          )}
+          {workspace?.run?.status === "failed" && !blocked && (
+            <button
+              className="subtle-button"
+              onClick={() => void run(journey!, { action: "retry" })}
+            >
+              Retry this work
+            </button>
+          )}
+          {pendingPhoto && journey && (
+            <PhotoReview
+              key={journey.events.length}
+              journey={journey}
+              busy={blocked}
+              onReview={async (event_index, observations, discard) => {
+                setBusy(true);
+                try {
+                  const j = await request<Journey>("photo-review", {
+                    revision: journey.revision,
+                    event_index,
+                    observations,
+                    discard,
+                  });
+                  update(j);
+                  setBusy(false);
+                  void run(j, { action: "plan" });
+                } catch (e) {
+                  setError((e as Error).message);
+                  setBusy(false);
+                }
+              }}
+            />
+          )}
+          <div ref={bottom} />
+        </div>
+        <form
+          className="agent-composer"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          {question && !pendingPhoto && (
+            <div className="inline-question">
+              <p className="question-label">{question.text}</p>
+              <p>{question.why}</p>
+              {question.fields.map((f) => (
+                <label key={f}>
+                  {fieldLabels[f]}
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min={f === "height_cm" ? 100 : f === "weight_kg" ? 25 : 0}
+                    max={
+                      f === "height_cm"
+                        ? 250
+                        : f === "weight_kg"
+                          ? 400
+                          : undefined
+                    }
+                    disabled={blocked}
+                    value={values[f] || ""}
+                    onChange={(e) =>
+                      setValues({ ...values, [f]: e.target.value })
+                    }
+                  />
+                </label>
+              ))}
+              {question.choices.length > 0 && (
+                <div className="question-choices">
+                  {question.choices.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      disabled={blocked}
+                      aria-pressed={choices.includes(c)}
+                      onClick={() =>
+                        setChoices(
+                          question.multiple
+                            ? choices.includes(c)
+                              ? choices.filter((v) => v !== c)
+                              : [...choices, c]
+                            : [c],
+                        )
+                      }
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {question.photo_mode !== "none" && (
+                <>
+                  <PhotoAnswer
+                    mode={question.photo_mode}
+                    photos={photos}
+                    onChange={setPhotos}
+                    busy={blocked}
+                    onPreparing={setPreparing}
+                  />
+                  {photos.length > 0 && (
+                    <label className="consent-row">
+                      <input
+                        type="checkbox"
+                        checked={photoConsent}
+                        onChange={(e) => setPhotoConsent(e.target.checked)}
+                      />
+                      Send these photos to OpenAI for temporary analysis.
+                    </label>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          <label className="sr-only" htmlFor="agent-message">
+            {journey ? "Message your goal agent" : "Describe your goal"}
+          </label>
+          <textarea
+            id="agent-message"
+            rows={3}
+            maxLength={2000}
+            disabled={blocked || !!pendingPhoto || loading}
+            placeholder={
+              journey
+                ? question
+                  ? "Add context (optional)…"
+                  : "Ask for a change or share an update…"
+                : "I want to…"
+            }
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {!journey && (
+            <label className="consent-row">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+              />
+              I am 18+ and agree to send my goal and updates to OpenAI for
+              guidance.
+            </label>
+          )}
+          <div className="composer-toolbar">
+            <span>
+              {busy
+                ? "Saving…"
+                : journey
+                  ? "Context stays with your goal"
+                  : "Skin, hair & body habits"}
+            </span>
+            {working ? (
+              <button
+                type="button"
+                className="stop-button"
+                onClick={() => void stop()}
+              >
+                ■ Stop
+              </button>
+            ) : (
+              <div>
+                {question && (
+                  <button
+                    className="skip-button"
+                    disabled={blocked || loading}
+                    type="button"
+                    onClick={() => void submit(true)}
+                  >
+                    Skip
+                  </button>
+                )}
+                <button
+                  className="accent-button"
+                  type="submit"
+                  disabled={!canSend || !!pendingPhoto}
+                >
+                  {journey ? "Send ↑" : "Start goal ↑"}
+                </button>
+              </div>
+            )}
+          </div>
+          <small className="composer-note">
+            Guidance can be wrong. Seek qualified care for concerning symptoms.
+          </small>
+        </form>
+      </section>
+      <nav className="mobile-workspace-nav" aria-label="Mobile workspace">
+        <button
+          aria-current={mobileAgent ? "page" : undefined}
+          onClick={() => setMobileAgent(true)}
+        >
+          ◈ Agent
+        </button>
+        <button
+          aria-current={
+            !mobileAgent && view === "overview" ? "page" : undefined
+          }
+          onClick={() => {
+            setView("overview");
+            setMobileAgent(false);
+          }}
+        >
+          ◇ Goal
+        </button>
+        <button
+          aria-current={!mobileAgent && view === "plan" ? "page" : undefined}
+          onClick={openPlan}
+        >
+          ☷ Plan{journey?.proposal ? " •" : ""}
+        </button>
+        <button
+          aria-current={
+            !mobileAgent && view === "progress" ? "page" : undefined
+          }
+          onClick={() => {
+            setView("progress");
+            setMobileAgent(false);
+          }}
+        >
+          ↗ Progress
+        </button>
+      </nav>
+      {deleting && (
+        <AppDialog
+          title="Delete this goal"
+          busy={blocked}
+          onClose={() => setDeleting(false)}
+        >
+          <h2>Delete this goal?</h2>
+          <p>
+            This removes its profile, plans and progress. Other saved goals
+            remain.
+          </p>
+          <button
+            className="danger-button"
+            disabled={blocked}
+            onClick={async () => {
+              const token = savedToken();
+              setBusy(true);
+              try {
+                await agentRequest("session", undefined, "DELETE");
+                const next = goals.filter((g) => g.token !== token);
+                localStorage.setItem("revana.goal.refs", JSON.stringify(next));
+                setGoals(next);
+                forgetToken();
+                current.current = null;
+                setJourney(null);
+                setDeleting(false);
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Delete goal permanently
+          </button>
+          <button className="subtle-button" onClick={() => setDeleting(false)}>
+            Keep goal
+          </button>
+        </AppDialog>
+      )}
+    </div>
+  );
+}
