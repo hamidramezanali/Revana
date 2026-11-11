@@ -272,7 +272,7 @@ def test_confirmation_consolidates_transcripts_but_preserves_sourced_facts(agent
     assert changed["memory_consolidated"] and changed["events"] == []
     assert changed["suggestion_board"]["conversation"] == []
     assert changed["profile"][0]["confirmed"]
-    assert workflow.reports(agent_store.read(access))["opening"].count("Simpler routine") >= 1
+    assert workflow.reports(agent_store.read(access))["opening"].count("Simpler routine") == 1
 
 
 def test_services_have_no_fabricated_marketplace_fields(agent):
@@ -308,3 +308,120 @@ def test_initial_plan_and_effort_budget_are_enforced_after_one_repair(agent, mon
     response = plan(client, headers, journey)
     assert response.status_code == 502
     assert agent_store.read(headers["Authorization"].split()[1]).plans == []
+
+
+def test_meal_progress_must_match_the_plan_and_observation_day(agent):
+    client, _ = agent
+    headers, journey = start(client)
+    journey = plan(client, headers, journey).json()
+    access = headers["Authorization"].split()[1]
+    saved = agent_store.read(access)
+    today = local_today(saved)
+    saved.plans[-1].plan.meals = [meal(day=today.weekday()), meal(day=(today.weekday() + 1) % 7)]
+    saved = agent_store.save(access, saved, saved.revision)
+    payload = {
+        "revision": saved.revision,
+        "status": "followed",
+        "observed_on": str(today),
+        "meal_key": f"{today.weekday()}-lunch",
+    }
+    result = client.post("/v1/agent/progress", headers=headers, json=payload)
+    assert result.status_code == 200
+    updated = result.json()
+    assert updated["progress"][-1]["meal_key"] == payload["meal_key"]
+    assert updated["completions"] == []
+    payload.update(revision=updated["revision"], meal_key=f"{(today.weekday() + 1) % 7}-lunch")
+    assert client.post("/v1/agent/progress", headers=headers, json=payload).status_code == 422
+
+
+def test_generated_numeric_question_does_not_require_choice_options():
+    from app.agent_models import GeneratedQuestion
+    from app.agent_provider import strict_schema
+
+    question = GeneratedQuestion(
+        id="time",
+        text="How much time is available?",
+        why="Fit the plan.",
+        options=[],
+        selection_mode="single",
+        photo_mode="none",
+        input_kind="number",
+        unit="minutes",
+        profile_key="daily_minutes",
+    )
+    assert question.options == []
+    schema = strict_schema(GeneratedQuestion.model_json_schema())
+    assert "input_kind" in schema["required"] and "profile_key" in schema["required"]
+    assert "default" not in str(schema)
+
+
+def test_timestamped_profile_context_is_json_serializable():
+    import json
+    from datetime import UTC, datetime
+
+    journey = Journey(
+        context={"goals": ["skin"], "description": "Synthetic routine", "target_date": ""},
+        decision=Decision(summary="Ready", ready=True, questions=[]),
+    )
+    journey.profile = [
+        ProfileFact(
+            id="source",
+            category="routine",
+            value="Synthetic routine",
+            source_id="opening",
+            quote="Synthetic routine",
+            status="reported",
+            updated_at=datetime.now(UTC),
+        )
+    ]
+    context = workflow.context_for(journey, {})
+    assert isinstance(context["reported_profile"][0]["updated_at"], str)
+    json.dumps(context)
+
+
+def test_goal_correction_preserves_limits_and_accepted_history(agent):
+    client, _ = agent
+    headers, journey = start(client)
+    journey = plan(client, headers, journey).json()
+    history = journey["plans"]
+    result = client.post(
+        "/v1/agent/goals",
+        headers=headers,
+        json={
+            "revision": journey["revision"],
+            "goals": ["hair", "body"],
+            "target_date": "2027-01-01",
+        },
+    )
+    assert result.status_code == 200
+    changed = result.json()
+    assert changed["context"]["goals"] == ["hair", "body"]
+    assert changed["preferences"] == journey["preferences"] and changed["plans"] == history
+    assert changed["workflow"]["status"] == "needs_review" and changed["proposal"] is None
+    assert (
+        client.post(
+            "/v1/agent/goals",
+            headers=headers,
+            json={"revision": changed["revision"], "goals": ["skin", "skin"]},
+        ).status_code
+        == 422
+    )
+
+
+def test_all_kept_actions_can_still_receive_a_progress_review(agent):
+    client, _ = agent
+    headers, journey = start(client)
+    journey = plan(client, headers, journey).json()
+    journey = client.post(
+        "/v1/agent/action-preferences",
+        headers=headers,
+        json={"revision": journey["revision"], "action_id": "observe", "choice": "keep"},
+    ).json()
+    journey = client.post(
+        "/v1/agent/checkins",
+        headers=headers,
+        json={"revision": journey["revision"], "message": "Please review my unchanged routine."},
+    ).json()
+    response = plan(client, headers, journey)
+    assert response.status_code == 200, response.text
+    assert response.json()["proposal"]["actions"] == journey["plans"][-1]["plan"]["actions"]

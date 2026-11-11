@@ -1,17 +1,204 @@
-import {useState} from "react";
-import type {ApiProfileEdit, ApiProfileFact} from "./api.generated";
-import type {Journey} from "./Agent";
-import {Button} from "./ui";
+import { useState } from "react"
 
-type Edit = Omit<ApiProfileEdit, "revision">;
-function FactEditor({fact, busy, onEdit}: {fact: ApiProfileFact; busy: boolean; onEdit: (edit: Edit) => void}) {
-  const [value, setValue] = useState(fact.value);
-  const [status, setStatus] = useState(fact.status);
-  return <li className="profile-fact"><p><strong>{fact.category}: </strong>{fact.value} <small>· {fact.status}</small></p><details><summary>Edit or review source</summary><label>{fact.category} · {fact.status}<input maxLength={400} value={value} disabled={busy} onChange={event => setValue(event.target.value)} /></label><label>Meaning<select value={status} disabled={busy} onChange={event => setStatus(event.target.value as ApiProfileFact["status"])}><option value="reported">Reported by me</option><option value="hypothesis">Working hypothesis</option><option value="unknown">Unknown</option><option value="needs_review">Needs clarification</option></select></label><details><summary>Where this came from</summary><p>{fact.quote}</p><small>{fact.source_id.startsWith("opening") ? "Your opening message" : fact.source_id.startsWith("profile-edit") ? "Your profile correction" : fact.source_id.startsWith("event-") ? "Your question answer" : "Your conversation or submitted preferences"}</small></details><div className="agent-buttons"><Button className="secondary" disabled={busy || !value.trim() || (value === fact.value && status === fact.status)} onClick={() => onEdit({fact_id: fact.id, category: fact.category, value, status, active: true})}>Save correction</Button><Button className="secondary" disabled={busy} onClick={() => onEdit({fact_id: fact.id, category: fact.category, value: fact.value, status: fact.status, active: false})}>Remove from current profile</Button></div></details></li>;
+import type { ApiProfileEdit, ApiProfileFact } from "./api.generated"
+
+import type { Journey } from "./Agent"
+
+import { Button } from "./ui"
+
+type Edit = Omit<ApiProfileEdit, "revision">
+
+const categories: Record<ApiProfileFact["category"],string> = {goal:"Goal",allergy:"Allergy",limitation:"Limitation",preference:"Preference",concern:"Concern",routine:"Current routine",measurement:"Measurement",observation:"Observation",health_context:"Relevant health context"}
+const meanings: Record<ApiProfileFact["status"],string> = {reported:"You reported",hypothesis:"Working idea",unknown:"Not known",needs_review:"Needs clarification"}
+
+function FactEditor({
+  fact,
+  busy,
+  onEdit,
+}: {
+  fact: ApiProfileFact
+  busy: boolean
+  onEdit: (edit: Edit) => void
+}) {
+  const [value, setValue] = useState(fact.value)
+
+  const [status, setStatus] = useState(fact.status)
+
+  return (
+    <li className="profile-fact">
+      <p>
+        <strong>{categories[fact.category]}: </strong>
+        {fact.value} <small>· {fact.source_kind === "visual_observation" ? "Reviewed photo observation" : meanings[fact.status]}</small>
+      </p>
+      <details>
+        <summary>Edit or review source</summary>
+        <label>
+          {categories[fact.category]} · {meanings[fact.status]}
+          <input
+            maxLength={400}
+            value={value}
+            disabled={busy}
+            onChange={(event) => setValue(event.target.value)}
+          />
+        </label>
+        <label>
+          Meaning
+          <select
+            value={status}
+            disabled={busy}
+            onChange={(event) =>
+              setStatus(event.target.value as ApiProfileFact["status"])
+            }
+          >
+            <option value="reported">Reported by me</option>
+            <option value="hypothesis">Working hypothesis</option>
+            <option value="unknown">Unknown</option>
+            <option value="needs_review">Needs clarification</option>
+          </select>
+        </label>
+        <details>
+          <summary>Where this came from</summary>
+          <p>{fact.quote}</p>
+          <small>
+            {fact.source_id.startsWith("opening")
+              ? "Your opening message"
+              : fact.source_id.startsWith("profile-edit")
+                ? "Your profile correction"
+                : fact.source_id.startsWith("event-")
+                  ? "Your question answer"
+                  : "Your conversation or submitted preferences"}
+          </small>
+        </details>
+        <div className="agent-buttons">
+          <Button
+            className="secondary"
+            disabled={
+              busy ||
+              !value.trim() ||
+              (value === fact.value && status === fact.status)
+            }
+            onClick={() =>
+              onEdit({
+                fact_id: fact.id,
+                category: fact.category,
+                value,
+                status,
+                active: true,
+              })
+            }
+          >
+            Save correction
+          </Button>
+          <Button
+            className="secondary"
+            disabled={busy}
+            onClick={() =>
+              onEdit({
+                fact_id: fact.id,
+                category: fact.category,
+                value: fact.value,
+                status: fact.status,
+                active: false,
+              })
+            }
+          >
+            Remove from current profile
+          </Button>
+        </div>
+      </details>
+    </li>
+  )
 }
-export function CareProfile({journey, busy, onEdit}: {journey: Journey; busy: boolean; onEdit: (edit: Edit) => void}) {
-  const [category, setCategory] = useState<ApiProfileFact["category"]>("limitation");
-  const [value, setValue] = useState("");
-  const active = (journey.profile ?? []).filter(fact => fact.active);
-  return <details className="care-profile"><summary>Your goals, allergies & preferences · {active.length}</summary><p>Edit what the coach uses. Reports, hypotheses and unknowns have separate labels. Changing your goal keeps relevant allergies and limits.</p>{!!journey.profile_conflicts?.length && <div role="status"><strong>Please clarify</strong>{journey.profile_conflicts.map((text, index) => <p key={index}>{text}</p>)}</div>}<ul>{active.map(fact => <FactEditor key={fact.id} fact={fact} busy={busy} onEdit={onEdit} />)}</ul><form onSubmit={event => {event.preventDefault(); if (!busy && value.trim()) {onEdit({fact_id: null, category, value: value.trim(), status: "reported", active: true});}}}><label>Add to my profile<select value={category} disabled={busy} onChange={event => setCategory(event.target.value as ApiProfileFact["category"])}><option value="goal">Goal</option><option value="allergy">Allergy</option><option value="limitation">Limitation</option><option value="preference">Preference</option></select></label><label>What should the coach know?<input maxLength={400} value={value} disabled={busy} onChange={event => setValue(event.target.value)} /></label><Button className="secondary" type="submit" disabled={busy || !value.trim()}>Add reported fact</Button></form></details>;
+
+export function CareProfile({
+  journey,
+  busy,
+  onEdit,
+  expanded = false,
+}: {
+  journey: Journey
+  busy: boolean
+  expanded?: boolean
+  onEdit: (edit: Edit) => void
+}) {
+  const [category, setCategory] =
+    useState<ApiProfileFact["category"]>("limitation")
+
+  const [value, setValue] = useState("")
+
+  const active = (journey.profile ?? []).filter((fact) => fact.active)
+
+  return (
+    <details className="care-profile" open={expanded || undefined}>
+      <summary>Your care profile · {active.length}</summary>
+      <p>
+        Edit what the coach uses. Reports, hypotheses and unknowns have separate
+        labels. Changing your goal keeps relevant allergies and limits.
+      </p>
+      {!!journey.profile_conflicts?.length && (
+        <div role="status">
+          <strong>Please clarify</strong>
+          {journey.profile_conflicts.map((text, index) => (
+            <p key={index}>{text}</p>
+          ))}
+        </div>
+      )}
+      <ul>
+        {active.map((fact) => (
+          <FactEditor key={fact.id} fact={fact} busy={busy} onEdit={onEdit} />
+        ))}
+      </ul>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!busy && value.trim()) {
+            onEdit({
+              fact_id: null,
+              category,
+              value: value.trim(),
+              status: "reported",
+              active: true,
+            })
+          }
+        }}
+      >
+        <label>
+          Add to my profile
+          <select
+            value={category}
+            disabled={busy}
+            onChange={(event) =>
+              setCategory(event.target.value as ApiProfileFact["category"])
+            }
+          >
+            <option value="goal">Goal</option>
+            <option value="allergy">Allergy</option>
+            <option value="limitation">Limitation</option>
+            <option value="preference">Preference</option>
+            <option value="concern">Concern</option>
+            <option value="routine">Current routine</option>
+            <option value="measurement">Measurement</option>
+            <option value="observation">Observation</option>
+            <option value="health_context">Relevant health context</option>
+          </select>
+        </label>
+        <label>
+          What should the coach know?
+          <input
+            maxLength={400}
+            value={value}
+            disabled={busy}
+            onChange={(event) => setValue(event.target.value)}
+          />
+        </label>
+        <Button
+          className="secondary"
+          type="submit"
+          disabled={busy || !value.trim()}
+        >
+          Add reported fact
+        </Button>
+      </form>
+    </details>
+  )
 }

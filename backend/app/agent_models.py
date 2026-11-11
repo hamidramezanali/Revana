@@ -80,7 +80,7 @@ class Decision(Model):
 
 class GeneratedQuestion(Question):
     # All output properties must be required for the strict provider schema.
-    options: list[AnswerOption] = Field(min_length=1)
+    options: list[AnswerOption] = Field(default_factory=list)
     selection_mode: Literal["single", "multiple"] = Field(...)
     photo_mode: Literal["none", "products", "skin", "hair"] = Field(...)
 
@@ -333,11 +333,25 @@ class BodyContext(Model):
         return self
 
 
+class GoalEdit(RevisionRequest):
+    goals: list[Literal["skin", "hair", "body"]] = Field(min_length=1, max_length=3)
+    target_date: str = Field(default="", max_length=10)
+
+    @model_validator(mode="after")
+    def valid_goals(self):
+        if len(set(self.goals)) != len(self.goals):
+            raise ValueError("Choose distinct goals.")
+        if self.target_date:
+            date.fromisoformat(self.target_date)
+        return self
+
+
 class BodyEdit(RevisionRequest):
     body: BodyContext
 
 
 class ProgressRequest(RevisionRequest):
+    meal_key: str | None = Field(default=None, max_length=30)
     action_id: str | None = Field(default=None, max_length=80)
     status: Literal["not_attempted", "inconsistent", "followed", "improved", "unchanged", "worse"]
     note: str = Field(default="", max_length=1000)
@@ -345,6 +359,7 @@ class ProgressRequest(RevisionRequest):
 
 
 class ProgressEntry(Model):
+    meal_key: str | None = None
     id: str
     plan_version: int
     action_id: str | None

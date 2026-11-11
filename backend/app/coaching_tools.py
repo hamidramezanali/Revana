@@ -16,8 +16,9 @@ def body_guidance(journey: Journey) -> dict:
     reasons = []
     bmi = None
     if body.height_cm and body.weight_kg:
-        bmi = round(body.weight_kg / (body.height_cm / 100) ** 2, 1)
-        if bmi < 18.5:
+        raw_bmi = body.weight_kg / (body.height_cm / 100) ** 2
+        bmi = round(raw_bmi, 1)
+        if raw_bmi < 18.5:
             reasons.append(
                 "Current measurements do not support weight-loss coaching; offer non-restrictive support and professional review."
             )

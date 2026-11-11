@@ -73,12 +73,16 @@ def planner_node(state: State):
 
         for action in draft.actions:
             action.id = uuid4().hex
+    if state["context"].get("keep_all_actions"):
+        from app.agent_models import Action
+
+        draft.actions = [
+            Action.model_validate(action) for action in state["context"]["keep_all_actions"]
+        ]
     return {"draft": draft}
 
 
-def reviewer_node(state: State):
-    journey, draft = state["journey"], state["draft"]
-    result = workflow.review(journey, state["context"], draft)
+def plan_issues(journey, draft):
     problems = []
     if isinstance(draft, Plan) and any(not meal.nutrition.available for meal in draft.meals):
         problems.append(
@@ -111,6 +115,8 @@ def reviewer_node(state: State):
             problems.append(
                 "A meal contains a catalogued allergen matching a reported restriction. Replace it; do not erase the restriction."
             )
+    if not isinstance(draft, Plan):
+        return problems
     if journey.body.daily_minutes is not None:
         if any(action.minutes is None for action in draft.actions):
             problems.append(
@@ -136,6 +142,13 @@ def reviewer_node(state: State):
         and sum(cost or 0 for cost in costs) > journey.body.monthly_budget_sek
     ):
         problems.append("Combined monthly costs exceed the stated budget.")
+    return problems
+
+
+def reviewer_node(state: State):
+    journey, draft = state["journey"], state["draft"]
+    result = workflow.review(journey, state["context"], draft)
+    problems = plan_issues(journey, draft)
     if problems:
         result.approved = False
         result.issues.extend(problems)
@@ -161,6 +174,12 @@ def correction_node(state: State):
 
         for action in draft.actions:
             action.id = uuid4().hex
+    if state["context"].get("keep_all_actions"):
+        from app.agent_models import Action
+
+        draft.actions = [
+            Action.model_validate(action) for action in state["context"]["keep_all_actions"]
+        ]
     return {"draft": draft}
 
 
@@ -175,6 +194,14 @@ def needs_correction(state: State):
 
 def finish_node(state: State):
     journey, result = state["journey"], state["result"]
+    if isinstance(state["draft"], Plan):
+        review_days = [
+            milestone.day
+            for milestone in state["draft"].milestones
+            if milestone.label in {"Review", "Seek assessment"}
+        ]
+        if review_days:
+            state["draft"].review_days = min(state["draft"].review_days, min(review_days))
     if not result.approved:
         for check in result.action_checks:
             if check.action_id in {a.id for a in state["draft"].actions}:

@@ -24,6 +24,7 @@ from app.agent_models import (
     Event,
     FitOptions,
     GeneratedQuestion,
+    GoalEdit,
     Journey,
     MealSwap,
     PhotoNotes,
@@ -980,9 +981,19 @@ def record_progress(body: ProgressRequest, access: Access) -> Journey:
     ids = {action.id for action in workflow.visible_actions(journey)}
     if body.action_id is not None and body.action_id not in ids:
         raise HTTPException(422, "Choose an action from your current plan or kept list.")
+    if body.meal_key:
+        if body.action_id or body.meal_key not in {
+            f"{meal.day}-{meal.slot}" for meal in journey.plans[-1].plan.meals
+        }:
+            raise HTTPException(422, "Choose a meal from your current plan.")
+        if int(body.meal_key.split("-")[0]) != body.observed_on.weekday():
+            raise HTTPException(
+                422, "The observation date must match the scheduled meal's weekday."
+            )
     journey.progress.append(
         ProgressEntry(
             id=uuid4().hex,
+            meal_key=body.meal_key,
             plan_version=journey.plans[-1].version,
             action_id=body.action_id,
             status=body.status,
@@ -1072,4 +1083,19 @@ def meal_swap(body: MealSwap, access: Access) -> Journey:
     finish_node({**state, **result})
     workflow.require_usable_plan(journey, draft)
     journey.proposal = draft
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/goals", response_model=Journey, operation_id="updateAgentGoals")
+def update_goals(body: GoalEdit, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    journey.context.goals = body.goals
+    journey.context.target_date = body.target_date
+    journey.profile_revision += 1
+    journey.profile_confirmed_revision = None
+    journey.proposal = None
+    workflow.quarantine(
+        journey,
+        "Your priorities or deadline changed. Ask the coach to propose an updated plan; relevant allergies and limits are preserved.",
+    )
     return store.save(access, journey, body.revision)

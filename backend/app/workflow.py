@@ -28,7 +28,12 @@ _deadline: ContextVar[float | None] = ContextVar("workflow_deadline", default=No
 def reports(journey: Journey) -> dict[str, str]:
     result = {"opening": journey.context.description}
     for fact in journey.profile:
-        if fact.active and fact.confirmed and fact.source_kind == "report":
+        if (
+            fact.active
+            and fact.confirmed
+            and fact.source_kind == "report"
+            and fact.quote not in result.get(fact.source_id, "")
+        ):
             result[fact.source_id] = result.get(fact.source_id, "") + "\n" + fact.quote
     for event in journey.events:
         if not event.skipped:
@@ -62,7 +67,9 @@ def context_for(journey: Journey, context: dict) -> dict:
         "body_context": journey.body.model_dump(mode="json"),
         "body_guidance": body_guidance(journey),
         "progress_review": progress_context(journey),
-        "reported_profile": [fact.model_dump() for fact in journey.profile if fact.active],
+        "reported_profile": [
+            fact.model_dump(mode="json") for fact in journey.profile if fact.active
+        ],
         "profile_conflicts": journey.profile_conflicts,
         "reports_by_source": reports(journey),
     }
@@ -215,6 +222,16 @@ def plan(journey: Journey, task: str, context: dict, output):
 
 
 def require_usable_plan(journey: Journey, draft):
+    from app.coaching_graph import plan_issues
+
+    problems = plan_issues(journey, draft)
+    if problems:
+        raise HTTPException(
+            502,
+            "The combined plan needs adjustment: "
+            + " ".join(problems)
+            + " Your accepted plan is unchanged.",
+        )
     if journey.workflow.review:
         unsafe = {
             c.action_id for c in journey.workflow.review.action_checks if c.status != "compatible"

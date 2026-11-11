@@ -950,6 +950,42 @@
         "title": "FitOptions",
         "type": "object"
       },
+      "GoalEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "goals": {
+            "items": {
+              "enum": [
+                "skin",
+                "hair",
+                "body"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Goals",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "target_date": {
+            "default": "",
+            "maxLength": 10,
+            "title": "Target Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "goals"
+        ],
+        "title": "GoalEdit",
+        "type": "object"
+      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -1841,6 +1877,17 @@
             "title": "Id",
             "type": "string"
           },
+          "meal_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meal Key"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -1898,6 +1945,18 @@
               }
             ],
             "title": "Action Id"
+          },
+          "meal_key": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meal Key"
           },
           "note": {
             "default": "",
@@ -3515,6 +3574,112 @@
           }
         ],
         "summary": "Food Catalog",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/goals": {
+      "post": {
+        "operationId": "updateAgentGoals",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Goals",
         "tags": [
           "agent"
         ]

@@ -166,3 +166,54 @@ button:disabled { opacity: .55; }
 .care-profile input, .care-profile select { width: 100%; margin-top: 6px; font-size: 16px; }
 .review-notice { padding: 14px; margin: 14px 0; border: 1px solid var(--forest); border-radius: 12px; background: var(--paper); line-height: 1.5; }
 .coach-checkpoint { margin: 20px 0; padding: 16px; border: 1px solid var(--forest); border-radius: 16px; }
+
+/* One mobile workspace: Today, Plan, Coach and Profile. */
+.workspace-panel { margin: 20px 0; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); min-width: 0; }
+.workspace-panel h2 { margin-bottom: 10px; font-size: 22px; line-height: 1.3; font-weight: 650; }
+.workspace-panel h3 { font-size: 19px; font-weight: 650; }
+.workspace-panel p { font-size: 16px; line-height: 1.6; color: var(--muted); }
+.workspace-panel summary { min-height: 44px; padding: 8px 0; font-size: 16px; font-weight: 600; cursor: pointer; }
+.workspace-panel summary span { font-size: 13px; color: var(--muted); }
+.workspace-panel small { display: block; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.workspace-panel label, .typed-answer { display: grid; gap: 7px; margin: 14px 0; font-size: 15px; font-weight: 500; }
+.workspace-panel input, .workspace-panel select, .workspace-panel textarea, .typed-answer input { width: 100%; max-width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; line-height: 1.5; background: var(--cream); }
+.workspace-panel .button { margin-top: 10px; }
+.workspace-panel > .workspace-panel { padding: 0; border: 0; }
+.profile-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.field-pair { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.review-pill { display: inline-block; border-radius: 999px; padding: 7px 12px; background: var(--sage); color: var(--sage-deep); font-size: 14px; }
+.today-date { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
+.priority-copy { font-size: 17px; line-height: 1.5; margin: 0 0 22px; }
+.week-picker { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; margin: 24px 0; }
+.week-picker button { min-width: 0; min-height: 46px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--muted); font-size: 14px; cursor: pointer; }
+.week-picker button[aria-pressed="true"] { background: var(--forest); color: var(--paper); border-color: var(--forest); }
+.milestone-list, .progress-entries { list-style: none; padding: 0; margin: 16px 0 0; }
+.milestone-list li, .progress-entries li { padding: 14px 0; border-top: 1px solid var(--line); }
+.milestone-list span { display: inline-block; padding: 5px 10px; border-radius: 999px; background: var(--sage); font-size: 14px; }
+.milestone-list p { margin: 10px 0 6px; }
+.meal-card { padding: 18px 0; border-top: 1px solid var(--line); }
+.meal-card h3 { margin-bottom: 8px; }
+.nutrition-badge { color: var(--sage-deep) !important; font-size: 14px !important; }
+.empty-copy { padding: 12px 0; }
+.coach-conversation { background: transparent !important; padding: 0 !important; border: 0 !important; }
+.coach-conversation > h2 { font-size: 24px; font-weight: 650; }
+.coach-question > h3 { font-size: 24px; line-height: 1.3; margin-top: 24px; }
+.care-profile { margin: 20px 0; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); }
+.care-profile > summary { font-size: 18px; }
+.care-profile label { display: grid; gap: 7px; margin: 12px 0; }
+.care-profile input, .care-profile select { width: 100%; min-width: 0; padding: 10px; min-height: 46px; font-size: 16px; }
+.care-profile > ul { list-style: none; padding: 0; }
+.profile-fact { border-top: 1px solid var(--line); padding: 14px 0; }
+.question-page .plan-refresh { margin-top: 0; }
+.onboarding-header .stepper span { width: 33.333%; max-width: 120px; }
+.onboarding-header .stepper { width: 100%; justify-content: center; }
+@media (min-width:641px) { .onboarding-header .stepper { min-width: 330px; } }
+@media (max-width:380px) { .workspace-panel { padding: 16px; } .field-pair { grid-template-columns: 1fr; gap: 0; } .week-picker { gap: 2px; } .week-picker button { font-size: 13px; } }
+
+.meal-complete { min-height: 44px; padding: 8px 14px; margin: 4px 0 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--forest); background: var(--paper); font-size: 14px; cursor: pointer; }
+.meal-complete[aria-pressed="true"] { background: var(--sage); border-color: var(--forest); }
+.nutrition-estimate > summary { font-size: 14px; color: var(--muted); font-weight: 500; }
+
+.goal-chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.goal-chips button { min-height:44px; padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:var(--paper); font-size:15px; cursor:pointer; }
+.goal-chips button[aria-pressed="true"] { background:var(--sage); border-color:var(--forest); color:var(--forest); }

@@ -57,7 +57,12 @@ def generate[T: BaseModel](
         raise HTTPException(503, "Configure the backend OpenAI key and model to use the agent.")
     context = dict(context)
     timeout = context.pop("_stage_timeout", 45)
-    model_input: str | list = json.dumps(context, ensure_ascii=False)
+    try:
+        model_input: str | list = json.dumps(context, ensure_ascii=False)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            502, "The coach could not prepare this request. Your saved journey is unchanged; retry."
+        ) from None
     if images:
         model_input = [
             {

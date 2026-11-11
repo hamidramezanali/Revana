@@ -72,6 +72,11 @@ def generate_batch(journey: Journey, context: dict, request: SuggestionRequest) 
             question.selection_mode == "single" or any(option.exclusive for option in selected)
         ):
             raise HTTPException(422, "These options cannot be selected together.")
+        from app.coaching_tools import validate_question_answer
+
+        validate_question_answer(
+            question, request.message, request.skipped, request.selected_option_ids, []
+        )
     # Keep explicit suggestions distinct from user-reported facts and accepted plans.
     context.pop("suggestion_board", None)
     context.pop("action_exploration", None)

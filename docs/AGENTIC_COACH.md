@@ -67,7 +67,11 @@ prescriptions are disabled. This release does not claim clinical nutritional sui
 Dated observations explicitly distinguish not attempted, inconsistent, followed,
 improved, unchanged and worse. Completion does not imply benefit; missing logs do not
 imply failure. Worsening quarantines actions and invalidates a pending proposal.
-Profile corrections and observation changes require a recheck. Review prompts appear
+Profile corrections, goal/deadline edits and observation changes require a recheck.
+Meal adherence is linked to the actual weekday/slot and observation date. Keeping an
+idea is a preference; it does not replace the accepted daily schedule. All-kept plans
+can still be reviewed while habit actions are inserted unchanged by application code.
+Reconstructed plans are checked against combined time/cost limits after preserves. Review prompts appear
 when the app is opened; no notification scheduler or background AI spending is enabled.
 
 Bokadirekt discovery is currently external category navigation only, with explicit
@@ -96,3 +100,14 @@ No test result establishes real-world clinical recommendation quality. Account s
 billing, notification delivery, broad food coverage, partner marketplace access and a
 validated forecasting model are not claimed by this release. Temporary public testing
 still follows the user's earlier explicit authorization.
+
+
+Final validation checkpoint (2026-11-11): 137 backend tests pass; one optional real
+Postgres test is skipped without a configured test database. Frontend TypeScript and
+production build pass. Synthetic browser checks covered focus selection, photo-enabled
+and numeric/no-photo questions, profile confirmation, daily completion, observations,
+shopping totals, a meal-swap proposal, rejection/acceptance, profile/body-context correction,
+review after a reduced time budget and 360/390/1280px layouts. A real configured-model
+smoke test completed assessment, a three-action plan, reviewer approval and confirmation
+consolidation; its isolated synthetic journey was deleted. This is one connectivity
+and schema smoke test, not evidence of clinical quality across the acceptance suite.

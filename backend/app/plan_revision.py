@@ -30,9 +30,13 @@ def build_revision(journey: Journey, context: dict, message: str) -> Plan:
         action.id: action for action in current.plan.actions if preferences.get(action.id) != "keep"
     }
     if not editable:
-        raise HTTPException(
-            409, "All actions are kept. Unmark an action before refreshing the plan."
+        draft = workflow.plan(
+            journey,
+            "Review progress and update plan metadata or meals as appropriate. All habit actions are frozen by the user's keep choices and are inserted unchanged by the application. Reassess their suitability; do not claim completion or change kept actions.",
+            {**context, "keep_all_actions": [action.model_dump(mode="json") for action in kept]},
+            Plan,
         )
+        return workflow.require_usable_plan(journey, draft)
     context = {
         **context,
         "revision_request": {
