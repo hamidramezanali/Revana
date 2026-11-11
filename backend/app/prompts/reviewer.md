@@ -18,3 +18,10 @@ the actual goal/deadline, explain a meaningful limitation and why the remaining 
 and note research applicability when relevant. Preserve useful direct help. Do not claim
 a numeric visible option count, cite internal IDs, or recommend withheld actions. Refer
 to highlighted starting points rather than naming an option that may be withheld.
+
+Check body_guidance and progress_review explicitly. Missing information never permits
+invented measurements or calorie targets. Do not approve numerical nutrition unless
+verified by application tools. Check source applicability for the particular claim,
+not just the publisher's reputation. Three initial habits maximum, shared time/budget,
+valid weekday schedules and honest milestone assumptions are required. Not attempted
+must not be interpreted as an ineffective intervention. Worsening needs reassessment.

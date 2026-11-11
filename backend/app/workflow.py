@@ -16,7 +16,6 @@ from app.agent_models import (
     ProfileFact,
     ResearchIntent,
     ReviewResult,
-    SuggestionBatch,
     SuggestionBoard,
     WorkflowState,
 )
@@ -28,6 +27,9 @@ _deadline: ContextVar[float | None] = ContextVar("workflow_deadline", default=No
 
 def reports(journey: Journey) -> dict[str, str]:
     result = {"opening": journey.context.description}
+    for fact in journey.profile:
+        if fact.active and fact.confirmed and fact.source_kind == "report":
+            result[fact.source_id] = result.get(fact.source_id, "") + "\n" + fact.quote
     for event in journey.events:
         if not event.skipped:
             result[f"event-{event.source_id}"] = "\n".join([*event.selected_options, event.answer])
@@ -53,8 +55,13 @@ def context_for(journey: Journey, context: dict) -> dict:
         for key, value in context.items()
         if key not in {"workflow", "profile", "research_intent"}
     }
+    from app.coaching_tools import body_guidance, progress_context
+
     return {
         **context,
+        "body_context": journey.body.model_dump(mode="json"),
+        "body_guidance": body_guidance(journey),
+        "progress_review": progress_context(journey),
         "reported_profile": [fact.model_dump() for fact in journey.profile if fact.active],
         "profile_conflicts": journey.profile_conflicts,
         "reports_by_source": reports(journey),
@@ -86,7 +93,11 @@ def absorb(journey: Journey, result, context: dict) -> None:
             for f in journey.profile
         ):
             continue
-        if candidate.supersedes_id and candidate.category in {"goal", "preference"}:
+        if (
+            candidate.supersedes_id
+            and candidate.status == "reported"
+            and candidate.category in {"goal", "preference"}
+        ):
             for fact in journey.profile:
                 if fact.id == candidate.supersedes_id and fact.category == candidate.category:
                     fact.active = False
@@ -98,6 +109,7 @@ def absorb(journey: Journey, result, context: dict) -> None:
                 source_id=candidate.source_id,
                 quote=candidate.quote,
                 status=candidate.status,
+                updated_at=datetime.now(UTC),
             )
         )
         changed = True
@@ -114,6 +126,9 @@ def begin(journey: Journey) -> None:
 
 
 def research(journey: Journey, intent: ResearchIntent | None) -> None:
+    from app.guidance import library
+
+    journey.workflow.research = library(journey.context.goals)
     if intent and intent.needed:
         journey.workflow.stages.append("researcher")
         if _deadline.get() is not None and _deadline.get() - monotonic() < 30:
@@ -194,48 +209,9 @@ def review(journey: Journey, context: dict, draft) -> ReviewResult:
 
 
 def plan(journey: Journey, task: str, context: dict, output):
-    enriched = {
-        **context_for(journey, context),
-        "research_context": journey.workflow.research.model_dump(mode="json"),
-    }
-    journey.workflow.stages.append("planner")
-    draft = stage("planner", task, enriched, output)
-    if isinstance(draft, SuggestionBatch):
-        for action in draft.actions:
-            action.id = uuid4().hex
-    result = review(journey, enriched, draft)
-    draft_ids = {a.id for a in draft.actions}
-    needs_correction = not result.approved or any(
-        c.status != "compatible" and c.action_id in draft_ids for c in result.action_checks
-    )
-    if needs_correction and result.correction.strip():
-        journey.workflow.stages.append("planner_correction")
-        draft = stage(
-            "planner",
-            task + " Apply exactly one targeted correction.",
-            {
-                **enriched,
-                "reviewer_correction": result.correction,
-                "previous_draft": draft.model_dump(mode="json"),
-            },
-            output,
-        )
-        if isinstance(draft, SuggestionBatch):
-            for action in draft.actions:
-                action.id = uuid4().hex
-        result = review(journey, enriched, draft)
-    if not result.approved:
-        draft_ids = {action.id for action in draft.actions}
-        for check in result.action_checks:
-            if check.action_id in draft_ids:
-                check.status = "needs_review"
-                check.reason = "The draft still needs refinement for your request: " + "; ".join(
-                    result.issues
-                )
-        result.suggested_starts = []
-        journey.workflow.status = "needs_review"
-        journey.workflow.message = "The draft did not pass review after one refinement. Please clarify the request or try another approach."
-    return draft
+    from app.coaching_graph import plan as graph_plan
+
+    return graph_plan(journey, task, context, output)
 
 
 def require_usable_plan(journey: Journey, draft):
@@ -296,3 +272,45 @@ def intake_revision(journey: Journey, context: dict, message: str):
     journey.research_intent = getattr(response, "research", None)
     research(journey, journey.research_intent)
     return response, enriched
+
+
+def consolidate_memory(journey: Journey) -> None:
+    """After explicit profile/plan approval, retain relevant facts, not a transcript.
+
+    Legacy records are converted only at that explicit approval boundary. This does
+    not purge historical backups or change the AI provider's retention policy.
+    """
+    for event in journey.events:
+        if event.photo_notes and event.photo_notes.confirmed:
+            for observation in event.photo_notes.observations:
+                if not any(
+                    f.active and f.source_kind == "visual_observation" and f.value == observation
+                    for f in journey.profile
+                ):
+                    journey.profile.append(
+                        ProfileFact(
+                            id=uuid4().hex,
+                            category="observation",
+                            value=observation[:400],
+                            source_id=f"photo-{event.source_id}",
+                            quote=observation[:400],
+                            status="needs_review",
+                            active=True,
+                            confirmed=True,
+                            source_kind="visual_observation",
+                            updated_at=datetime.now(UTC),
+                        )
+                    )
+    for fact in journey.profile:
+        if fact.active:
+            fact.quote = fact.quote[:400]
+            if fact.status == "reported":
+                fact.confirmed = True
+    journey.profile = [fact for fact in journey.profile if fact.active]
+    journey.events = []
+    if journey.suggestion_board:
+        journey.suggestion_board.conversation = []
+        journey.suggestion_board.pending_question = None
+    journey.research_intent = None
+    journey.profile_confirmed_revision = journey.profile_revision
+    journey.memory_consolidated = True

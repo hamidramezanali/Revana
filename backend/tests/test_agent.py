@@ -139,17 +139,17 @@ def plan(client, headers, journey):
     )
 
 
-def test_assessment_continues_past_old_question_cap_and_keeps_context(agent):
+def test_six_question_cap_keeps_context(agent):
     client, calls = agent
     headers, journey = start(client)
-    for _ in range(8):
+    for _ in range(6):
         response = answer(client, headers, journey)
         assert response.status_code == 200
         journey = response.json()
-    assert journey["assessment_count"] == 8
-    assert not journey["decision"]["ready"]
-    assert journey["decision"]["questions"]
-    assert len(calls) == 9
+    assert journey["assessment_count"] == 6
+    assert journey["decision"]["ready"]
+    assert not journey["decision"]["questions"]
+    assert len(calls) == 6
     assert calls[1][1]["events"][0]["answer"] == "My sensitive private answer"
 
 
@@ -165,10 +165,10 @@ def test_plan_checkin_proposal_accept_resume_delete(agent):
     )
     journey = response.json()
     assert journey["mode"] == "checkin"
-    for _ in range(5):
+    for _ in range(3):
         journey = answer(client, headers, journey).json()
-    assert journey["checkin_count"] == 5
-    assert journey["decision"]["questions"]
+    assert journey["checkin_count"] == 3
+    assert not journey["decision"]["questions"]
     journey = plan(client, headers, journey).json()
     assert journey["proposal"] is not None
     assert journey["plans"] == [original]

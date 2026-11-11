@@ -1,0 +1,157 @@
+{
+  "publisher": "Livsmedelsverket, Swedish Food Composition Database",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "retrieved_at": "2026-11-11T19:23:06.973970+00:00",
+  "basis": "100g edible portion in the preparation state named by each entry",
+  "foods": [
+    {
+      "id": 677,
+      "name": "Oatmeal porridge wholegrain",
+      "version": "2026-06-29T11:16:37.5",
+      "kcal_per_100g": 66,
+      "protein_per_100g": 1.7,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/677/naringsvarden?sprak=2",
+      "known_allergens": [
+        "oats"
+      ],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 553,
+      "name": "Banana",
+      "version": "2026-06-29T00:32:30.257",
+      "kcal_per_100g": 95,
+      "protein_per_100g": 1.1,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/553/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 1170,
+      "name": "Chicken breast fillet fresh meat fried w/o skin",
+      "version": "2026-06-29T00:46:37.583",
+      "kcal_per_100g": 116,
+      "protein_per_100g": 23.0,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/1170/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 2205,
+      "name": "Egg boiled",
+      "version": "2026-06-29T00:48:12.89",
+      "kcal_per_100g": 136,
+      "protein_per_100g": 12.1,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/2205/naringsvarden?sprak=2",
+      "known_allergens": [
+        "egg"
+      ],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 804,
+      "name": "Brown rice boiled w/ salt",
+      "version": "2026-06-29T00:38:43.367",
+      "kcal_per_100g": 107,
+      "protein_per_100g": 2.5,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/804/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 339,
+      "name": "Cucumber",
+      "version": "2026-06-29T00:27:52.94",
+      "kcal_per_100g": 13,
+      "protein_per_100g": 0.8,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/339/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 35,
+      "name": "Olive oil",
+      "version": "2026-06-29T00:19:22.1",
+      "kcal_per_100g": 884,
+      "protein_per_100g": 0.0,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/35/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 588,
+      "name": "Apple w/ skin",
+      "version": "2026-06-29T00:33:28.58",
+      "kcal_per_100g": 48,
+      "protein_per_100g": 0.0,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/588/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 4939,
+      "name": "Broccoli boiled w/o salt frozen product",
+      "version": "2026-06-29T01:50:18.357",
+      "kcal_per_100g": 26,
+      "protein_per_100g": 2.4,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/4939/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 3821,
+      "name": "Green lentils dried boiled w/ salt",
+      "version": "2026-06-29T01:42:46.953",
+      "kcal_per_100g": 127,
+      "protein_per_100g": 9.4,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/3821/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 3822,
+      "name": "Red lentils dried boiled w/ salt",
+      "version": "2026-06-29T01:42:48.483",
+      "kcal_per_100g": 125,
+      "protein_per_100g": 10.6,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/3822/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 3815,
+      "name": "Chickpeas canned w/o brine",
+      "version": "2026-06-29T01:42:38.44",
+      "kcal_per_100g": 128,
+      "protein_per_100g": 7.5,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/3815/naringsvarden?sprak=2",
+      "known_allergens": [],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 124,
+      "name": "Yoghurt plain 3% fat fortified",
+      "version": "2026-06-29T00:22:07.157",
+      "kcal_per_100g": 56,
+      "protein_per_100g": 3.4,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/124/naringsvarden?sprak=2",
+      "known_allergens": [
+        "milk"
+      ],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    },
+    {
+      "id": 5956,
+      "name": "Yoghurt substitute oat based non-dairy plain 2.2% fat fortified",
+      "version": "2026-06-29T01:58:35.14",
+      "kcal_per_100g": 76,
+      "protein_per_100g": 1.5,
+      "source_url": "https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel/5956/naringsvarden?sprak=2",
+      "known_allergens": [
+        "oats"
+      ],
+      "allergen_note": "Not a complete allergen guarantee; check the actual product label."
+    }
+  ]
+}

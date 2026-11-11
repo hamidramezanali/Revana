@@ -1,10 +1,10 @@
 """Bounded contracts for the adaptive beauty-agent workflow."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 
 class Model(BaseModel):
@@ -46,6 +46,21 @@ class Question(Model):
     options: list[AnswerOption] = Field(default_factory=list)
     selection_mode: Literal["single", "multiple"] = "multiple"
     photo_mode: Literal["none", "products", "skin", "hair"] = "none"
+    input_kind: Literal["options", "number", "date", "text"] = "options"
+    unit: Literal["kg", "cm", "years", "minutes", "SEK", ""] = ""
+    number_min: float | None = None
+    number_max: float | None = None
+    profile_key: (
+        Literal[
+            "age",
+            "height_cm",
+            "weight_kg",
+            "target_weight_kg",
+            "daily_minutes",
+            "monthly_budget_sek",
+        ]
+        | None
+    ) = None
 
     @model_validator(mode="after")
     def distinct_options(self):
@@ -74,7 +89,17 @@ class GeneratedDecision(Decision):
     questions: list[GeneratedQuestion] = Field(max_length=1)
 
 
-FactCategory = Literal["goal", "allergy", "limitation", "preference"]
+FactCategory = Literal[
+    "goal",
+    "allergy",
+    "limitation",
+    "preference",
+    "concern",
+    "routine",
+    "measurement",
+    "observation",
+    "health_context",
+]
 FactStatus = Literal["reported", "hypothesis", "unknown", "needs_review"]
 
 
@@ -95,6 +120,9 @@ class ProfileFact(Model):
     quote: str
     status: FactStatus
     active: bool = True
+    updated_at: datetime | None = None
+    confirmed: bool = False
+    source_kind: Literal["report", "visual_observation"] = "report"
 
 
 class ProfileEdit(Model):
@@ -147,6 +175,10 @@ class RevisionRequest(Model):
     revision: int = Field(ge=0)
 
 
+class AcceptRequest(RevisionRequest):
+    confirm_profile: bool = False
+
+
 class FitOptions(Model):
     options: list[str]
     limitations_hint: str = Field(min_length=1, max_length=300)
@@ -184,6 +216,7 @@ class PhotoNotesRequest(RevisionRequest):
 
 class PlanRequest(RevisionRequest):
     preferences: Preferences
+    confirm_profile: bool = False
 
 
 class CheckInRequest(RevisionRequest):
@@ -236,6 +269,16 @@ class PlanFeedback(Model):
     created_at: datetime
 
 
+class Exercise(Model):
+    name: str = Field(min_length=1, max_length=100)
+    sets: int | None = Field(default=None, ge=1, le=10)
+    repetitions: str = Field(default="", max_length=80)
+    duration_minutes: int | None = Field(default=None, ge=1, le=180)
+    rest_seconds: int | None = Field(default=None, ge=0, le=600)
+    instructions: str = Field(min_length=1, max_length=500)
+    easier_alternative: str = Field(min_length=1, max_length=300)
+
+
 class Action(Model):
     id: str = Field(min_length=1, max_length=80)
     category: str = Field(min_length=1, max_length=80)
@@ -246,10 +289,121 @@ class Action(Model):
     cost: str = Field(min_length=1, max_length=200)
     effort: str = Field(min_length=1, max_length=100)
     observation: str = Field(min_length=1, max_length=500)
+    minutes: int | None = Field(default=None, ge=0, le=240)
+    monthly_cost_sek: float | None = Field(default=None, ge=0, le=100000)
+    days: list[int] = Field(default_factory=lambda: list(range(7)), max_length=7)
+    time_of_day: Literal["morning", "midday", "evening", "flexible"] = "flexible"
+    exercises: list[Exercise] = Field(default_factory=list, max_length=8)
+
+    @model_validator(mode="after")
+    def valid_days(self):
+        if any(day not in range(7) for day in self.days) or len(set(self.days)) != len(self.days):
+            raise ValueError("Use distinct weekday numbers from zero to six.")
+        return self
+
+
+class Milestone(Model):
+    day: int = Field(ge=1, le=84)
+    label: Literal["Observe", "Review", "Too early to assess", "Seek assessment"]
+    description: str = Field(min_length=1, max_length=400)
+    assumptions: str = Field(max_length=400)
+
+
+class BodyContext(Model):
+    age: int | None = Field(default=None, ge=18, le=120)
+    height_cm: float | None = Field(default=None, ge=100, le=250)
+    weight_kg: float | None = Field(default=None, ge=25, le=400)
+    target_weight_kg: float | None = Field(default=None, ge=25, le=400)
+    equation_coefficient: Literal["female", "male", "not_specified"] = "not_specified"
+    pregnancy: Literal["unknown", "not_applicable", "pregnant_or_breastfeeding"] = "unknown"
+    activity: Literal["unknown", "mostly_seated", "some_activity", "regular_training"] = "unknown"
+    daily_minutes: int | None = Field(default=None, ge=1, le=240)
+    monthly_budget_sek: float | None = Field(default=None, ge=0, le=100000)
+    city: str = Field(default="", max_length=100)
+    timezone: str = "Europe/Stockholm"
+
+    @model_validator(mode="after")
+    def valid_timezone(self):
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        try:
+            ZoneInfo(self.timezone)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Choose a supported timezone.") from None
+        return self
+
+
+class BodyEdit(RevisionRequest):
+    body: BodyContext
+
+
+class ProgressRequest(RevisionRequest):
+    action_id: str | None = Field(default=None, max_length=80)
+    status: Literal["not_attempted", "inconsistent", "followed", "improved", "unchanged", "worse"]
+    note: str = Field(default="", max_length=1000)
+    observed_on: date
+
+
+class ProgressEntry(Model):
+    id: str
+    plan_version: int
+    action_id: str | None
+    status: Literal["not_attempted", "inconsistent", "followed", "improved", "unchanged", "worse"]
+    note: str
+    observed_on: date
+    recorded_at: datetime
+
+
+class MealIngredient(Model):
+    food_id: int = Field(ge=1)
+    grams: float = Field(gt=0, le=2000)
+
+
+class MealNutrition(Model):
+    available: bool
+    kcal: float | None
+    protein_g: float | None
+    missing_food_ids: list[int]
+    source: str
+
+
+class Meal(Model):
+    day: int = Field(ge=0, le=6)
+    slot: Literal["breakfast", "lunch", "dinner", "snack"]
+    title: str = Field(min_length=1, max_length=150)
+    ingredients: list[MealIngredient] = Field(min_length=1, max_length=12)
+    instructions: str = Field(min_length=1, max_length=1000)
+    preparation_minutes: int = Field(ge=0, le=180)
+    substitution_note: str = Field(max_length=400)
+
+    @model_validator(mode="before")
+    @classmethod
+    def recompute_saved_totals(cls, value):
+        if isinstance(value, dict):
+            value = {key: item for key, item in value.items() if key != "nutrition"}
+        return value
+
+    @computed_field
+    @property
+    def nutrition(self) -> MealNutrition:
+        from app.nutrition import meal_totals
+
+        return MealNutrition(**meal_totals(self.ingredients))
+
+
+class MealSwap(RevisionRequest):
+    day: int = Field(ge=0, le=6)
+    slot: Literal["breakfast", "lunch", "dinner", "snack"]
+    source_day: int = Field(ge=0, le=6)
+    source_slot: Literal["breakfast", "lunch", "dinner", "snack"]
 
 
 class Plan(Model):
     summary: str = Field(min_length=1, max_length=2000)
+    priority: str = Field(default="", max_length=400)
+    deferred: list[str] = Field(default_factory=list, max_length=6)
+    milestones: list[Milestone] = Field(default_factory=list, max_length=6)
+    meals: list[Meal] = Field(default_factory=list, max_length=28)
     reported: list[str] = Field(max_length=8)
     hypotheses: list[str] = Field(max_length=8)
     uncertainties: list[str] = Field(max_length=8)
@@ -262,6 +416,9 @@ class Plan(Model):
     def unique_actions(self):
         if len({action.id for action in self.actions}) != len(self.actions):
             raise ValueError("Action IDs must be unique.")
+        slots = [(meal.day, meal.slot) for meal in self.meals]
+        if len(set(slots)) != len(slots):
+            raise ValueError("Each day and meal slot must be unique.")
         return self
 
 
@@ -416,6 +573,10 @@ class Journey(Model):
     profile_conflicts: list[str] = Field(default_factory=list)
     workflow: WorkflowState = Field(default_factory=WorkflowState)
     research_intent: ResearchIntent | None = None
+    body: BodyContext = Field(default_factory=BodyContext)
+    progress: list[ProgressEntry] = Field(default_factory=list)
+    profile_confirmed_revision: int | None = None
+    memory_consolidated: bool = False
 
 
 class SessionCreated(Model):

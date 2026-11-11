@@ -1,11 +1,12 @@
 # Revana agent guidance
 
-Start with `docs/PRODUCT_ROADMAP.md`, `docs/architecture.md` and `docs/agent-roadmap.md`.
+Start with `docs/AGENTIC_COACH.md`, `docs/PRODUCT_ROADMAP.md`, `docs/architecture.md` and `docs/agent-roadmap.md`.
 
 ## Product goal
 
-Revana is an interactive beauty and lifestyle agent. Keep the current visual direction
-and direction -> goals -> understanding -> fit/safety -> analysis -> plan workflow.
+Revana is an interactive beauty and lifestyle agent. Keep the warm visual direction and focus -> understanding -> profile review -> plan workflow.
+The active workspace is Today, My plan, Coach and Profile. New goals are skin, hair
+and weight/body habits; other lifestyle factors are supporting context.
 The latest message drives the next response, with earlier context and safety constraints
 preserved. Questions adapt to every answer without a fixed cycle or option count. Users
 may skip or finish whenever ready. Separate explicit user reports, hypotheses and
@@ -94,3 +95,13 @@ completed, validated checkpoint to GitHub instead of batching unrelated work. St
 feature branches from updated main. A push does not authorize merging or deploying.
 Update current-state documentation as each slice lands, and distinguish synthetic
 validation from live-provider recommendation quality.
+
+## Agentic workflow update (2026-11-11)
+
+`app/coaching_graph.py` now runs bounded LangGraph graphs using the existing journey
+store at turn boundaries; external tracing is explicitly disabled. Keep six assessment
+questions and three follow-up questions, optional typed inputs, application-controlled
+budgets, proposals and revision checks. Do not restore unlimited-question behavior.
+`app/data/foods.json` is a limited attributed public snapshot; never invent missing
+nutrients or treat it as a complete allergen database. Milestones are review points,
+not validated personal predictions. See AGENTIC_COACH.md for current privacy limits.

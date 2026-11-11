@@ -137,7 +137,9 @@ def test_legacy_saved_journey_stays_readable_without_options(agent):
 
 
 def test_generated_schema_requires_options_and_all_properties():
-    schema = GeneratedDecision.model_json_schema()
+    from app.agent_provider import strict_schema
+
+    schema = strict_schema(GeneratedDecision.model_json_schema())
     for model in [schema, *schema["$defs"].values()]:
         assert set(model.get("required", [])) == set(model.get("properties", {}))
         assert model["additionalProperties"] is False

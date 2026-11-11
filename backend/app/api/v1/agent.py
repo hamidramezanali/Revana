@@ -9,10 +9,12 @@ from app import agent_provider as provider
 from app import agent_store as store
 from app import workflow
 from app.agent_models import (
+    AcceptRequest,
     ActionPreference,
     ActionPreferenceRequest,
     AgentStatus,
     AnswerRequest,
+    BodyEdit,
     CheckInRequest,
     CoachDecision,
     CoachTurn,
@@ -23,6 +25,7 @@ from app.agent_models import (
     FitOptions,
     GeneratedQuestion,
     Journey,
+    MealSwap,
     PhotoNotes,
     PhotoNotesRequest,
     PhotoReading,
@@ -32,6 +35,8 @@ from app.agent_models import (
     PlanVersion,
     ProfileEdit,
     ProfileFact,
+    ProgressEntry,
+    ProgressRequest,
     Question,
     ReshuffleRequest,
     RevisionRequest,
@@ -75,6 +80,11 @@ def coaching_context(journey: Journey) -> dict:
     context = journey.model_dump(mode="json")
     # Do not prime the model with unselected suggestions from the previous question.
     context.pop("decision", None)
+    # Only the accepted current plan and recent observations are needed for this turn.
+    context["plans"] = context["plans"][-1:]
+    context["progress"] = context["progress"][-30:]
+    context["completions"] = context["completions"][-30:]
+    context["plan_feedback"] = context["plan_feedback"][-5:]
     for event in context["events"]:
         event.pop("question_snapshot", None)
         if event.get("photo_notes") and not event["photo_notes"]["confirmed"]:
@@ -118,20 +128,29 @@ def coaching_context(journey: Journey) -> dict:
 
 def decide(journey: Journey) -> Decision:
     workflow.begin(journey)
+    limit = 6 if journey.mode == "assessment" else 3
+    count = journey.assessment_count if journey.mode == "assessment" else journey.checkin_count
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         return Decision(
             summary="Review the photo observations before continuing.", ready=False, questions=[]
         )
+    if count >= limit:
+        return Decision(
+            summary="We have reached this review's question limit. We can make a starting plan and leave missing details explicit.",
+            ready=True,
+            questions=[],
+        )
     context = coaching_context(journey)
     journey.workflow.stages.append("coach")
-    decision = workflow.stage(
-        "coach",
+    from app.coaching_graph import assess
+
+    decision = assess(
+        journey,
         "Decide the next question or finish now based on the latest request and answers. "
         "Return ready=true with no questions when enough is known. Otherwise ask "
-        "one focused question with as many useful short answer options as needed. Choose single or "
+        f"one focused question with 3–6 short answer options, or a numeric/date/text input. {limit - count} questions remain. Choose single or "
         "multiple selection appropriately. Ask only for missing information that changes "
-        "the plan; use the initial description and ALL answers. There is no fixed turn "
-        "or option quota; stop when further questions would not improve the response. "
+        "the plan; use the initial description and ALL answers. Stop early when enough is known. "
         "Use a concise summary of actual user reports. "
         "Set photo_mode to products, skin or hair only when a photo can help answer this "
         "specific question; otherwise none. Never request photos for duration, pain, diet "
@@ -152,6 +171,7 @@ def decide(journey: Journey) -> Decision:
         if question.text.strip().casefold() in previous:
             raise HTTPException(502, "The agent repeated an answered question. Please retry.")
         question.id = uuid4().hex
+        question.options = question.options[:6]
         for option in question.options:
             option.id = uuid4().hex
     return Decision.model_validate(decision.model_dump(include={"summary", "ready", "questions"}))
@@ -174,14 +194,19 @@ def status() -> AgentStatus:
             raise HTTPException(503, "Set " + " and ".join(missing) + " in Vercel, then redeploy.")
     return AgentStatus(
         configured=bool(settings.openai_api_key and settings.openai_model),
-        max_questions=None,
-        max_checkin_questions=None,
+        max_questions=6,
+        max_checkin_questions=3,
         mode="hosted" if settings.hosted else "single-user-local",
     )
 
 
 @router.post("/sessions", response_model=SessionCreated, operation_id="startAgentSession")
 def start(body: StartRequest) -> SessionCreated:
+    if any(goal not in {"skin", "hair", "body"} for goal in body.context.goals):
+        raise HTTPException(
+            422,
+            "Choose skin, hair or weight/body habits. Other lifestyle factors can be supporting context.",
+        )
     if get_settings().hosted:
         store.check_available()
     journey = Journey(
@@ -246,6 +271,11 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
         question.selection_mode == "single" or any(option.exclusive for option in selected)
     ):
         raise HTTPException(422, "These options cannot be selected together.")
+    from app.coaching_tools import validate_question_answer
+
+    validate_question_answer(
+        question, body.answer, body.skipped, body.selected_option_ids, body.photos
+    )
     photo_notes = None
     if body.photos:
         images = sanitized_photos(body.photos)
@@ -291,11 +321,30 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
                 fact.active = False
         journey.profile_revision += 1
         removed = len(journey.events) - body.event_index
+        for removed_event in journey.events[body.event_index :]:
+            snapshot = removed_event.question_snapshot
+            if snapshot and snapshot.input_kind == "number" and snapshot.profile_key:
+                setattr(journey.body, snapshot.profile_key, None)
         journey.events = journey.events[: body.event_index]
         if journey.mode == "assessment":
             journey.assessment_count -= removed
         else:
             journey.checkin_count -= removed
+    if question.input_kind == "number" and question.profile_key and not body.skipped:
+        from pydantic import ValidationError
+
+        from app.agent_models import BodyContext
+
+        values = journey.body.model_dump()
+        values[question.profile_key] = float(body.answer.replace(",", "."))
+        try:
+            journey.body = BodyContext.model_validate(values)
+        except ValidationError:
+            raise HTTPException(
+                422, "This measurement is outside the supported range. Correct it or skip."
+            ) from None
+        journey.profile_revision += 1
+        journey.profile_confirmed_revision = None
     journey.events.append(
         Event(
             kind="answer",
@@ -369,6 +418,11 @@ def plan(body: PlanRequest, access: Access) -> Journey:
             409, "Review or discard the photo observations before generating a plan."
         )
     journey.preferences = body.preferences
+    if body.confirm_profile:
+        for fact in journey.profile:
+            if fact.active and fact.status == "reported":
+                fact.confirmed = True
+        journey.profile_confirmed_revision = journey.profile_revision
     # The explicit fit form is a user report, kept with immutable source provenance.
     preference_values = [
         *body.preferences.sensitivities,
@@ -422,6 +476,8 @@ def plan(body: PlanRequest, access: Access) -> Journey:
                     )
                 )
                 journey.profile_revision += 1
+    if body.confirm_profile:
+        journey.profile_confirmed_revision = journey.profile_revision
     workflow.begin(journey)
     workflow.research(journey, journey.research_intent)
     if journey.proposal is not None:
@@ -472,6 +528,8 @@ def plan(body: PlanRequest, access: Access) -> Journey:
         )
         journey.suggestion_board = board
     journey.decision = Decision(summary=generated.summary, ready=True, questions=[])
+    if body.confirm_profile and journey.proposal is None:
+        workflow.consolidate_memory(journey)
     return store.save(access, journey, body.revision)
 
 
@@ -514,7 +572,7 @@ def checkin(body: CheckInRequest, access: Access) -> Journey:
 
 
 @router.post("/accept", response_model=Journey, operation_id="acceptAgentPlan")
-def accept(body: RevisionRequest, access: Access) -> Journey:
+def accept(body: AcceptRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if journey.proposal is None:
         raise HTTPException(409, "There is no proposed plan to accept.")
@@ -539,6 +597,8 @@ def accept(body: RevisionRequest, access: Access) -> Journey:
     )
     journey.proposal = None
     journey.mode = "assessment"
+    if body.confirm_profile:
+        workflow.consolidate_memory(journey)
     return store.save(access, journey, body.revision)
 
 
@@ -743,6 +803,11 @@ def suggestions(body: SuggestionRequest, access: Access) -> Journey:
 def coach_turn(body: SuggestionRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if not journey.plans:
+        if journey.assessment_count >= 6:
+            raise HTTPException(
+                409,
+                "The six-question assessment is complete. Review your profile and create a starting plan.",
+            )
         if body.question_id and journey.decision.questions:
             return answer(
                 AnswerRequest(
@@ -838,11 +903,14 @@ def edit_profile(body: ProfileEdit, access: Access) -> Journey:
                 category=body.category,
                 value=body.value.strip(),
                 source_id=f"profile-edit-{journey.revision}",
+                confirmed=body.status == "reported",
+                updated_at=datetime.now(UTC),
                 quote=body.value.strip(),
                 status=body.status,
             )
         )
     journey.profile_revision += 1
+    journey.profile_confirmed_revision = None
     journey.proposal = None
     workflow.quarantine(
         journey,
@@ -873,4 +941,135 @@ def review_photo_notes(body: PhotoNotesRequest, access: Access) -> Journey:
         )
     if journey.plans:
         workflow.review(journey, coaching_context(journey), journey.decision)
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/body-context", response_model=Journey, operation_id="updateAgentBodyContext")
+def body_context(body: BodyEdit, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    journey.body = body.body
+    journey.profile_revision += 1
+    journey.profile_confirmed_revision = None
+    journey.proposal = None
+    workflow.quarantine(
+        journey,
+        "Your measurements or constraints changed. Review the plan with your coach before continuing affected actions.",
+    )
+    return store.save(access, journey, body.revision)
+
+
+@router.get("/planning-context", operation_id="getAgentPlanningContext")
+def planning_context(access: Access):
+    from app.coaching_tools import body_guidance
+
+    journey = store.read(access)
+    return body_guidance(journey)
+
+
+@router.post("/progress", response_model=Journey, operation_id="recordAgentProgress")
+def record_progress(body: ProgressRequest, access: Access) -> Journey:
+    from app.coaching_tools import local_today
+
+    journey = load(access, body.revision)
+    if not journey.plans:
+        raise HTTPException(409, "Create a plan before recording observations.")
+    if body.observed_on > local_today(journey):
+        raise HTTPException(422, "Observations cannot be dated in the future.")
+    if len(journey.progress) >= 1000:
+        raise HTTPException(409, "Export your observations before adding more.")
+    ids = {action.id for action in workflow.visible_actions(journey)}
+    if body.action_id is not None and body.action_id not in ids:
+        raise HTTPException(422, "Choose an action from your current plan or kept list.")
+    journey.progress.append(
+        ProgressEntry(
+            id=uuid4().hex,
+            plan_version=journey.plans[-1].version,
+            action_id=body.action_id,
+            status=body.status,
+            note=body.note.strip(),
+            observed_on=body.observed_on,
+            recorded_at=datetime.now(UTC),
+        )
+    )
+    if body.status == "worse":
+        journey.proposal = None
+        workflow.quarantine(
+            journey,
+            "You reported worsening. Ask the coach to reassess before continuing affected actions; seek qualified help for persistent or concerning symptoms.",
+        )
+    return store.save(access, journey, body.revision)
+
+
+@router.delete("/progress/{entry_id}", response_model=Journey, operation_id="removeAgentProgress")
+def remove_progress(entry_id: str, body: RevisionRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if entry_id not in {entry.id for entry in journey.progress}:
+        raise HTTPException(404, "Observation not found.")
+    journey.progress = [entry for entry in journey.progress if entry.id != entry_id]
+    journey.proposal = None
+    workflow.quarantine(journey, "Your observations changed. Recheck the plan with your coach.")
+    return store.save(access, journey, body.revision)
+
+
+@router.get("/services", operation_id="getAgentServiceLinks")
+def service_links(access: Access):
+    journey = store.read(access)
+    from app.services import discovery_links
+
+    return discovery_links(journey)
+
+
+@router.get("/food-catalog", operation_id="getAgentFoodCatalog")
+def food_catalog(access: Access):
+    store.read(access)
+    from app.nutrition import catalog
+
+    return catalog()
+
+
+@router.get("/shopping-list", operation_id="getAgentShoppingList")
+def get_shopping_list(access: Access):
+    journey = store.read(access)
+    if not journey.plans:
+        raise HTTPException(409, "Create a plan first.")
+    from app.nutrition import shopping_list
+
+    return shopping_list(journey.plans[-1].plan)
+
+
+@router.post("/meal-swap", response_model=Journey, operation_id="proposeAgentMealSwap")
+def meal_swap(body: MealSwap, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans or journey.proposal is not None:
+        raise HTTPException(409, "Create a plan and resolve any proposed changes first.")
+    if journey.workflow.status != "ready":
+        raise HTTPException(409, "Recheck the plan after your profile or observations changed.")
+    if len(journey.plans) >= 25:
+        raise HTTPException(409, "Plan version limit reached. Export your journey first.")
+    draft = journey.plans[-1].plan.model_copy(deep=True)
+    target = next(
+        (meal for meal in draft.meals if (meal.day, meal.slot) == (body.day, body.slot)), None
+    )
+    source = next(
+        (
+            meal
+            for meal in draft.meals
+            if (meal.day, meal.slot) == (body.source_day, body.source_slot)
+        ),
+        None,
+    )
+    if not target or not source:
+        raise HTTPException(422, "Choose meals from your current plan.")
+    replacement = source.model_copy(deep=True)
+    replacement.day, replacement.slot = body.day, body.slot
+    draft.meals = [replacement if meal is target else meal for meal in draft.meals]
+    draft.changes = "Replace one meal with another meal from your accepted plan; all other meals and habits stay unchanged."
+    workflow.begin(journey)
+    from app.coaching_graph import finish_node, reviewer_node
+
+    state = {"journey": journey, "context": coaching_context(journey), "draft": draft}
+    result = reviewer_node(state)
+    finish_node({**state, **result})
+    workflow.require_usable_plan(journey, draft)
+    journey.proposal = draft
     return store.save(access, journey, body.revision)

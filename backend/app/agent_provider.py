@@ -29,6 +29,26 @@ def instructions(task: str) -> str:
     return POLICY + "\n" + task
 
 
+def strict_schema(schema: dict) -> dict:
+    """All output fields required by the provider; defaults still migrate saved data."""
+    schema = json.loads(json.dumps(schema))
+
+    def visit(value):
+        if isinstance(value, dict):
+            value.pop("default", None)
+            if value.get("type") == "object" and "properties" in value:
+                value["required"] = list(value["properties"])
+                value["additionalProperties"] = False
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(schema)
+    return schema
+
+
 def generate[T: BaseModel](
     task: str, context: dict, output: type[T], *, images: list[str] | None = None
 ) -> T:
@@ -67,7 +87,7 @@ def generate[T: BaseModel](
                             "type": "json_schema",
                             "name": output.__name__,
                             "strict": True,
-                            "schema": output.model_json_schema(),
+                            "schema": strict_schema(output.model_json_schema()),
                         }
                     },
                 },
@@ -84,6 +104,29 @@ def generate[T: BaseModel](
             if content.get("type") == "output_text"
         ]
         return output.model_validate_json("".join(parts))
+    except httpx.HTTPStatusError as error:
+        status = error.response.status_code
+        if status == 429:
+            try:
+                kind = error.response.json().get("error", {}).get("type")
+            except (ValueError, AttributeError, TypeError):
+                kind = None
+            message = (
+                "OpenAI API credits or a usage limit are preventing coaching. Check the API project's billing and limits; your saved journey is unchanged."
+                if kind == "insufficient_quota"
+                else "OpenAI is temporarily limiting requests. Please wait and retry; your saved journey is unchanged."
+            )
+        elif status in (401, 403):
+            message = "OpenAI rejected this deployment's credentials or permissions. Check the server configuration; your saved journey is unchanged."
+        else:
+            message = (
+                "OpenAI could not complete this request. Your saved journey is unchanged; retry."
+            )
+        raise HTTPException(502, message) from None
+    except httpx.TimeoutException:
+        raise HTTPException(
+            502, "The coach took too long. Your saved journey is unchanged; retry."
+        ) from None
     except (httpx.HTTPError, ValidationError, ValueError, KeyError, TypeError):
         raise HTTPException(
             502,

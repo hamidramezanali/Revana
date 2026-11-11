@@ -544,7 +544,9 @@ def test_all_staged_output_schemas_require_every_property():
         Plan,
         ReshuffleDraft,
     ]:
-        schema = output.model_json_schema()
+        from app.agent_provider import strict_schema
+
+        schema = strict_schema(output.model_json_schema())
         for definition in [schema, *schema.get("$defs", {}).values()]:
             assert set(definition.get("required", [])) == set(definition.get("properties", {}))
             assert definition.get("additionalProperties") is False

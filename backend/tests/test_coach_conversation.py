@@ -90,7 +90,7 @@ def test_latest_message_and_choices_drive_conversation_without_replacing_plan(ag
     journey = response.json()
     board = journey["suggestion_board"]
     question = board["pending_question"]
-    assert len(question["options"]) == 8
+    assert len(question["options"]) == 6
     assert question["id"] != "provider-question"
     assert board["suggestions"] == before["suggestion_board"]["suggestions"]
     assert board["kept"] == before["suggestion_board"]["kept"]
@@ -100,7 +100,7 @@ def test_latest_message_and_choices_drive_conversation_without_replacing_plan(ag
     assert (
         context["current_request"]["message"] == "I want to lose 3 kg in a week. Give me options."
     )
-    selected = question["options"][:7]
+    selected = question["options"][:6]
     response = respond(
         client,
         headers,
@@ -209,7 +209,7 @@ def test_skip_and_free_text_pivot_are_explicit_and_conversation_reaches_plan(age
     assert "Professional support" not in str(captured[-1]["coach_conversation"])
 
 
-def test_assessment_accepts_more_than_six_choices_and_status_has_no_cycle_cap(agent):
+def test_legacy_options_remain_answerable_and_status_exposes_budgets(agent):
     client, _ = agent
     headers, journey = start(client)
     access = headers["Authorization"].split()[1]
@@ -230,4 +230,4 @@ def test_assessment_accepts_more_than_six_choices_and_status_has_no_cycle_cap(ag
     assert result.status_code == 200
     assert len(result.json()["events"][-1]["selected_options"]) == 8
     status = client.get("/v1/agent/status").json()
-    assert status["max_questions"] is None and status["max_checkin_questions"] is None
+    assert status["max_questions"] == 6 and status["max_checkin_questions"] == 3

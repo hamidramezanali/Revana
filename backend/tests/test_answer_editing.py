@@ -112,7 +112,7 @@ def test_edit_only_current_checkin_and_preserve_accepted_plan(agent):
     [
         (["body"], "I want to lose weight with manageable habits."),
         (["skin", "hair"], "I want a simple product routine."),
-        (["other"], "I want to lose weight; not skin advice."),
+        (["body"], "I want to lose weight; not skin advice."),
     ],
 )
 def test_tailored_fit_options_use_actual_request_without_saving_choices(

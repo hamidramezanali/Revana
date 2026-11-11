@@ -1,6 +1,26 @@
 {
   "components": {
     "schemas": {
+      "AcceptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_profile": {
+            "default": false,
+            "title": "Confirm Profile",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "AcceptRequest",
+        "type": "object"
+      },
       "Action": {
         "additionalProperties": false,
         "properties": {
@@ -16,6 +36,14 @@
             "title": "Cost",
             "type": "string"
           },
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "title": "Days",
+            "type": "array"
+          },
           "detail": {
             "maxLength": 1000,
             "minLength": 1,
@@ -28,16 +56,61 @@
             "title": "Effort",
             "type": "string"
           },
+          "exercises": {
+            "items": {
+              "$ref": "#/components/schemas/Exercise"
+            },
+            "maxItems": 8,
+            "title": "Exercises",
+            "type": "array"
+          },
           "id": {
             "maxLength": 80,
             "minLength": 1,
             "title": "Id",
             "type": "string"
           },
+          "minutes": {
+            "anyOf": [
+              {
+                "maximum": 240.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes"
+          },
+          "monthly_cost_sek": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Cost Sek"
+          },
           "observation": {
             "maxLength": 500,
             "minLength": 1,
             "title": "Observation",
+            "type": "string"
+          },
+          "time_of_day": {
+            "default": "flexible",
+            "enum": [
+              "morning",
+              "midday",
+              "evening",
+              "flexible"
+            ],
+            "title": "Time Of Day",
             "type": "string"
           },
           "timing": {
@@ -308,6 +381,152 @@
           "question_id"
         ],
         "title": "AnswerRequest",
+        "type": "object"
+      },
+      "BodyContext": {
+        "additionalProperties": false,
+        "properties": {
+          "activity": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "mostly_seated",
+              "some_activity",
+              "regular_training"
+            ],
+            "title": "Activity",
+            "type": "string"
+          },
+          "age": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 18.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "city": {
+            "default": "",
+            "maxLength": 100,
+            "title": "City",
+            "type": "string"
+          },
+          "daily_minutes": {
+            "anyOf": [
+              {
+                "maximum": 240.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Minutes"
+          },
+          "equation_coefficient": {
+            "default": "not_specified",
+            "enum": [
+              "female",
+              "male",
+              "not_specified"
+            ],
+            "title": "Equation Coefficient",
+            "type": "string"
+          },
+          "height_cm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 100.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Cm"
+          },
+          "monthly_budget_sek": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Budget Sek"
+          },
+          "pregnancy": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "not_applicable",
+              "pregnant_or_breastfeeding"
+            ],
+            "title": "Pregnancy",
+            "type": "string"
+          },
+          "target_weight_kg": {
+            "anyOf": [
+              {
+                "maximum": 400.0,
+                "minimum": 25.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Weight Kg"
+          },
+          "timezone": {
+            "default": "Europe/Stockholm",
+            "title": "Timezone",
+            "type": "string"
+          },
+          "weight_kg": {
+            "anyOf": [
+              {
+                "maximum": 400.0,
+                "minimum": 25.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Kg"
+          }
+        },
+        "title": "BodyContext",
+        "type": "object"
+      },
+      "BodyEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/components/schemas/BodyContext"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "body"
+        ],
+        "title": "BodyEdit",
         "type": "object"
       },
       "CheckInRequest": {
@@ -632,6 +851,81 @@
         "title": "Event",
         "type": "object"
       },
+      "Exercise": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "easier_alternative": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Easier Alternative",
+            "type": "string"
+          },
+          "instructions": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Instructions",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "repetitions": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Repetitions",
+            "type": "string"
+          },
+          "rest_seconds": {
+            "anyOf": [
+              {
+                "maximum": 600.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest Seconds"
+          },
+          "sets": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sets"
+          }
+        },
+        "required": [
+          "name",
+          "instructions",
+          "easier_alternative"
+        ],
+        "title": "Exercise",
+        "type": "object"
+      },
       "FitOptions": {
         "additionalProperties": false,
         "properties": {
@@ -685,6 +979,9 @@
             "title": "Assessment Count",
             "type": "integer"
           },
+          "body": {
+            "$ref": "#/components/schemas/BodyContext"
+          },
           "checkin_count": {
             "default": 0,
             "title": "Checkin Count",
@@ -709,6 +1006,11 @@
             },
             "title": "Events",
             "type": "array"
+          },
+          "memory_consolidated": {
+            "default": false,
+            "title": "Memory Consolidated",
+            "type": "boolean"
           },
           "mode": {
             "default": "assessment",
@@ -750,6 +1052,17 @@
             "title": "Profile",
             "type": "array"
           },
+          "profile_confirmed_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Confirmed Revision"
+          },
           "profile_conflicts": {
             "items": {
               "type": "string"
@@ -761,6 +1074,13 @@
             "default": 0,
             "title": "Profile Revision",
             "type": "integer"
+          },
+          "progress": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressEntry"
+            },
+            "title": "Progress",
+            "type": "array"
           },
           "proposal": {
             "anyOf": [
@@ -806,6 +1126,239 @@
           "decision"
         ],
         "title": "Journey",
+        "type": "object"
+      },
+      "Meal": {
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/MealIngredient"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Ingredients",
+            "type": "array"
+          },
+          "instructions": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Instructions",
+            "type": "string"
+          },
+          "nutrition": {
+            "$ref": "#/components/schemas/MealNutrition",
+            "readOnly": true
+          },
+          "preparation_minutes": {
+            "maximum": 180.0,
+            "minimum": 0.0,
+            "title": "Preparation Minutes",
+            "type": "integer"
+          },
+          "slot": {
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ],
+            "title": "Slot",
+            "type": "string"
+          },
+          "substitution_note": {
+            "maxLength": 400,
+            "title": "Substitution Note",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "slot",
+          "title",
+          "ingredients",
+          "instructions",
+          "preparation_minutes",
+          "substitution_note",
+          "nutrition"
+        ],
+        "title": "Meal",
+        "type": "object"
+      },
+      "MealIngredient": {
+        "additionalProperties": false,
+        "properties": {
+          "food_id": {
+            "minimum": 1.0,
+            "title": "Food Id",
+            "type": "integer"
+          },
+          "grams": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 2000.0,
+            "title": "Grams",
+            "type": "number"
+          }
+        },
+        "required": [
+          "food_id",
+          "grams"
+        ],
+        "title": "MealIngredient",
+        "type": "object"
+      },
+      "MealNutrition": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "kcal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kcal"
+          },
+          "missing_food_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Missing Food Ids",
+            "type": "array"
+          },
+          "protein_g": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protein G"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "kcal",
+          "protein_g",
+          "missing_food_ids",
+          "source"
+        ],
+        "title": "MealNutrition",
+        "type": "object"
+      },
+      "MealSwap": {
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "slot": {
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ],
+            "title": "Slot",
+            "type": "string"
+          },
+          "source_day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Source Day",
+            "type": "integer"
+          },
+          "source_slot": {
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ],
+            "title": "Source Slot",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "day",
+          "slot",
+          "source_day",
+          "source_slot"
+        ],
+        "title": "MealSwap",
+        "type": "object"
+      },
+      "Milestone": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "maxLength": 400,
+            "title": "Assumptions",
+            "type": "string"
+          },
+          "day": {
+            "maximum": 84.0,
+            "minimum": 1.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "description": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "label": {
+            "enum": [
+              "Observe",
+              "Review",
+              "Too early to assess",
+              "Seek assessment"
+            ],
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "label",
+          "description",
+          "assumptions"
+        ],
+        "title": "Milestone",
         "type": "object"
       },
       "PhotoNotes": {
@@ -892,6 +1445,14 @@
             "title": "Changes",
             "type": "string"
           },
+          "deferred": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Deferred",
+            "type": "array"
+          },
           "hypotheses": {
             "items": {
               "type": "string"
@@ -899,6 +1460,28 @@
             "maxItems": 8,
             "title": "Hypotheses",
             "type": "array"
+          },
+          "meals": {
+            "items": {
+              "$ref": "#/components/schemas/Meal"
+            },
+            "maxItems": 28,
+            "title": "Meals",
+            "type": "array"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/Milestone"
+            },
+            "maxItems": 6,
+            "title": "Milestones",
+            "type": "array"
+          },
+          "priority": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Priority",
+            "type": "string"
           },
           "reported": {
             "items": {
@@ -995,6 +1578,11 @@
       "PlanRequest": {
         "additionalProperties": false,
         "properties": {
+          "confirm_profile": {
+            "default": false,
+            "title": "Confirm Profile",
+            "type": "boolean"
+          },
           "preferences": {
             "$ref": "#/components/schemas/Preferences"
           },
@@ -1096,7 +1684,12 @@
               "goal",
               "allergy",
               "limitation",
-              "preference"
+              "preference",
+              "concern",
+              "routine",
+              "measurement",
+              "observation",
+              "health_context"
             ],
             "title": "Category",
             "type": "string"
@@ -1156,10 +1749,20 @@
               "goal",
               "allergy",
               "limitation",
-              "preference"
+              "preference",
+              "concern",
+              "routine",
+              "measurement",
+              "observation",
+              "health_context"
             ],
             "title": "Category",
             "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
           },
           "id": {
             "title": "Id",
@@ -1173,6 +1776,15 @@
             "title": "Source Id",
             "type": "string"
           },
+          "source_kind": {
+            "default": "report",
+            "enum": [
+              "report",
+              "visual_observation"
+            ],
+            "title": "Source Kind",
+            "type": "string"
+          },
           "status": {
             "enum": [
               "reported",
@@ -1182,6 +1794,18 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           },
           "value": {
             "title": "Value",
@@ -1199,6 +1823,119 @@
         "title": "ProfileFact",
         "type": "object"
       },
+      "ProgressEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "observed_on": {
+            "format": "date",
+            "title": "Observed On",
+            "type": "string"
+          },
+          "plan_version": {
+            "title": "Plan Version",
+            "type": "integer"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_attempted",
+              "inconsistent",
+              "followed",
+              "improved",
+              "unchanged",
+              "worse"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "plan_version",
+          "action_id",
+          "status",
+          "note",
+          "observed_on",
+          "recorded_at"
+        ],
+        "title": "ProgressEntry",
+        "type": "object"
+      },
+      "ProgressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          },
+          "observed_on": {
+            "format": "date",
+            "title": "Observed On",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "not_attempted",
+              "inconsistent",
+              "followed",
+              "improved",
+              "unchanged",
+              "worse"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "status",
+          "observed_on"
+        ],
+        "title": "ProgressRequest",
+        "type": "object"
+      },
       "Question": {
         "additionalProperties": false,
         "properties": {
@@ -1207,6 +1944,39 @@
             "minLength": 1,
             "title": "Id",
             "type": "string"
+          },
+          "input_kind": {
+            "default": "options",
+            "enum": [
+              "options",
+              "number",
+              "date",
+              "text"
+            ],
+            "title": "Input Kind",
+            "type": "string"
+          },
+          "number_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Max"
+          },
+          "number_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Min"
           },
           "options": {
             "items": {
@@ -1226,6 +1996,25 @@
             "title": "Photo Mode",
             "type": "string"
           },
+          "profile_key": {
+            "anyOf": [
+              {
+                "enum": [
+                  "age",
+                  "height_cm",
+                  "weight_kg",
+                  "target_weight_kg",
+                  "daily_minutes",
+                  "monthly_budget_sek"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Key"
+          },
           "selection_mode": {
             "default": "multiple",
             "enum": [
@@ -1239,6 +2028,19 @@
             "maxLength": 500,
             "minLength": 1,
             "title": "Text",
+            "type": "string"
+          },
+          "unit": {
+            "default": "",
+            "enum": [
+              "kg",
+              "cm",
+              "years",
+              "minutes",
+              "SEK",
+              ""
+            ],
+            "title": "Unit",
             "type": "string"
           },
           "why": {
@@ -1677,7 +2479,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionRequest"
+                "$ref": "#/components/schemas/AcceptRequest"
               }
             }
           },
@@ -2089,6 +2891,112 @@
           }
         ],
         "summary": "Answer",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/body-context": {
+      "post": {
+        "operationId": "updateAgentBodyContext",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BodyEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Body Context",
         "tags": [
           "agent"
         ]
@@ -2518,6 +3426,206 @@
         ]
       }
     },
+    "/v1/agent/food-catalog": {
+      "get": {
+        "operationId": "getAgentFoodCatalog",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Food Catalog",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/meal-swap": {
+      "post": {
+        "operationId": "proposeAgentMealSwap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MealSwap"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Meal Swap",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/v1/agent/photo-notes": {
       "post": {
         "operationId": "reviewAgentPhotoNotes",
@@ -2730,6 +3838,100 @@
         ]
       }
     },
+    "/v1/agent/planning-context": {
+      "get": {
+        "operationId": "getAgentPlanningContext",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Planning Context",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/v1/agent/profile": {
       "post": {
         "operationId": "editAgentProfile",
@@ -2831,6 +4033,229 @@
           }
         ],
         "summary": "Edit Profile",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/progress": {
+      "post": {
+        "operationId": "recordAgentProgress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Progress",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/progress/{entry_id}": {
+      "delete": {
+        "operationId": "removeAgentProgress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Progress",
         "tags": [
           "agent"
         ]
@@ -3043,6 +4468,100 @@
           }
         ],
         "summary": "Reshuffle",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/services": {
+      "get": {
+        "operationId": "getAgentServiceLinks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Service Links",
         "tags": [
           "agent"
         ]
@@ -3327,6 +4846,100 @@
           }
         },
         "summary": "Start",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/shopping-list": {
+      "get": {
+        "operationId": "getAgentShoppingList",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Shopping List",
         "tags": [
           "agent"
         ]
