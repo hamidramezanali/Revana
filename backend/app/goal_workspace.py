@@ -491,12 +491,12 @@ def run_goal(body: WorkRequest, access: Access):
                 loop.call_soon_threadsafe(queue.put_nowait, event)
 
         task = asyncio.create_task(asyncio.to_thread(execute, access, journey, body, emit))
-        yield (
-            "data: "
-            + json.dumps({"type": "started", "journey": journey.model_dump(mode="json")})
-            + "\n\n"
-        )
         try:
+            yield (
+                "data: "
+                + json.dumps({"type": "started", "journey": journey.model_dump(mode="json")})
+                + "\n\n"
+            )
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=1)

@@ -282,3 +282,26 @@ def test_workspace_preserves_network_origin_and_body_limits(workspace):
     )
     assert r.status_code == 413
     assert calls == []
+
+
+def test_disconnect_after_started_cancels_before_late_output(workspace):
+    import asyncio
+
+    from app.agent_models import WorkRequest
+    from app.goal_workspace import run_goal
+
+    client, _ = workspace
+    j, _, token = create(client, "Improve dry skin")
+
+    async def disconnect():
+        response = run_goal(WorkRequest(revision=j["revision"], action="plan"), token)
+        first = await anext(response.body_iterator)
+        assert '"type": "started"' in first
+        await response.body_iterator.aclose()
+        # Give the worker its first opportunity to see the persisted cancellation.
+        await asyncio.sleep(0)
+
+    asyncio.run(disconnect())
+    saved = agent_store.read(token)
+    assert saved.workspace.run.status == "cancelled"
+    assert saved.proposal is None
