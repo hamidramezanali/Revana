@@ -1,8 +1,11 @@
 # Revana
 
-An interactive beauty and lifestyle agent. Revana asks up to six adaptive questions,
-creates an overall personal plan, and proposes revisions based on later check-ins.
+An interactive beauty and lifestyle agent. Revana adapts the conversation to the current
+request, creates a reviewed personal plan, and proposes revisions based on later check-ins.
 The existing React assessment, analysis and dashboard workflow is preserved.
+
+The staged coach, optional real web research, planner and reviewer are wired into
+requests. See [the implementation and limits matrix](docs/STAGED_COACH_WORKFLOW.md).
 
 The next release is planned as a mobile-first coach with an editable care profile,
 a complete free starting plan, and paid progress tracking and plan updates. See the

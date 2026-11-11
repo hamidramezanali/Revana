@@ -27,9 +27,12 @@ Do not promise recommendations unavailable elsewhere or superiority to medical c
 
 - Preserve the visual direction and mobile improvements merged into `main`.
 - Text conversation first; a guided-question presentation uses the same engine.
-- One adaptive question per turn with 3-6 relevant choices, multiple selection when
-  appropriate, and optional text. Ask at most six for the initial assessment, with skip
-  and early completion. Fit/safety and profile confirmation remain concise explicit steps.
+- Conversation leads: the latest message drives the response while preserving relevant
+  reported context and safety constraints. Ask a focused question when needed, using
+  as many relevant choices as useful, with optional text. No fixed assessment/follow-up
+  question or option quota. Users may skip or finish early. Fit/safety remains explicit.
+- Coach replies can explain, clarify or offer concrete action alternatives, including
+  more than three when useful. Show a concise rationale, never private chain-of-thought.
 - A complete starting plan is free. Do not replace it with three teaser ideas or hide
   its useful content behind checkout. Action count follows need and manageable effort.
 - Paid access covers ongoing coaching, dated progress and observations, follow-up
@@ -197,7 +200,7 @@ each slice lands; never present a planned feature as shipped.
 Relevant product, skin and hair/scalp questions may offer up to three optional JPG,
 PNG or WebP photos. Choices, text, photos or combinations are accepted; nonvisual
 questions still need text/choices or an explicit skip. Images are context, not a
-clinical assessment. The six-question ceiling still applies. The user must review,
+clinical assessment. Questions adapt to the user’s replies. The user must review,
 correct or discard visual observations before the next question or plan generation.
 Notes remain distinct from reported symptoms, routines and causal hypotheses.
 

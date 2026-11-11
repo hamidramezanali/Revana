@@ -7,18 +7,20 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app import agent_provider as provider
 from app import agent_store as store
+from app import workflow
 from app.agent_models import (
     ActionPreference,
     ActionPreferenceRequest,
     AgentStatus,
     AnswerRequest,
     CheckInRequest,
+    CoachDecision,
+    CoachTurn,
     Completion,
     CompletionRequest,
     Decision,
     Event,
     FitOptions,
-    GeneratedDecision,
     GeneratedQuestion,
     Journey,
     PhotoNotes,
@@ -28,17 +30,20 @@ from app.agent_models import (
     PlanFeedback,
     PlanRequest,
     PlanVersion,
+    ProfileEdit,
+    ProfileFact,
     Question,
     ReshuffleRequest,
     RevisionRequest,
     SessionCreated,
     StartRequest,
+    SuggestionRequest,
 )
 from app.config import get_settings
 from app.errors import ErrorResponse
 from app.photo_inputs import sanitized_photos
 from app.plan_revision import build_revision, current_preferences
-from app.suggestions import board_for, generate_batch
+from app.suggestions import board_for, conversation_context, generate_batch
 
 router = APIRouter(
     prefix="/agent",
@@ -48,8 +53,6 @@ router = APIRouter(
 # Keep the generated contract stable across Python HTTPStatus wording changes.
 router.responses[422]["description"] = "Unprocessable Content"
 security = HTTPBearer(auto_error=False)
-MAX_QUESTIONS = 6
-MAX_CHECKIN_QUESTIONS = 3
 
 
 def token(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]) -> str:
@@ -82,35 +85,62 @@ def coaching_context(journey: Journey) -> dict:
             "kept": board["kept"],
             "not_for_me": [a for a in board["seen"] if a["id"] in board["rejected_ids"]],
         }
-    return context
+        context["coach_conversation"] = conversation_context(journey.suggestion_board)
+        if journey.suggestion_board.conversation:
+            latest = next(
+                (
+                    turn
+                    for turn in reversed(journey.suggestion_board.conversation)
+                    if turn.purpose == "conversation"
+                    and (turn.message or turn.selected_answers or turn.skipped)
+                ),
+                journey.suggestion_board.conversation[-1],
+            )
+            context["current_request"] = {
+                "message": latest.message,
+                "selected_answers": latest.selected_answers,
+                "skipped": latest.skipped,
+            }
+            newer_event = (
+                len(journey.events) > latest.event_count
+                if latest.event_count is not None
+                else bool(journey.events and journey.events[-1].created_at > latest.created_at)
+            )
+            if journey.events and newer_event:
+                event = journey.events[-1]
+                context["current_request"] = {
+                    "message": event.answer,
+                    "selected_answers": event.selected_options,
+                    "skipped": event.skipped,
+                }
+    return workflow.context_for(journey, context)
 
 
 def decide(journey: Journey) -> Decision:
-    limit = MAX_QUESTIONS if journey.mode == "assessment" else MAX_CHECKIN_QUESTIONS
-    count = journey.assessment_count if journey.mode == "assessment" else journey.checkin_count
+    workflow.begin(journey)
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         return Decision(
             summary="Review the photo observations before continuing.", ready=False, questions=[]
         )
-    if count >= limit:
-        return Decision(
-            summary="Question limit reached. Ready to build or update your plan.",
-            ready=True,
-            questions=[],
-        )
-    decision = provider.generate(
-        f"Decide the next question or finish now. {limit - count} questions remain in this "
-        "cycle. Return ready=true with no questions when enough is known. Otherwise ask "
-        "exactly one focused question with 3-6 short answer options. Choose single or "
+    context = coaching_context(journey)
+    journey.workflow.stages.append("coach")
+    decision = workflow.stage(
+        "coach",
+        "Decide the next question or finish now based on the latest request and answers. "
+        "Return ready=true with no questions when enough is known. Otherwise ask "
+        "one focused question with as many useful short answer options as needed. Choose single or "
         "multiple selection appropriately. Ask only for missing information that changes "
-        "the plan; use the initial description and ALL answers. Stop early rather than "
-        "filling the remaining quota. Use a concise summary of actual user reports. "
+        "the plan; use the initial description and ALL answers. There is no fixed turn "
+        "or option quota; stop when further questions would not improve the response. "
+        "Use a concise summary of actual user reports. "
         "Set photo_mode to products, skin or hair only when a photo can help answer this "
         "specific question; otherwise none. Never request photos for duration, pain, diet "
         "or other nonvisual history. Photos are always optional.",
-        coaching_context(journey),
-        GeneratedDecision,
+        context,
+        CoachDecision,
     )
+    workflow.absorb(journey, decision, context)
+    journey.research_intent = getattr(decision, "research", None)
     if decision.ready:
         decision.questions = []
     elif not decision.questions:
@@ -124,7 +154,7 @@ def decide(journey: Journey) -> Decision:
         question.id = uuid4().hex
         for option in question.options:
             option.id = uuid4().hex
-    return decision
+    return Decision.model_validate(decision.model_dump(include={"summary", "ready", "questions"}))
 
 
 @router.get("/status", response_model=AgentStatus, operation_id="getAgentStatus")
@@ -144,8 +174,8 @@ def status() -> AgentStatus:
             raise HTTPException(503, "Set " + " and ".join(missing) + " in Vercel, then redeploy.")
     return AgentStatus(
         configured=bool(settings.openai_api_key and settings.openai_model),
-        max_questions=MAX_QUESTIONS,
-        max_checkin_questions=MAX_CHECKIN_QUESTIONS,
+        max_questions=None,
+        max_checkin_questions=None,
         mode="hosted" if settings.hosted else "single-user-local",
     )
 
@@ -159,6 +189,19 @@ def start(body: StartRequest) -> SessionCreated:
         decision=Decision(summary="Starting assessment.", ready=False, questions=[]),
     )
     journey.decision = decide(journey)
+    board = board_for(journey)
+    board.pending_question = journey.decision.questions[0] if journey.decision.questions else None
+    board.conversation.append(
+        CoachTurn(
+            event_count=len(journey.events),
+            created_at=datetime.now(UTC),
+            message=body.context.description,
+            selected_answers=[],
+            skipped=False,
+            reply=journey.decision.summary,
+        )
+    )
+    journey.suggestion_board = board
     return SessionCreated(token=store.create(journey), journey=journey)
 
 
@@ -170,8 +213,6 @@ def get_session(access: Access) -> Journey:
 @router.post("/answers", response_model=Journey, operation_id="answerAgentQuestion")
 def answer(body: AnswerRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
-    if len(journey.events) >= 104 and body.event_index is None:
-        raise HTTPException(409, "This journey is full. Export it before starting another.")
     if journey.plans and (journey.mode != "checkin" or journey.proposal is not None):
         raise HTTPException(409, "Start a check-in before changing answers.")
     if body.event_index is not None:
@@ -239,6 +280,16 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
     if body.event_index is not None:
         # Later questions depended on the old answer. Replace them atomically only
         # after validation/generation succeeds; accepted plans are never rewritten.
+        invalid_sources = {f"event-{e.source_id}" for e in journey.events[body.event_index :]}
+        if journey.suggestion_board:
+            invalid_sources.update(
+                f"turn-{t.source_id}"
+                for t in journey.suggestion_board.conversation[body.event_index + 1 :]
+            )
+        for fact in journey.profile:
+            if fact.source_id in invalid_sources:
+                fact.active = False
+        journey.profile_revision += 1
         removed = len(journey.events) - body.event_index
         journey.events = journey.events[: body.event_index]
         if journey.mode == "assessment":
@@ -263,15 +314,35 @@ def answer(body: AnswerRequest, access: Access) -> Journey:
     else:
         journey.checkin_count += 1
     journey.decision = decide(journey)
+    board = board_for(journey)
+    if body.event_index is not None:
+        # Question edits invalidate the corresponding later conversation too.
+        board.conversation = board.conversation[: body.event_index + 1]
+    board.conversation.append(
+        CoachTurn(
+            event_count=len(journey.events),
+            created_at=datetime.now(UTC),
+            message=body.answer.strip(),
+            selected_answers=[option.label for option in selected],
+            skipped=body.skipped,
+            reply=journey.decision.summary,
+            question=question,
+        )
+    )
+    board.pending_question = journey.decision.questions[0] if journey.decision.questions else None
+    journey.suggestion_board = board
+    if journey.plans:
+        workflow.review(journey, coaching_context(journey), journey.decision)
     return store.save(access, journey, body.revision)
 
 
 @router.post("/fit-options", response_model=FitOptions, operation_id="getAgentFitOptions")
 def fit_options(body: RevisionRequest, access: Access) -> FitOptions:
     journey = load(access, body.revision)
-    return provider.generate(
+    return workflow.stage(
+        "coach",
         "Prepare optional fit/safety choices for this person's intended plan. Read the "
-        "actual goals, description and ALL answers. Return 1-5 short constraint labels "
+        "actual goals, description and ALL answers. Return relevant short constraint labels "
         "only when they could change a plausible suggestion for THIS request, plus a "
         "short limitations_hint with relevant examples for an optional free-text field. "
         "For weight management or fitness, consider food allergies, dietary needs and "
@@ -298,12 +369,68 @@ def plan(body: PlanRequest, access: Access) -> Journey:
             409, "Review or discard the photo observations before generating a plan."
         )
     journey.preferences = body.preferences
+    # The explicit fit form is a user report, kept with immutable source provenance.
+    preference_values = [
+        *body.preferences.sensitivities,
+        body.preferences.limitations,
+        f"Monthly budget: {body.preferences.budget}"
+        if body.preferences.budget != "Not specified"
+        else "",
+        f"Plan style: {body.preferences.effort}"
+        if body.preferences.effort != "Practical alternatives tailored to my request"
+        else "",
+    ]
+    explicit_values = [
+        value
+        for value in preference_values
+        if value.strip()
+        and value
+        not in {
+            "Nothing else to add",
+            "No additional constraints",
+            "Not sure yet",
+            "Not specified",
+            "Practical alternatives tailored to my request",
+        }
+    ]
+    if explicit_values:
+        board = board_for(journey)
+        preference_turn = CoachTurn(
+            purpose="preferences",
+            event_count=len(journey.events),
+            created_at=datetime.now(UTC),
+            message="\n".join(explicit_values),
+            selected_answers=[],
+            skipped=False,
+            reply="Your plan preferences are recorded.",
+        )
+        board.conversation.append(preference_turn)
+        journey.suggestion_board = board
+        for value in explicit_values:
+            if not any(f.value == value and f.active for f in journey.profile):
+                journey.profile.append(
+                    ProfileFact(
+                        id=uuid4().hex,
+                        category="limitation"
+                        if value == body.preferences.limitations
+                        or value in body.preferences.sensitivities
+                        else "preference",
+                        value=value,
+                        source_id=f"turn-{preference_turn.source_id}",
+                        quote=value,
+                        status="reported",
+                    )
+                )
+                journey.profile_revision += 1
+    workflow.begin(journey)
+    workflow.research(journey, journey.research_intent)
     if journey.proposal is not None:
         raise HTTPException(409, "Accept or start another check-in before generating again.")
     if journey.plans and current_preferences(journey):
         generated = build_revision(journey, coaching_context(journey), "")
     else:
-        generated = provider.generate(
+        generated = workflow.plan(
+            journey,
             "Create ONE coherent personal plan using the initial goals/description, ALL "
             "answer events (selected_options plus any additional answer text), and preferences. "
             "Unselected options are not user reports. Respect skipped/unknown answers. "
@@ -314,10 +441,36 @@ def plan(body: PlanRequest, access: Access) -> Journey:
             coaching_context(journey),
             Plan,
         )
+    workflow.require_usable_plan(journey, generated)
     if journey.plans:
         journey.proposal = generated
     else:
-        journey.plans.append(PlanVersion(version=1, created_at=datetime.now(UTC), plan=generated))
+        journey.plans.append(
+            PlanVersion(
+                version=1,
+                created_at=datetime.now(UTC),
+                plan=generated,
+                research=journey.workflow.research.model_copy(deep=True),
+                review=journey.workflow.review.model_copy(deep=True)
+                if journey.workflow.review
+                else None,
+            )
+        )
+        board = board_for(journey)
+        board.suggestions = [action.model_copy(deep=True) for action in generated.actions]
+        board.seen = [action.model_copy(deep=True) for action in generated.actions]
+        board.pending_question = None
+        board.conversation.append(
+            CoachTurn(
+                event_count=len(journey.events),
+                created_at=datetime.now(UTC),
+                message="",
+                selected_answers=[],
+                skipped=False,
+                reply=generated.summary,
+            )
+        )
+        journey.suggestion_board = board
     journey.decision = Decision(summary=generated.summary, ready=True, questions=[])
     return store.save(access, journey, body.revision)
 
@@ -327,7 +480,7 @@ def checkin(body: CheckInRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if not journey.plans:
         raise HTTPException(409, "Create your initial plan first.")
-    if len(journey.events) >= 100 or len(journey.plans) >= 25:
+    if len(journey.plans) >= 25:
         raise HTTPException(
             409, "This local journey has reached its storage limit. Export it first."
         )
@@ -343,6 +496,20 @@ def checkin(body: CheckInRequest, access: Access) -> Journey:
         )
     )
     journey.decision = decide(journey)
+    workflow.review(journey, coaching_context(journey), journey.decision)
+    board = board_for(journey)
+    board.conversation.append(
+        CoachTurn(
+            event_count=len(journey.events),
+            created_at=datetime.now(UTC),
+            message=body.message,
+            selected_answers=[],
+            skipped=False,
+            reply=journey.decision.summary,
+        )
+    )
+    board.pending_question = journey.decision.questions[0] if journey.decision.questions else None
+    journey.suggestion_board = board
     return store.save(access, journey, body.revision)
 
 
@@ -354,7 +521,13 @@ def accept(body: RevisionRequest, access: Access) -> Journey:
     previous_preferences = current_preferences(journey)
     journey.plans.append(
         PlanVersion(
-            version=len(journey.plans) + 1, created_at=datetime.now(UTC), plan=journey.proposal
+            version=len(journey.plans) + 1,
+            created_at=datetime.now(UTC),
+            plan=journey.proposal,
+            research=journey.workflow.research.model_copy(deep=True),
+            review=journey.workflow.review.model_copy(deep=True)
+            if journey.workflow.review
+            else None,
         )
     )
     new_version = journey.plans[-1]
@@ -415,7 +588,7 @@ def upgrade_question_options(body: RevisionRequest, access: Access) -> Journey:
     context = coaching_context(journey)
     context["current_question"] = {"text": question.text, "why": question.why}
     generated = provider.generate(
-        "Add 3-6 short probable answer options to this existing question. Keep its exact "
+        "Add relevant short answer options to this existing question, with no fixed count. Keep its exact "
         "meaning; do not ask a new question. Choose single/multiple selection appropriately "
         "and mark exclusive choices. Use the goals, description and all previous answers.",
         context,
@@ -448,6 +621,18 @@ def set_action_preference(body: ActionPreferenceRequest, access: Access) -> Jour
                 plan_version=current.version, action_id=body.action_id, choice=body.choice
             )
         )
+    board = board_for(journey)
+    action = next(a for a in current.plan.actions if a.id == body.action_id)
+    board.suggestions = [a for a in board.suggestions if a.id != action.id]
+    board.kept = [a for a in board.kept if a.id != action.id]
+    board.rejected_ids = [value for value in board.rejected_ids if value != action.id]
+    if body.choice == "keep":
+        board.kept.append(action.model_copy(deep=True))
+    elif body.choice == "not_for_me":
+        board.rejected_ids.append(action.id)
+    else:
+        board.suggestions.append(action.model_copy(deep=True))
+    journey.suggestion_board = board
     # A proposal made before these choices is no longer valid to accept.
     journey.proposal = None
     journey.decision = Decision(summary=current.plan.summary, ready=True, questions=[])
@@ -468,7 +653,16 @@ def reshuffle(body: ReshuffleRequest, access: Access) -> Journey:
     message = body.message.strip()
     if not preferences and not message:
         raise HTTPException(422, "Choose actions to keep or replace, or add a message.")
-    proposed = build_revision(journey, coaching_context(journey), message)
+    kept_ids = {item.action_id for item in preferences if item.choice == "keep"}
+    if all(action.id in kept_ids for action in journey.plans[-1].plan.actions):
+        raise HTTPException(
+            409, "All actions are kept. Unmark an action before refreshing the plan."
+        )
+    response, context = workflow.intake_revision(journey, coaching_context(journey), message)
+    if getattr(response, "questions", []) and not getattr(response, "ready_for_plan", True):
+        workflow.review(journey, context, response)
+        return store.save(access, journey, body.revision)
+    proposed = build_revision(journey, context, message)
     journey.plan_feedback.append(
         PlanFeedback(
             plan_version=journey.plans[-1].version,
@@ -507,12 +701,6 @@ def suggestion_choice(body: ActionPreferenceRequest, access: Access) -> Journey:
     if body.action_id not in available:
         raise HTTPException(422, "This suggestion is no longer available.")
     action = available[body.action_id]
-    if (
-        body.choice == "keep"
-        and len(board.kept) >= 24
-        and action.id not in {a.id for a in board.kept}
-    ):
-        raise HTTPException(409, "Your kept list is full. Remove an action before adding another.")
     board.suggestions = [a for a in board.suggestions if a.id != action.id]
     board.kept = [a for a in board.kept if a.id != action.id]
     board.rejected_ids = [value for value in board.rejected_ids if value != action.id]
@@ -543,12 +731,122 @@ def suggestion_choice(body: ActionPreferenceRequest, access: Access) -> Journey:
 
 
 @router.post("/suggestions", response_model=Journey, operation_id="generateAgentSuggestions")
-def suggestions(body: ReshuffleRequest, access: Access) -> Journey:
+def suggestions(body: SuggestionRequest, access: Access) -> Journey:
     journey = load(access, body.revision)
     if not journey.plans:
         raise HTTPException(409, "Create your initial plan first.")
-    journey.suggestion_board = generate_batch(
-        journey, coaching_context(journey), body.message.strip()
+    journey.suggestion_board = generate_batch(journey, coaching_context(journey), body)
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/coach", response_model=Journey, operation_id="continueAgentCoach")
+def coach_turn(body: SuggestionRequest, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not journey.plans:
+        if body.question_id and journey.decision.questions:
+            return answer(
+                AnswerRequest(
+                    revision=body.revision,
+                    question_id=body.question_id,
+                    answer=body.message,
+                    selected_option_ids=body.selected_option_ids,
+                    skipped=body.skipped,
+                ),
+                access,
+            )
+        if body.question_id:
+            raise HTTPException(409, "This coach question is no longer active.")
+        if not body.message.strip():
+            raise HTTPException(422, "Tell your coach what you would like to explore.")
+        journey.events.append(
+            Event(
+                kind="answer",
+                question="What matters now?",
+                answer=body.message.strip(),
+                created_at=datetime.now(UTC),
+            )
+        )
+        journey.assessment_count += 1
+        journey.decision = decide(journey)
+        board = board_for(journey)
+        board.conversation.append(
+            CoachTurn(
+                event_count=len(journey.events),
+                created_at=datetime.now(UTC),
+                message=body.message.strip(),
+                selected_answers=[],
+                skipped=False,
+                reply=journey.decision.summary,
+            )
+        )
+        board.pending_question = (
+            journey.decision.questions[0] if journey.decision.questions else None
+        )
+        journey.suggestion_board = board
+        return store.save(access, journey, body.revision)
+    # Capture the report and quarantine old actions even if a later model stage fails.
+    # This path intentionally differs from atomic legacy /suggestions failure behavior.
+    try:
+        journey.suggestion_board = generate_batch(journey, coaching_context(journey), body)
+    except HTTPException as error:
+        if error.status_code != 502:
+            raise
+        board = board_for(journey)
+        question = board.pending_question if body.question_id else None
+        selected_labels = (
+            [o.label for o in question.options if o.id in body.selected_option_ids]
+            if question
+            else []
+        )
+        board.conversation.append(
+            CoachTurn(
+                event_count=len(journey.events),
+                created_at=datetime.now(UTC),
+                message=body.message.strip(),
+                selected_answers=selected_labels,
+                skipped=body.skipped,
+                reply="I saved your message, but could not finish checking the suggestions. Please retry or add context.",
+                source_id=journey.workflow.report_source or uuid4().hex,
+                question=question,
+            )
+        )
+        journey.suggestion_board = board
+        workflow.quarantine(
+            journey,
+            "Current suggestions need review after your new message. They are withheld until checked.",
+        )
+        journey.workflow.status = "retry"
+        journey.workflow.message = "Your message is saved. The response needs a retry."
+    journey.proposal = None
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/profile", response_model=Journey, operation_id="editAgentProfile")
+def edit_profile(body: ProfileEdit, access: Access) -> Journey:
+    journey = load(access, body.revision)
+    if not body.value.strip():
+        raise HTTPException(422, "Enter a nonempty profile value.")
+    if body.fact_id:
+        previous = next((f for f in journey.profile if f.id == body.fact_id), None)
+        if previous is None:
+            raise HTTPException(422, "This profile fact is unavailable.")
+        previous.active = False
+    if body.active:
+        journey.profile.append(
+            ProfileFact(
+                id=uuid4().hex,
+                category=body.category,
+                value=body.value.strip(),
+                source_id=f"profile-edit-{journey.revision}",
+                quote=body.value.strip(),
+                status=body.status,
+            )
+        )
+    journey.profile_revision += 1
+    journey.proposal = None
+    workflow.quarantine(
+        journey,
+        "Your profile changed. Ask the coach to recheck suggestions; review kept actions before using them.",
     )
     return store.save(access, journey, body.revision)
 
@@ -569,4 +867,10 @@ def review_photo_notes(body: PhotoNotesRequest, access: Access) -> Journey:
         event.photo_notes.observations = [item.strip() for item in body.observations]
         event.photo_notes.confirmed = True
     journey.decision = decide(journey)
+    if journey.suggestion_board:
+        journey.suggestion_board.pending_question = (
+            journey.decision.questions[0] if journey.decision.questions else None
+        )
+    if journey.plans:
+        workflow.review(journey, coaching_context(journey), journey.decision)
     return store.save(access, journey, body.revision)

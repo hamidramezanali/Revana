@@ -1,6 +1,8 @@
+import { CoachConversation, type CoachAnswer } from "./CoachConversation";
+import { CareProfile } from "./CareProfile";
 import { useEffect, useState } from "react";
 import { Brand, Button, Icon, SafetyStrip, type IconName } from "./ui";
-import { AdaptiveQuestions, AgentAnalysis, AgentDashboard, AgentError, agentRequest, forgetToken, savedToken, startJourney, type Journey } from "./Agent";
+import { AgentAnalysis, AgentDashboard, AgentError, agentRequest, forgetToken, savedToken, startJourney, type Journey } from "./Agent";
 
 import { AppDialog } from "./ProfileSettings";
 import { navigate, useScreenNavigation, type Screen } from "./navigation";
@@ -38,8 +40,8 @@ const initialProfile: Profile = {
   ownWords: "",
   sensitivities: [],
   limitations: "",
-  budget: "Under $100 / month",
-  effort: "Three high-impact actions",
+  budget: "Not specified",
+  effort: "Practical alternatives tailored to my request",
 };
 
 const order: Screen[] = ["welcome", "timeline", "goals", "details", "safety", "analysis", "dashboard"];
@@ -105,7 +107,7 @@ function Goals({ profile, setProfile, next }: { profile: Profile; setProfile: (p
   );
 }
 
-function Safety({ profile, setProfile, next, journey, onBack }: { profile: Profile; setProfile: (p: Profile) => void; next: () => void; journey: Journey; onBack: () => void }) {
+function Safety({ profile, setProfile, next, journey, onBack, onProfileEdit }: { profile: Profile; setProfile: (p: Profile) => void; next: () => void; journey: Journey; onBack: () => void; onProfileEdit: (edit: Omit<import("./api.generated").ApiProfileEdit, "revision">) => void }) {
   const [fit, setFit] = useState<ApiFitOptions | null>(null);
   const [fitError, setFitError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -119,7 +121,7 @@ function Safety({ profile, setProfile, next, journey, onBack }: { profile: Profi
     });
     return () => { cancelled = true; };
   }, [journey.revision, attempt]);
-  const none = "No known allergies or limitations";
+  const none = (journey.profile ?? []).some(fact => fact.active && ["allergy", "limitation"].includes(fact.category)) ? "Nothing else to add" : "No known allergies or limitations";
   const unsure = "Not sure yet";
   const options = [none, ...new Set([...(fit?.options ?? []), ...profile.sensitivities].filter(item => item !== none && item !== unsure)), unsure];
   const toggle = (item: string) => setProfile({ ...profile, sensitivities: profile.sensitivities.includes(item)
@@ -129,7 +131,7 @@ function Safety({ profile, setProfile, next, journey, onBack }: { profile: Profi
     <div className="question-page wide-question">
       <span className="eyebrow">YOUR BOUNDARIES · 4 OF 4</span>
       <h2>Anything we should keep in mind?</h2>
-      <p>You can skip sensitive questions. Your preferences help shape your plan.</p>
+      <p>Before we make your plan, review what you’ve shared and set any preferences. Sensitive questions are optional.</p><CareProfile journey={journey} busy={false} onEdit={onProfileEdit} />
       <Button className="secondary" onClick={onBack}>← Back to questions</Button>
       <div className="safety-sections">
         <section className="safety-card">
@@ -146,7 +148,7 @@ function Safety({ profile, setProfile, next, journey, onBack }: { profile: Profi
           <label className="safety-notes-label" htmlFor="safety-limitations">Share anything else you’d like your plan to take into account</label>
           <textarea id="safety-limitations" maxLength={800} onChange={event => setProfile({ ...profile, limitations: event.target.value })} placeholder={fit?.limitations_hint ?? "Any limits or preferences relevant to the help you’re asking for…"} value={profile.limitations} />
         </section>
-        <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Three high-impact actions</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
+        <section className="safety-card plan-preferences"><h3>Plan preferences</h3><label>Monthly budget<select onChange={e => setProfile({ ...profile, budget: e.target.value })} value={profile.budget}><option>Not specified</option><option>Under $100 / month</option><option>$100–250 / month</option><option>$250–500 / month</option><option>Flexible</option></select></label><label>Preferred plan style<select onChange={e => setProfile({ ...profile, effort: e.target.value })} value={profile.effort}><option>Practical alternatives tailored to my request</option><option>A balanced weekly routine</option><option>A detailed optimization plan</option></select></label></section>
       </div>
       <div className="privacy-note"><Icon name="info" /><span><strong>You stay in control.</strong> Your answers are saved by this Revana deployment and sent to OpenAI when generating questions or plans. Some questions allow optional photos. Photos are processed temporarily; reviewed visual notes can be saved.</span></div>
       <Button className="primary continue" onClick={next}>Connect the dots <Icon name="arrow" /></Button>
@@ -161,6 +163,7 @@ function App() {
   const [journey, setJourney] = useState<Journey | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [coachNote, setCoachNote] = useState("");
   const [consent, setConsent] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [restoring, setRestoring] = useState(true);
@@ -206,6 +209,12 @@ function App() {
       preferences: { sensitivities: profile.sensitivities, limitations: profile.limitations, budget: profile.budget, effort: profile.effort } });
     setJourney(saved); setScreen("analysis");
   });
+  const sendCoach = (message: string, answer?: CoachAnswer) => void run(async () => {
+    if (!journey) return;
+    const usePhotos = !!answer?.photos?.length;
+    setJourney(await agentRequest<Journey>(usePhotos ? "answers" : "coach", usePhotos ? {revision: journey.revision, ...answer, answer: message} : {revision: journey.revision, message, ...(answer ? {question_id: answer.question_id, selected_option_ids: answer.selected_option_ids, skipped: answer.skipped} : {})}));
+    setCoachNote("");
+  });
   const deleteJourney = () => void run(async () => {
     await agentRequest("session", undefined, "DELETE");
     forgetToken(); setJourney(null); setProfile(initialProfile); setConsent(false);
@@ -221,10 +230,10 @@ function App() {
       {screen === "welcome" && <><Welcome returning={!!journey?.plans.length} onStart={() => setScreen(journey?.plans.length ? "dashboard" : "timeline")} />{configured === false && <p className="agent-banner">The coaching service is not ready. Check the setup message above, then reload to retry.</p>}</>}
       {screen === "timeline" && <Timeline profile={profile} setProfile={setProfile} next={() => setScreen("goals")} />}
       {screen === "goals" && <Goals profile={profile} setProfile={setProfile} next={() => setScreen("details")} />}
-      {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana asks at most six questions, one at a time, based on each answer. You can skip any question or finish early.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved by this Revana deployment; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {
+      {screen === "details" && (!journey ? <div className="question-page"><span className="eyebrow">YOUR BEAUTY AGENT</span><h2>A few questions, shaped around you.</h2><p>Revana adapts each question to your answers and asks only what helps. You can skip any question or finish whenever you’re ready.</p><label className="agent-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I am 18 or older and agree to send my selected goals and answers to OpenAI for personalized guidance. My journey is saved by this Revana deployment; an access token is saved in this browser. I can export or delete it.</label><Button className="primary" disabled={busy || !consent || configured === false} onClick={() => void run(async () => {
         setJourney(await startJourney({ goals: profile.goals.length ? profile.goals : ["other"], description: profile.ownWords.slice(0, 2000), target_date: profile.targetDate }));
-      })}>{busy ? "Preparing your first question…" : "Start my assessment"}</Button></div> : <AdaptiveQuestions journey={journey} update={setJourney} busy={busy} run={task => void run(task)} onFinish={() => setScreen("safety")} />)}
-      {screen === "safety" && journey && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} journey={journey} onBack={() => setScreen("details")} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}
+      })}>{busy ? "Preparing your first question…" : "Start my assessment"}</Button></div> : <div className="question-page wide-question"><CoachConversation journey={journey} busy={busy} note={coachNote} onNoteChange={setCoachNote} onSend={sendCoach} onPhotoReview={(event_index, observations, discard) => void run(async () => setJourney(await agentRequest<Journey>("photo-notes", {revision: journey.revision, event_index, observations, discard})))} onFinish={() => setScreen("safety")} /><CareProfile journey={journey} busy={busy} onEdit={edit => void run(async () => setJourney(await agentRequest<Journey>("profile", {...edit, revision: journey.revision})))} /></div>)}
+      {screen === "safety" && journey && <fieldset className="agent-fieldset" disabled={busy}><Safety profile={profile} setProfile={setProfile} journey={journey} onBack={() => setScreen("details")} onProfileEdit={edit => void run(async () => setJourney(await agentRequest<Journey>("profile", {...edit, revision: journey.revision})))} next={buildPlan} />{busy && <p className="agent-banner" role="status">Building your personal plan…</p>}</fieldset>}
       {journey && !journey.plans.length && <div className="agent-banner"><Button className="secondary" disabled={busy} onClick={() => setDeleteConfirm(true)}>Delete profile & start over</Button></div>}
     </OnboardingShell>}
   </>;

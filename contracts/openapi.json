@@ -73,6 +73,43 @@
         "title": "Action",
         "type": "object"
       },
+      "ActionCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "compatible",
+              "incompatible",
+              "needs_review"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_id",
+          "status",
+          "reason",
+          "source_ids"
+        ],
+        "title": "ActionCheck",
+        "type": "object"
+      },
       "ActionPreference": {
         "additionalProperties": false,
         "properties": {
@@ -141,12 +178,26 @@
             "type": "boolean"
           },
           "max_checkin_questions": {
-            "title": "Max Checkin Questions",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Checkin Questions"
           },
           "max_questions": {
-            "title": "Max Questions",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Questions"
           },
           "mode": {
             "default": "single-user-local",
@@ -206,7 +257,6 @@
           "event_index": {
             "anyOf": [
               {
-                "maximum": 104.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -244,7 +294,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
             "title": "Selected Option Ids",
             "type": "array"
           },
@@ -281,6 +330,78 @@
           "message"
         ],
         "title": "CheckInRequest",
+        "type": "object"
+      },
+      "CoachTurn": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Count"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "conversation",
+            "enum": [
+              "conversation",
+              "preferences"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "selected_answers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Selected Answers",
+            "type": "array"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "boolean"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "message",
+          "selected_answers",
+          "skipped",
+          "reply"
+        ],
+        "title": "CoachTurn",
         "type": "object"
       },
       "Completion": {
@@ -496,6 +617,10 @@
             "default": false,
             "title": "Skipped",
             "type": "boolean"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
           }
         },
         "required": [
@@ -520,8 +645,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
-            "minItems": 1,
             "title": "Options",
             "type": "array"
           }
@@ -620,10 +743,39 @@
               }
             ]
           },
+          "profile": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileFact"
+            },
+            "title": "Profile",
+            "type": "array"
+          },
+          "profile_conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profile Conflicts",
+            "type": "array"
+          },
+          "profile_revision": {
+            "default": 0,
+            "title": "Profile Revision",
+            "type": "integer"
+          },
           "proposal": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Plan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "research_intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResearchIntent"
               },
               {
                 "type": "null"
@@ -644,6 +796,9 @@
                 "type": "null"
               }
             ]
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/WorkflowState"
           }
         },
         "required": [
@@ -695,7 +850,6 @@
             "type": "boolean"
           },
           "event_index": {
-            "maximum": 104.0,
             "minimum": 0.0,
             "title": "Event Index",
             "type": "integer"
@@ -728,7 +882,6 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 4,
             "minItems": 1,
             "title": "Actions",
             "type": "array"
@@ -869,6 +1022,19 @@
           "plan": {
             "$ref": "#/components/schemas/Plan"
           },
+          "research": {
+            "$ref": "#/components/schemas/ResearchResult"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "version": {
             "title": "Version",
             "type": "integer"
@@ -905,7 +1071,6 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 10,
             "title": "Sensitivities",
             "type": "array"
           }
@@ -916,6 +1081,122 @@
           "effort"
         ],
         "title": "Preferences",
+        "type": "object"
+      },
+      "ProfileEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "goal",
+              "allergy",
+              "limitation",
+              "preference"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fact Id"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "default": "reported",
+            "enum": [
+              "reported",
+              "hypothesis",
+              "unknown",
+              "needs_review"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "category",
+          "value"
+        ],
+        "title": "ProfileEdit",
+        "type": "object"
+      },
+      "ProfileFact": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "goal",
+              "allergy",
+              "limitation",
+              "preference"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "reported",
+              "hypothesis",
+              "unknown",
+              "needs_review"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "value",
+          "source_id",
+          "quote",
+          "status"
+        ],
+        "title": "ProfileFact",
         "type": "object"
       },
       "Question": {
@@ -931,7 +1212,6 @@
             "items": {
               "$ref": "#/components/schemas/AnswerOption"
             },
-            "maxItems": 6,
             "title": "Options",
             "type": "array"
           },
@@ -976,6 +1256,116 @@
         "title": "Question",
         "type": "object"
       },
+      "ResearchIntent": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "evidence",
+              "product",
+              "service"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "boolean"
+          },
+          "query": {
+            "maxLength": 200,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "needed",
+          "query",
+          "kind"
+        ],
+        "title": "ResearchIntent",
+        "type": "object"
+      },
+      "ResearchResult": {
+        "additionalProperties": false,
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "default": "not_needed",
+            "enum": [
+              "not_needed",
+              "retrieved",
+              "unavailable",
+              "limited"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "default": "No web research requested.",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "title": "ResearchResult",
+        "type": "object"
+      },
+      "ResearchSource": {
+        "additionalProperties": false,
+        "properties": {
+          "applicability": {
+            "title": "Applicability",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "evidence",
+              "product",
+              "service"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "uncertainty": {
+            "title": "Uncertainty",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "url",
+          "retrieved_at",
+          "kind",
+          "applicability",
+          "uncertainty"
+        ],
+        "title": "ResearchSource",
+        "type": "object"
+      },
       "ReshuffleRequest": {
         "additionalProperties": false,
         "properties": {
@@ -995,6 +1385,64 @@
           "revision"
         ],
         "title": "ReshuffleRequest",
+        "type": "object"
+      },
+      "ReviewResult": {
+        "additionalProperties": false,
+        "properties": {
+          "action_checks": {
+            "items": {
+              "$ref": "#/components/schemas/ActionCheck"
+            },
+            "title": "Action Checks",
+            "type": "array"
+          },
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "correction": {
+            "title": "Correction",
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "public_summary": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Public Summary",
+            "type": "string"
+          },
+          "suggested_starts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Starts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "approved",
+          "public_summary",
+          "issues",
+          "correction",
+          "limitations",
+          "action_checks",
+          "suggested_starts"
+        ],
+        "title": "ReviewResult",
         "type": "object"
       },
       "RevisionRequest": {
@@ -1052,25 +1500,39 @@
       "SuggestionBoard": {
         "additionalProperties": false,
         "properties": {
+          "conversation": {
+            "items": {
+              "$ref": "#/components/schemas/CoachTurn"
+            },
+            "title": "Conversation",
+            "type": "array"
+          },
           "kept": {
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 24,
             "title": "Kept",
             "type": "array"
+          },
+          "pending_question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rejected_ids": {
             "items": {
               "type": "string"
             },
-            "maxItems": 204,
             "title": "Rejected Ids",
             "type": "array"
           },
           "rounds": {
             "default": 0,
-            "maximum": 50.0,
             "minimum": 0.0,
             "title": "Rounds",
             "type": "integer"
@@ -1087,7 +1549,6 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 204,
             "title": "Seen",
             "type": "array"
           },
@@ -1095,12 +1556,104 @@
             "items": {
               "$ref": "#/components/schemas/Action"
             },
-            "maxItems": 28,
             "title": "Suggestions",
             "type": "array"
           }
         },
         "title": "SuggestionBoard",
+        "type": "object"
+      },
+      "SuggestionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Message",
+            "type": "string"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "selected_option_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Selected Option Ids",
+            "type": "array"
+          },
+          "skipped": {
+            "default": false,
+            "title": "Skipped",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "SuggestionRequest",
+        "type": "object"
+      },
+      "WorkflowState": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          },
+          "report_source": {
+            "default": "",
+            "title": "Report Source",
+            "type": "string"
+          },
+          "research": {
+            "$ref": "#/components/schemas/ResearchResult"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "status": {
+            "default": "ready",
+            "enum": [
+              "ready",
+              "needs_review",
+              "retry"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "WorkflowState",
         "type": "object"
       }
     },
@@ -1647,6 +2200,112 @@
         ]
       }
     },
+    "/v1/agent/coach": {
+      "post": {
+        "operationId": "continueAgentCoach",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Coach Turn",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/v1/agent/discard-proposal": {
       "post": {
         "operationId": "discardAgentPlanProposal",
@@ -2066,6 +2725,112 @@
           }
         ],
         "summary": "Plan",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/v1/agent/profile": {
+      "post": {
+        "operationId": "editAgentProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit Profile",
         "tags": [
           "agent"
         ]
@@ -2771,7 +3536,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReshuffleRequest"
+                "$ref": "#/components/schemas/SuggestionRequest"
               }
             }
           },

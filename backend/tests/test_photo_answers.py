@@ -106,7 +106,7 @@ def test_photo_only_answer_is_temporary_and_requires_review_before_plan(agent, m
     assert plan(client, headers, journey).status_code == 200
 
 
-def test_photos_with_choices_and_text_and_discard_at_question_cap(agent, monkeypatch):
+def test_photos_with_choices_and_text_and_discard_past_old_question_cap(agent, monkeypatch):
     client, _ = agent
     headers, journey = visual_question(client)
     access = headers["Authorization"].split()[1]
@@ -131,7 +131,7 @@ def test_photos_with_choices_and_text_and_discard_at_question_cap(agent, monkeyp
     assert captured[0][0]["answer"] == "Used occasionally."
     assert captured[0][0]["selected_answers"] == ["Cleanser"]
     journey = review(client, headers, journey, discard=True, observations=[]).json()
-    assert journey["assessment_count"] == 6 and journey["decision"]["ready"]
+    assert journey["assessment_count"] == 6 and journey["decision"]["questions"]
     assert journey["events"][-1]["photo_notes"] is None
     assert journey["events"][-1]["answer"] == "Used occasionally."
 

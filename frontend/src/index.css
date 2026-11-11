@@ -616,7 +616,7 @@ textarea, input, select { border: 1px solid var(--line); border-radius: 10px; ba
 .dashboard-app .review-card strong { margin: 0 0 0 4px; font: 600 13px/1.4 "Figtree Variable",sans-serif; }
 .dashboard-app .dash-grid { display: block; padding-top: 0; }
 .coach-panel { display: none; }
-.coach-active .dash-primary { display: none; }
+.coach-active .dash-primary { display: block; }
 .coach-active .coach-panel { display: block; }
 .dashboard-app .section-title { align-items: center; flex-wrap: wrap; gap: 8px; }
 .dashboard-app .section-title h2 { font-size: 25px; }

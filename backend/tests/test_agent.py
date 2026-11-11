@@ -6,8 +6,8 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app import agent_provider, agent_store
-from app.agent_models import Decision, Plan, Question
+from app import agent_provider, agent_store, workflow
+from app.agent_models import ActionCheck, Decision, Plan, Question, ReviewResult
 from app.config import get_settings
 from app.main import create_app
 
@@ -48,6 +48,32 @@ def agent(monkeypatch, tmp_path, request):
         monkeypatch.setenv("REVANA_DATABASE_URL", os.environ["REVANA_TEST_DATABASE_URL"])
     get_settings.cache_clear()
     calls = []
+
+    # Legacy endpoint regressions use a deterministic compatible reviewer. Dedicated
+    # workflow tests restore the real orchestrator and verify provider role payloads.
+    def compatible_review(journey, context, draft):
+        actions = {a.id: a for a in workflow.visible_actions(journey)}
+        actions.update({a.id: a for a in getattr(draft, "actions", [])})
+        result = ReviewResult(
+            approved=True,
+            issues=[],
+            correction="",
+            limitations=[],
+            action_checks=[
+                ActionCheck(
+                    action_id=value,
+                    status="compatible",
+                    reason="Synthetic compatible action",
+                    source_ids=[],
+                )
+                for value in actions
+            ],
+            suggested_starts=[],
+        )
+        journey.workflow.review = result
+        return result
+
+    monkeypatch.setattr(workflow, "review", compatible_review)
 
     def generate(task, context, output):
         calls.append((task, context))
@@ -113,17 +139,17 @@ def plan(client, headers, journey):
     )
 
 
-def test_six_question_cap_and_answer_context(agent):
+def test_assessment_continues_past_old_question_cap_and_keeps_context(agent):
     client, calls = agent
     headers, journey = start(client)
-    for _ in range(6):
+    for _ in range(8):
         response = answer(client, headers, journey)
         assert response.status_code == 200
         journey = response.json()
-    assert journey["assessment_count"] == 6
-    assert journey["decision"]["ready"]
-    assert journey["decision"]["questions"] == []
-    assert len(calls) == 6  # No seventh LLM question call at the hard limit.
+    assert journey["assessment_count"] == 8
+    assert not journey["decision"]["ready"]
+    assert journey["decision"]["questions"]
+    assert len(calls) == 9
     assert calls[1][1]["events"][0]["answer"] == "My sensitive private answer"
 
 
@@ -139,9 +165,10 @@ def test_plan_checkin_proposal_accept_resume_delete(agent):
     )
     journey = response.json()
     assert journey["mode"] == "checkin"
-    for _ in range(3):
+    for _ in range(5):
         journey = answer(client, headers, journey).json()
-    assert journey["decision"]["questions"] == []
+    assert journey["checkin_count"] == 5
+    assert journey["decision"]["questions"]
     journey = plan(client, headers, journey).json()
     assert journey["proposal"] is not None
     assert journey["plans"] == [original]

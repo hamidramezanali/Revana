@@ -142,8 +142,8 @@ def test_generated_schema_requires_options_and_all_properties():
         assert set(model.get("required", [])) == set(model.get("properties", {}))
         assert model["additionalProperties"] is False
     generated = schema["$defs"]["GeneratedQuestion"]
-    assert generated["properties"]["options"]["minItems"] == 3
-    assert generated["properties"]["options"]["maxItems"] == 6
+    assert generated["properties"]["options"]["minItems"] == 1
+    assert "maxItems" not in generated["properties"]["options"]
     assert "ALL recorded answers" in files("app").joinpath("prompts/coach.md").read_text()
 
 

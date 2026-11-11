@@ -12,12 +12,31 @@ from app.config import get_settings
 POLICY = files("app").joinpath("prompts/coach.md").read_text(encoding="utf-8")
 
 
+def instructions(task: str) -> str:
+    if task.startswith("[stage:"):
+        marker, _, task = task.partition("]")
+        role = marker.removeprefix("[stage:")
+        if role not in {"coach", "planner", "reviewer", "researcher"}:
+            raise ValueError("Unknown workflow stage")
+        root = files("app").joinpath("prompts")
+        return (
+            root.joinpath("common.md").read_text(encoding="utf-8")
+            + "\n"
+            + root.joinpath(f"{role}.md").read_text(encoding="utf-8")
+            + "\n"
+            + task
+        )
+    return POLICY + "\n" + task
+
+
 def generate[T: BaseModel](
     task: str, context: dict, output: type[T], *, images: list[str] | None = None
 ) -> T:
     settings = get_settings()
     if not settings.openai_api_key or not settings.openai_model:
         raise HTTPException(503, "Configure the backend OpenAI key and model to use the agent.")
+    context = dict(context)
+    timeout = context.pop("_stage_timeout", 45)
     model_input: str | list = json.dumps(context, ensure_ascii=False)
     if images:
         model_input = [
@@ -33,15 +52,15 @@ def generate[T: BaseModel](
             }
         ]
     try:
-        with httpx.Client(timeout=45) as client:
+        with httpx.Client(timeout=timeout) as client:
             response = client.post(
                 "https://api.openai.com/v1/responses",
                 headers={"Authorization": f"Bearer {settings.openai_api_key.get_secret_value()}"},
                 json={
                     "model": settings.openai_model,
                     "store": False,
-                    "max_output_tokens": 4500,
-                    "instructions": POLICY + "\n" + task,
+                    "max_output_tokens": 8000,
+                    "instructions": instructions(task),
                     "input": model_input,
                     "text": {
                         "format": {
