@@ -9,6 +9,7 @@ import type {
 import { agentRequest } from "./agentClient";
 import { ActionCard, type IdeaIntent } from "./ActionCard";
 import { BodyEditor, ProgressPanel, Milestones } from "./CareWorkspace";
+import { WeeklyProgramme } from "./WeeklyProgramme";
 import { CareProfile } from "./CareProfile";
 export type View = "overview" | "plan" | "progress" | "profile";
 type Props = {
@@ -28,6 +29,8 @@ type Props = {
   onError: (s: string) => void;
   onIdea: (a: ApiAction, intent: IdeaIntent) => void;
   expandedId?: string;
+  onAssess: () => void;
+  onOpenAction: (id: string) => void;
 };
 function MealIdeas({ meals }: { meals: ApiMeal[] }) {
   const [foods, setFoods] = useState<Array<{ id: number; name: string }>>([]);
@@ -92,6 +95,8 @@ export function GoalArtifact({
   onError,
   onIdea,
   expandedId,
+  onAssess,
+  onOpenAction,
 }: Props) {
   const accepted = j?.plans.at(-1)?.plan;
   const sourcePlan = draft || j?.proposal || accepted;
@@ -260,6 +265,30 @@ export function GoalArtifact({
             )}
             {view === "plan" && (
               <>
+                {!plan?.programme && (
+                  <section className="programme-upgrade">
+                    <strong>Build a complete weekly programme</strong>
+                    <p>
+                      Set your goal and timeline, answer the relevant questions,
+                      and get scheduled actions with progression.
+                    </p>
+                    <button
+                      className="accent-button"
+                      disabled={busy}
+                      onClick={onAssess}
+                    >
+                      Plan my week →
+                    </button>
+                  </section>
+                )}
+                {plan?.programme && (
+                  <WeeklyProgramme
+                    plan={plan}
+                    journey={j}
+                    onOpen={onOpenAction}
+                  />
+                )}
+
                 {j.workflow.status === "needs_review" && (
                   <p className="workspace-error" role="status">
                     {j.workflow.message} Ask your agent to review the plan.

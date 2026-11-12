@@ -1012,4 +1012,290 @@ button:disabled {
   border: 1px solid #49515e;
   padding: 4px 9px;
 }
-.goal-app .idea-steps{list-style:decimal}.goal-app .idea-steps li::marker{color:#c6ddaa;font-weight:600}
+.goal-app .idea-steps {
+  list-style: decimal;
+}
+.goal-app .idea-steps li::marker {
+  color: #c6ddaa;
+  font-weight: 600;
+}
+/* Compact programme items; the full instructions remain available in Show more. */
+.goal-app .focus-action {
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  scroll-margin-top: 12px;
+}
+.goal-app .focus-action h3 {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+}
+.goal-app .focus-action-heading {
+  margin-bottom: 6px;
+}
+.goal-app .focus-action-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0;
+}
+.goal-app .focus-action-badges > span {
+  font-size: 9px;
+  padding: 1px 5px;
+  max-width: 145px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.goal-app .idea-controls {
+  margin: 8px 0;
+  gap: 4px;
+}
+.goal-app .idea-controls button {
+  font-size: 10px;
+  padding: 4px 7px;
+  min-height: 26px;
+}
+.goal-app .focus-action-details > summary {
+  font-size: 11px;
+  padding: 3px 0;
+}
+.goal-app .focus-action-details p,
+.goal-app .focus-action-details li {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.goal-app .exercise-instructions {
+  white-space: pre-line;
+}
+.goal-app .exercise-cues {
+  list-style: disc;
+  padding-left: 20px;
+}
+.goal-app .exercise-list > div,
+.goal-app .action-progression > div {
+  border-top: 1px solid #3b424d;
+  padding: 14px 0;
+}
+.goal-app .exercise-list h4,
+.goal-app .action-progression h4 {
+  font-size: 15px;
+  color: #d2e6bd;
+}
+.goal-app .exercise-list strong {
+  color: #e3e5e9;
+}
+.weekly-programme,
+.programme-upgrade {
+  padding: 18px;
+  background: #25282e;
+  border: 1px solid #39424a;
+  border-radius: 7px;
+  margin-bottom: 18px;
+}
+.weekly-programme > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.weekly-programme > header > span {
+  font-size: 10px;
+  color: #a5acb8;
+  max-width: 160px;
+}
+.weekly-programme > p {
+  font-size: 14px;
+}
+.programme-rationale {
+  font-size: 12px;
+  margin: 12px 0 18px;
+}
+.programme-rationale ul {
+  list-style: disc;
+  padding-left: 20px;
+}
+.week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.week-days button {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  min-height: 43px;
+  padding: 5px 2px;
+  font-size: 11px;
+  background: #202228;
+  color: #a5acb8;
+  border: 1px solid #3a424d;
+}
+.week-days button[aria-pressed="true"] {
+  background: #35412f;
+  color: #dbe9ce;
+  border-color: #a4bd8c;
+}
+.week-days i {
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background: transparent;
+}
+.week-days i.scheduled {
+  background: #c6ddaa;
+}
+.goal-app .day-programme > h3 {
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 18px 0 12px;
+}
+.day-programme > h3 > span {
+  font-size: 10px;
+  color: #a5acb8;
+  font-weight: 400;
+}
+.scheduled-idea {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  background: transparent;
+  color: #e3e5e9;
+  border: 0;
+  border-top: 1px solid #3a424d;
+  padding: 12px 0;
+}
+.scheduled-idea > span:first-child {
+  display: grid;
+  gap: 5px;
+}
+.scheduled-idea strong {
+  font-size: 13px;
+}
+.scheduled-idea small {
+  font-size: 11px;
+  color: #a5acb8;
+}
+.scheduled-meal {
+  padding: 12px 0;
+  border-top: 1px solid #3a424d;
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+.scheduled-meal small {
+  color: #c6ddaa;
+  text-transform: capitalize;
+}
+.programme-upgrade {
+  font-size: 13px;
+}
+.programme-upgrade p {
+  color: #a5acb8;
+  margin: 6px 0 14px;
+}
+.assessment-footer {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #3a424d;
+}
+.assessment-footer span {
+  font-size: 10px;
+  color: #a5acb8;
+}
+.assessment-footer button {
+  background: transparent;
+  border: 0;
+  color: #c6ddaa;
+  font-size: 11px;
+  padding: 4px 0;
+}
+.assessment-goal {
+  font-size: 12px;
+  display: grid;
+  gap: 3px;
+  background: #202228;
+  padding: 10px;
+  border-radius: 5px;
+}
+.assessment-goal small {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: #a5acb8;
+}
+.goal-app .inline-question > label.question-text-field {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.question-text-field input {
+  width: 100%;
+  min-width: 0;
+}
+.goal-app .inline-question {
+  max-height: 48dvh;
+  overflow: auto;
+}
+.goal-app .inline-question .question-label {
+  line-height: 1.5;
+}
+.goal-app .plan-intro {
+  padding: 16px;
+}
+.goal-app .plan-intro > h2 {
+  font-size: 16px;
+}
+.goal-app .plan-intro > p {
+  font-size: 13px;
+}
+.goal-app .plan-actions .habit-group > h2 {
+  font-size: 14px;
+  margin: 15px 0 10px;
+}
+@media (max-width: 760px) {
+  .goal-app .focus-action {
+    padding: 11px 12px;
+  }
+  .goal-app .focus-action h3 {
+    font-size: 14px;
+  }
+  .goal-app .idea-controls button {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  .goal-app .weekly-programme {
+    padding: 14px;
+  }
+  .goal-app .weekly-programme > header > span {
+    font-size: 9px;
+    max-width: 125px;
+  }
+  .goal-app .agent-composer {
+    max-height: 72%;
+  }
+  .goal-app .question-text-field input {
+    font-size: 16px;
+  }
+}
+.goal-app .idea-controls {
+  padding: 0;
+  margin: 6px 0;
+}
+.goal-app .focus-action-details {
+  margin-top: 6px;
+}
+.goal-app .focus-action-details > summary {
+  min-height: 22px;
+  line-height: 1.45;
+  padding: 2px 0;
+}

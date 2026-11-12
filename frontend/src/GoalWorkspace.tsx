@@ -11,6 +11,7 @@ import { PhotoAnswer } from "./PhotoAnswer";
 import { PhotoReview } from "./PhotoReview";
 import { AppDialog } from "./ProfileSettings";
 import type { IdeaIntent } from "./ActionCard";
+import { localDate } from "./CareWorkspace";
 import { GoalArtifact, type View } from "./GoalViews";
 
 type GoalRef = { token: string; title: string };
@@ -72,6 +73,7 @@ export default function GoalWorkspace() {
   const [text, setText] = useState("");
   const [consent, setConsent] = useState(false);
   const [choices, setChoices] = useState<string[]>([]);
+  const [textValues, setTextValues] = useState<Record<string, string>>({});
   const [values, setValues] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoConsent, setPhotoConsent] = useState(false);
@@ -152,6 +154,7 @@ export default function GoalWorkspace() {
   useEffect(() => {
     setChoices([]);
     setValues({});
+    setTextValues({});
     setPhotos([]);
     setPhotoConsent(false);
   }, [question?.id]);
@@ -298,7 +301,7 @@ export default function GoalWorkspace() {
       setError((e as Error).message);
     }
   }
-  async function submit(skip = false) {
+  async function submit(skip = false, finish = false) {
     const j = current.current;
     if (!j) {
       if (!text.trim() || !consent) return;
@@ -315,7 +318,7 @@ export default function GoalWorkspace() {
         setText("");
         setBusy(false);
         if (!result.journey.workspace?.question)
-          void run(result.journey, { action: "plan" });
+          void run(result.journey, { action: "continue" });
       } catch (e) {
         setError((e as Error).message);
         setBusy(false);
@@ -339,14 +342,30 @@ export default function GoalWorkspace() {
                 .filter(([, v]) => v.trim())
                 .map(([k, v]) => [k, Number(v)]),
             ),
+            text_values: Object.fromEntries(
+              Object.entries(textValues).filter(([, v]) => v.trim()),
+            ),
             photos,
             photo_consent: photoConsent,
           };
+    const actualPayload: Record<string, unknown> = payload;
+    if (finish) {
+      actualPayload.action = "plan";
+      if (
+        j.workspace?.question &&
+        !text.trim() &&
+        !choices.length &&
+        !Object.values(values).some((v) => v.trim()) &&
+        !Object.values(textValues).some((v) => v.trim()) &&
+        !photos.length
+      )
+        actualPayload.skipped = true;
+    }
     setText("");
     setPhotos([]);
     setPhotoConsent(false);
     setSelectedIdea(null);
-    await run(j, payload);
+    await run(j, actualPayload);
   }
   async function mutate(fn: () => Promise<Journey>) {
     setBusy(true);
@@ -398,9 +417,14 @@ export default function GoalWorkspace() {
         : !!text.trim() ||
           choices.length > 0 ||
           Object.values(values).some((v) => v.trim()) ||
+          Object.values(textValues).some((v) => v.trim()) ||
           photos.length > 0) &&
     (!photos.length || photoConsent) &&
-    (!selectedIdea || !!text.trim());
+    (!selectedIdea || !!text.trim()) &&
+    (question?.key !== "timeline" ||
+      choices.length > 0 ||
+      !!textValues.target_date ||
+      !!text.trim());
   return (
     <div className={`goal-app ${mobileAgent ? "show-agent" : "show-artifact"}`}>
       <header className="goal-topbar">
@@ -510,6 +534,25 @@ export default function GoalWorkspace() {
         onError={setError}
         onIdea={(action, intent) => void ideaAction(action, intent)}
         expandedId={expandedId}
+        onAssess={() => {
+          if (current.current) {
+            setMobileAgent(true);
+            void run(current.current, { action: "assess" });
+          }
+        }}
+        onOpenAction={(id) => {
+          setExpandedId(undefined);
+          setView("plan");
+          setMobileAgent(false);
+          requestAnimationFrame(() => {
+            setExpandedId(id);
+            requestAnimationFrame(() =>
+              document
+                .getElementById(`idea-${id}`)
+                ?.scrollIntoView({ block: "start" }),
+            );
+          });
+        }}
       />
       <section className="goal-agent" aria-label="Goal agent">
         <header className="agent-panel-heading">
@@ -598,7 +641,7 @@ export default function GoalWorkspace() {
                   });
                   update(j);
                   setBusy(false);
-                  void run(j, { action: "plan" });
+                  void run(j, { action: "continue" });
                 } catch (e) {
                   setError((e as Error).message);
                   setBusy(false);
@@ -638,13 +681,47 @@ export default function GoalWorkspace() {
             <div className="inline-question">
               <p className="question-label">{question.text}</p>
               <p>{question.why}</p>
+              {question.key === "timeline" && (
+                <div className="assessment-goal">
+                  <small>YOUR CURRENT GOAL</small>
+                  <span>{workspace?.outcome || workspace?.objective}</span>
+                </div>
+              )}
+              {question.text_fields.map((field) => (
+                <label className="question-text-field" key={field}>
+                  {field === "target_date"
+                    ? "Or choose a specific date"
+                    : "Refine the desired result (optional)"}
+                  <input
+                    type={field === "target_date" ? "date" : "text"}
+                    min={
+                      field === "target_date" && journey
+                        ? localDate(journey.body.timezone)
+                        : undefined
+                    }
+                    maxLength={field === "target_date" ? 10 : 1000}
+                    disabled={blocked}
+                    value={textValues[field] || ""}
+                    placeholder={
+                      field === "goal_outcome"
+                        ? "What would a useful result look like?"
+                        : undefined
+                    }
+                    onChange={(e) => {
+                      setTextValues({ ...textValues, [field]: e.target.value });
+                      if (field === "target_date" && e.target.value)
+                        setChoices([]);
+                    }}
+                  />
+                </label>
+              ))}
               {question.fields.map((f) => (
                 <label key={f}>
                   {fieldLabels[f]}
                   <input
                     type="number"
                     inputMode="decimal"
-                    step="any"
+                    step={f === "height_cm" || f === "weight_kg" ? "any" : "1"}
                     min={f === "height_cm" ? 100 : f === "weight_kg" ? 25 : 0}
                     max={
                       f === "height_cm"
@@ -669,15 +746,17 @@ export default function GoalWorkspace() {
                       type="button"
                       disabled={blocked}
                       aria-pressed={choices.includes(c)}
-                      onClick={() =>
+                      onClick={() => {
+                        if (question.key === "timeline")
+                          setTextValues((old) => ({ ...old, target_date: "" }));
                         setChoices(
                           question.multiple
                             ? choices.includes(c)
                               ? choices.filter((v) => v !== c)
                               : [...choices, c]
                             : [c],
-                        )
-                      }
+                        );
+                      }}
                     >
                       {c}
                     </button>
@@ -777,6 +856,27 @@ export default function GoalWorkspace() {
               </div>
             )}
           </div>
+          {journey &&
+            !workspace?.assessment_complete &&
+            !selectedIdea &&
+            !pendingPhoto &&
+            !working && (
+              <div className="assessment-footer">
+                <span>
+                  {workspace?.assessment_count || 0} of up to 6 focused
+                  questions
+                </span>
+                <button
+                  type="button"
+                  disabled={
+                    blocked || preparing || (photos.length > 0 && !photoConsent)
+                  }
+                  onClick={() => void submit(false, true)}
+                >
+                  Build weekly plan now →
+                </button>
+              </div>
+            )}
           <small className="composer-note">
             Guidance can be wrong. Seek qualified care for concerning symptoms.
           </small>

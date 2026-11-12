@@ -35,11 +35,12 @@ export function ActionCard({
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
-  const preview =
-    steps[0]?.replace(/^\d+[.)]\s*/, "").split(/(?<=[.!?])\s/)[0] || "";
 
   return (
-    <article className={`focus-action${choice ? ` preference-${choice}` : ""}`}>
+    <article
+      id={`idea-${action.id}`}
+      className={`focus-action${choice ? ` preference-${choice}` : ""}`}
+    >
       <div className="focus-action-heading">
         {onComplete && (
           <button
@@ -58,16 +59,12 @@ export function ActionCard({
         <h3>{action.title}</h3>
       </div>
       <div className="focus-action-badges">
+        {action.minutes != null && <span>{action.minutes} min</span>}
         <span title={action.effort}>{action.effort} effort</span>
         <span title={action.cost}>{action.cost}</span>
         {badge && <span className="focus-action-tag">{badge}</span>}
         {completed && <span className="focus-action-tag">Completed</span>}
       </div>
-      {preview && onIdea && (
-        <p className="idea-next-step">
-          {preview.length > 180 ? preview.slice(0, 177) + "…" : preview}
-        </p>
-      )}
       {onIdea && (
         <div
           className="focus-action-choices idea-controls"
@@ -142,7 +139,7 @@ export function ActionCard({
         </div>
       )}
       <details className="focus-action-details" open={expanded || undefined}>
-        <summary>View details</summary>
+        <summary>Show more</summary>
         {steps.length > 1 ? (
           <ol className="idea-steps">
             {steps.map((step, i) => (
@@ -168,10 +165,42 @@ export function ActionCard({
                     ? ` · rest ${exercise.rest_seconds}s`
                     : ""}
                 </p>
-                <p>{exercise.instructions}</p>
+                <p className="exercise-instructions">{exercise.instructions}</p>
+                {!!exercise.form_cues.length && (
+                  <ul className="exercise-cues">
+                    {exercise.form_cues.map((cue, i) => (
+                      <li key={i}>{cue}</li>
+                    ))}
+                  </ul>
+                )}
+                {exercise.progression && (
+                  <p>
+                    <strong>Progression: </strong>
+                    {exercise.progression}
+                  </p>
+                )}
                 <p>
                   <strong>Easier option: </strong>
                   {exercise.easier_alternative}
+                </p>
+              </div>
+            ))}
+          </section>
+        )}
+        {!!action.progression.length && (
+          <section className="action-progression">
+            <h4>How to progress</h4>
+            {action.progression.map((step, i) => (
+              <div key={i}>
+                <strong>From week {step.week}</strong>
+                <p>{step.instruction}</p>
+                <p>
+                  <strong>Advance when: </strong>
+                  {step.advance_when}
+                </p>
+                <p>
+                  <strong>If difficult: </strong>
+                  {step.if_difficult}
                 </p>
               </div>
             ))}
