@@ -1529,3 +1529,36 @@ button:disabled {
   color: #bcc8b3;
   margin: 6px 0 12px;
 }
+
+.run-performance {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.run-performance summary {
+  cursor: pointer;
+  color: #bacba3;
+}
+.run-performance dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin: 14px 0;
+}
+.run-performance dd {
+  margin: 0;
+  color: var(--ink);
+}
+.run-performance p {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 5px 0;
+}
+.run-performance small {
+  display: block;
+  line-height: 1.6;
+  margin-top: 10px;
+}

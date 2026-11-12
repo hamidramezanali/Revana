@@ -666,6 +666,53 @@ export default function GoalWorkspace() {
               )}
             </div>
           )}
+          {workspace?.run?.performance && !working && (
+            <details className="run-performance">
+              <summary>
+                Last run ·{" "}
+                {(workspace.run.performance.total_ms / 1000).toFixed(1)}s ·{" "}
+                {workspace.run.performance.calls.length} model{" "}
+                {workspace.run.performance.calls.length === 1
+                  ? "call"
+                  : "calls"}
+              </summary>
+              <dl>
+                <dt>Model requests</dt>
+                <dd>
+                  {(
+                    workspace.run.performance.calls.reduce(
+                      (n, c) => n + c.elapsed_ms,
+                      0,
+                    ) / 1000
+                  ).toFixed(1)}
+                  s
+                </dd>
+                <dt>Context preparation</dt>
+                <dd>
+                  {(workspace.run.performance.context_ms / 1000).toFixed(3)}s
+                </dd>
+                <dt>Storage</dt>
+                <dd>
+                  {(workspace.run.performance.storage_ms / 1000).toFixed(3)}s ·{" "}
+                  {workspace.run.performance.storage_operations} operations
+                </dd>
+              </dl>
+              {workspace.run.performance.calls.map((c, i) => (
+                <p key={i}>
+                  {c.role} · {(c.elapsed_ms / 1000).toFixed(1)}s
+                  {c.input_tokens != null && c.output_tokens != null
+                    ? ` · ${c.input_tokens} in / ${c.output_tokens} out tokens`
+                    : ""}
+                  {!c.completed ? " · interrupted" : ""}
+                </p>
+              ))}
+              <small>
+                Server measurements. Model time includes the provider request
+                and response handling. Browser network time and separate
+                research requests are not measured here.
+              </small>
+            </details>
+          )}
           {workspace?.run?.status === "failed" && !blocked && (
             <button
               className="subtle-button"
