@@ -407,6 +407,17 @@ export default function GoalWorkspace() {
     setView("plan");
     setMobileAgent(false);
   }
+  function reviewPlan() {
+    openPlan();
+    const goalNavigation = nonce.current;
+    // Wait for the Plan pane to mount/become visible, even if it was already selected.
+    requestAnimationFrame(() => {
+      if (nonce.current !== goalNavigation) return;
+      const review = document.getElementById("plan-review");
+      review?.scrollIntoView({ block: "start", behavior: "auto" });
+      review?.focus({ preventScroll: true });
+    });
+  }
   const selectedSteps = steps.length ? steps : workspace?.run?.steps || [];
   const canSend =
     !blocked &&
@@ -644,8 +655,17 @@ export default function GoalWorkspace() {
             </div>
           )}
           {journey?.proposal && !working && (
-            <button className="draft-link" onClick={openPlan}>
-              ▤ Draft ready · Review plan →
+            <button
+              className="draft-link"
+              onClick={reviewPlan}
+              aria-controls="plan-review"
+            >
+              ▤{" "}
+              {journey.workflow.status === "ready" &&
+              journey.workflow.review?.approved
+                ? "Draft ready"
+                : "Draft needs attention"}{" "}
+              · Review plan →
             </button>
           )}
           {error && (

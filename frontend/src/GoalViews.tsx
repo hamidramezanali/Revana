@@ -309,7 +309,12 @@ export function GoalArtifact({
                         </button>
                       </section>
                     )}
-                    <section className="workspace-card plan-intro">
+                    <section
+                      className="workspace-card plan-intro"
+                      id="plan-review"
+                      tabIndex={-1}
+                      aria-labelledby="plan-review-title"
+                    >
                       <p className="eyebrow">
                         {j.proposal
                           ? "PROPOSED PLAN"
@@ -317,7 +322,7 @@ export function GoalArtifact({
                             ? "WORK IN PROGRESS · CHECKING"
                             : "ACCEPTED PLAN"}
                       </p>
-                      <h2>
+                      <h2 id="plan-review-title">
                         {plan.actions.length !== sourcePlan?.actions.length
                           ? "Your remaining ideas"
                           : plan.priority || "Your working plan"}
@@ -335,6 +340,13 @@ export function GoalArtifact({
                               ? " Your previous accepted plan is preserved."
                               : ""}
                           </p>
+                          {(j.workflow.status !== "ready" ||
+                            !j.workflow.review?.approved) && (
+                            <p className="workspace-error" role="status">
+                              This draft still needs the agent’s review before
+                              you can accept it. {j.workflow.message}
+                            </p>
+                          )}
                           <div className="plan-review-controls">
                             <button
                               className="accent-button"

@@ -318,3 +318,15 @@ fixed food quantities/schedules, feedback and independent whole-plan review. Sta
 completion writes are coalesced with existing checkpoints, preserving lease/CAS checks.
 The agent's collapsed Last run panel shows numeric stage/storage/context timings.
 See [performance methodology, limits and reproduction](PERFORMANCE.md).
+
+
+## Review-plan navigation (2026-11-12)
+
+The agent's Review plan shortcut opens the Plan pane, scrolls to the proposed-plan
+review section and focuses its labeled container after the pane renders. It also
+works when Plan is already selected or scrolled elsewhere. A focus outline makes the
+destination visible. The ordinary Plan tab retains its existing navigation behavior.
+The shortcut labels unapproved drafts as needing attention, and the review section
+explains why acceptance is unavailable. Navigation does not call the model, accept a
+plan or bypass review. Browser checks covered desktop, repeated clicks, 360/390px
+phones, keyboard focus and both approval states; TypeScript/build passed.

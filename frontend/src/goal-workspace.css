@@ -1562,3 +1562,11 @@ button:disabled {
   line-height: 1.6;
   margin-top: 10px;
 }
+
+.plan-intro {
+  scroll-margin-top: 12px;
+}
+.plan-intro:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
