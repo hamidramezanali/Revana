@@ -69,8 +69,8 @@ Automated tests cover immediate weight clarification, skip/no repeat, measuremen
 streamed stage ordering, proposal acceptance, cancellation, safe failure and abandoned
 run recovery. Existing backend regressions remain required. Test the live model with
 synthetic goals and inspect mobile layouts before release. The app remains an approved
-temporary public test; authentication, billing, broad evidence coverage, professional
-service discovery/booking and voice remain separate roadmap items.
+temporary public test; authentication, billing, broad evidence coverage, service booking and voice remain separate roadmap items. Public service discovery is
+implemented below; listings do not establish medical suitability.
 
 ## Per-idea controls (2026-11-12)
 
@@ -146,3 +146,81 @@ Regression coverage includes adaptive assessment transitions, date persistence a
 inputs, finish/skip behaviour, the six-question bound, programmes beyond three actions,
 exercise quality checks, larger details and all earlier idea-choice/cancellation flows.
 Use synthetic goals for live validation; do not load real saved profiles into smoke tests.
+
+
+## Food-first planning and researched alternatives (2026-11-12)
+
+Assessment preserves the goal/timeline and six-card ceiling, but body goals no longer
+implicitly mean workouts. The coach asks about the preferred route, food preferences,
+allergies, cooking/storage access and time when those answers change the plan. Skin
+and hair questions also consider relevant routines, health context and preferences;
+professional procedures are optional approaches, not automatic recommendations.
+
+`Plan.nutrition` describes the meal pattern, portion approach, substitutions and
+batch-preparation sessions with meal links and storage guidance. Meals include actual
+catalog ingredient weights, instructions and optional storage/reheating notes. The UI
+shows seven meal days, ingredient totals in their named preparation state and
+application-calculated approximate ingredient kcal/protein. These totals are incomplete
+meal estimates, never a personal daily calorie target. Batch-prep minutes plus additional
+meal assembly and activities must fit the daily budget; the planner must count prep
+work once. Existing plans can use **Add meal-prep planning** or **Update food preferences**
+to ask the missing questions and propose a revision without losing the accepted plan.
+
+Automatic numerical calorie targets/deficits remain disabled. Qualitative modest-deficit
+discussion is eligible only with known adult measurements, BMI at least 25, pregnancy
+explicitly inapplicable and no existing body-guidance contraindication. This is a
+conservative application eligibility rule, not a medical assessment. Lower/normal BMI,
+unknown measurements and unsafe targets use balanced meals or individual clinical
+review. Existing restrictive-target and exercise safety review still applies. The
+limited food snapshot/allergen markers do not establish allergy safety or complete
+nutrient coverage. Storage guidance references Livsmedelsverket; it does not guarantee
+shelf life for a generated recipe.
+
+**Explore other approaches** embeds an explicit research action in the plan. Topics
+cover nutrition/body composition, skin care, pigmentation, laser/light, hair loss,
+scalp care and hair removal. The user optionally selects a supported Swedish city and
+public Bokadirekt listings. Research is deliberately outside the first-plan path.
+Application-owned generic topic queries plus the selected city go to web search;
+answers, measurements, photos and free text never enter those queries. Normal
+server-side OpenAI interpretation receives profile context to discuss fit and limits.
+
+Evidence retrieval is restricted to 1177, Livsmedelsverket, AAD, NHS, FDA, PubMed and
+NICE. Service retrieval is restricted to Bokadirekt, with individual `/places/` pages
+shown separately from primary evidence. Each search requires an actual completed
+OpenAI web-search call and domain-checked URL citations. Citation presence is not
+independent verification of the source's findings or the listing's qualifications.
+No direct marketplace scraping, login, availability checking, payment or booking is
+implemented. Category links are manual fallbacks when individual listings are absent.
+
+`method_discovery.py` interprets actual evidence into cited alternatives, with risk,
+evidence limitations, suitability and practical next steps. No usable evidence means
+no generated treatment recommendation; failed interpretation preserves the sources
+and labels the report partial. Professional options require assessment. Body contouring
+is never a substitute for weight loss. The last eight reports are saved in Journey
+JSON, dated and separated from profile facts. The last two relevant reports can inform
+later reviewed plan proposals, using their actual evidence IDs. **Discuss with my agent**
+prepares a message; it never silently adds a procedure or changes an accepted plan.
+
+The existing `/run` SSE protocol accepts `action=research`, a typed topic, optional city
+and services flag. It rejects questionnaire fields on research requests, preserves the
+previous workflow review/accepted plan and applies results only with the existing
+revision/run/cancellation checks. Explicit retry remembers an interrupted research
+request. Stop prevents later application, but cannot reverse dispatched provider costs.
+
+Validation: 170 backend tests passed, one optional Postgres test skipped; TypeScript,
+Ruff and production build passed. Synthetic tests cover food/prep budgets, ingredient
+estimates, restricted energy advice, source IDs/domain filtering, query minimization,
+report persistence, cancellation and unchanged accepted plans. A deliberate live
+synthetic research run returned four primary citations, five public listings and two
+interpreted alternatives in about 22 seconds; this is an exploratory integration check,
+not a clinical quality evaluation or guarantee of marketplace coverage.
+
+Implementation references:
+- [OpenAI web search](https://developers.openai.com/api/docs/guides/tools-web-search)
+- [Bokadirekt](https://www.bokadirekt.se/)
+- [Livsmedelsverket chilled food storage](https://www.livsmedelsverket.se/livsmedel-och-innehall/tillagning-forvaring-hallbarhet/forvaring-av-kyld-mat/)
+- [AAD laser guidance](https://www.aad.org/public/diseases/a-z/skin-conditions-lasers-treat)
+
+Next: broader de-identified recommendation evaluations, food/allergen catalog coverage,
+more locations/locales and practitioner qualification verification. Account sign-in,
+billing, voice and service booking remain deferred.

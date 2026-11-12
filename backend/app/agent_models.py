@@ -403,6 +403,7 @@ class Meal(Model):
     instructions: str = Field(min_length=1, max_length=1000)
     preparation_minutes: int = Field(ge=0, le=180)
     substitution_note: str = Field(max_length=400)
+    storage: str = Field(default="", max_length=1000)
 
     @model_validator(mode="before")
     @classmethod
@@ -426,6 +427,26 @@ class MealSwap(RevisionRequest):
     source_slot: Literal["breakfast", "lunch", "dinner", "snack"]
 
 
+class PrepSession(Model):
+    day: int = Field(ge=0, le=6)
+    minutes: int = Field(ge=0, le=180)
+    title: str = Field(min_length=1, max_length=150)
+    steps: list[str] = Field(min_length=1, max_length=12)
+    storage: str = Field(min_length=1, max_length=1000)
+    meal_keys: list[str] = Field(default_factory=list, max_length=28)
+
+
+class NutritionPlan(Model):
+    priority: Literal["meal_first", "balanced", "activity_first"] = "balanced"
+    focus: str = Field(min_length=1, max_length=1000)
+    energy_strategy: Literal["balanced", "deficit_discussion", "clinician_review"]
+    energy_explanation: str = Field(min_length=1, max_length=1500)
+    meal_pattern: str = Field(min_length=1, max_length=1500)
+    portion_approach: str = Field(min_length=1, max_length=1500)
+    substitutions: list[str] = Field(default_factory=list, max_length=8)
+    prep_sessions: list[PrepSession] = Field(default_factory=list, max_length=7)
+
+
 class WeeklyProgramme(Model):
     weeks: int = Field(ge=1, le=12)
     outcome: str = Field(min_length=1, max_length=1000)
@@ -437,6 +458,7 @@ class WeeklyProgramme(Model):
 
 
 class Plan(Model):
+    nutrition: NutritionPlan | None = None
     programme: WeeklyProgramme | None = None
     summary: str = Field(min_length=1, max_length=2000)
     priority: str = Field(default="", max_length=400)
@@ -601,6 +623,8 @@ class GoalQuestion(Model):
         "experience",
         "schedule",
         "nutrition",
+        "approach",
+        "services",
         "health",
         "constraints",
         "routine",
@@ -656,6 +680,71 @@ class IdeaChoiceRequest(RevisionRequest):
     choice: Literal["keep", "remove", "clear"]
 
 
+DiscoveryTopic = Literal[
+    "nutrition",
+    "body_composition",
+    "skin_options",
+    "laser_skin",
+    "pigmentation",
+    "hair_options",
+    "scalp_care",
+    "hair_removal",
+]
+SearchCity = Literal[
+    "",
+    "Stockholm",
+    "Göteborg",
+    "Malmö",
+    "Uppsala",
+    "Västerås",
+    "Örebro",
+    "Linköping",
+    "Helsingborg",
+    "Jönköping",
+    "Lund",
+    "Umeå",
+    "Luleå",
+]
+
+
+class AlternativeMethod(Model):
+    title: str = Field(min_length=1, max_length=150)
+    approach: Literal["nutrition", "activity", "home_routine", "professional"]
+    rationale: str = Field(min_length=1, max_length=1500)
+    suitability: Literal["consider", "assessment_required", "not_recommended"]
+    evidence_summary: str = Field(min_length=1, max_length=2000)
+    risks: list[str] = Field(max_length=8)
+    practical_next_step: str = Field(min_length=1, max_length=1200)
+    evidence_ids: list[str] = Field(max_length=8)
+
+
+class MethodSynthesis(Model):
+    summary: str = Field(min_length=1, max_length=1800)
+    alternatives: list[AlternativeMethod] = Field(max_length=6)
+    limitations: list[str] = Field(max_length=8)
+
+
+class MethodReport(Model):
+    id: str = Field(default_factory=lambda: uuid4().hex)
+    topic: DiscoveryTopic
+    city: SearchCity = ""
+    created_at: datetime
+    status: Literal["ready", "limited", "unavailable"]
+    summary: str
+    alternatives: list[AlternativeMethod] = Field(default_factory=list)
+    evidence: list[ResearchSource] = Field(default_factory=list)
+    listings: list[ResearchSource] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    browse_url: str
+    services_searched: bool = False
+
+
+class DiscoveryRequest(Model):
+    topic: DiscoveryTopic
+    city: SearchCity = ""
+    services: bool = True
+
+
 class GoalWorkspace(Model):
     title: str = Field(max_length=120)
     objective: str = Field(max_length=2000)
@@ -674,6 +763,8 @@ class GoalWorkspace(Model):
     assessment_count: int = Field(default=0, ge=0, le=6)
     outcome: str = ""
     timeline_note: str = ""
+    method_reports: list[MethodReport] = Field(default_factory=list, max_length=8)
+    discovery_request: DiscoveryRequest | None = None
 
 
 class WorkspaceDraft(Plan):
@@ -705,10 +796,13 @@ class WorkRequest(RevisionRequest):
     skipped: bool = False
     photos: list[str] = Field(default_factory=list, max_length=3)
     photo_consent: bool = False
-    action: Literal["continue", "plan", "retry", "assess"] = "continue"
+    action: Literal["continue", "plan", "retry", "assess", "research"] = "continue"
     action_id: str | None = Field(default=None, max_length=80)
     idea_intent: Literal["details", "improve"] | None = None
     text_values: dict[str, str] = Field(default_factory=dict)
+    research_topic: DiscoveryTopic | None = None
+    research_city: SearchCity = ""
+    research_services: bool = True
 
 
 class Journey(Model):

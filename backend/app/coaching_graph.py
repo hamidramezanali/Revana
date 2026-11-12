@@ -119,6 +119,13 @@ def plan_issues(journey, draft):
             "milk": r"\b(milk|dairy|mjölk)\b",
             "egg": r"\b(egg|eggs|ägg)\b",
             "oats": r"\b(oat|oats|gluten|havre)\b",
+            "soy": r"\b(soy|soya|soja)\b",
+            "fish": r"\b(fish|fisk|salmon|lax|tuna|tonfisk)\b",
+            "wheat": r"\b(wheat|gluten|vete)\b",
+            "peanut": r"\b(peanut|peanuts|jordnöt|jordnötter)\b",
+            "nuts": r"\b(nut|nuts|nötter|almond|almonds|mandel)\b",
+            "sesame": r"\b(sesame|sesam)\b",
+            "shellfish": r"\b(shellfish|skaldjur|shrimp|räkor)\b",
         }
         blocked = {tag for tag, pattern in markers.items() if re.search(pattern, allergies)}
         if any(
@@ -131,6 +138,30 @@ def plan_issues(journey, draft):
             )
     if not isinstance(draft, Plan):
         return problems
+    if draft.nutrition:
+        energy_text = f"{draft.nutrition.energy_explanation} {draft.nutrition.portion_approach} {draft.nutrition.meal_pattern}"
+        if re.search(
+            r"(?:\d{2,4}\s*(?:kcal|calories|kalorier).{0,30}(?:per day|daily|a day|/day|per dag|/dag|dagligen|deficit|underskott)|(?:daily|deficit|underskott|target).{0,30}\d{2,4}\s*(?:kcal|calories|kalorier))",
+            energy_text,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            problems.append(
+                "Do not prescribe an unverified numerical calorie target or deficit. Use balanced meal guidance and application-calculated ingredient estimates."
+            )
+        if (
+            draft.nutrition.energy_strategy == "deficit_discussion"
+            and not body_guidance(journey)["weight_management_appropriate_to_discuss"]
+        ):
+            problems.append(
+                "An energy-deficit approach is not supported by this profile; use balanced meals or individualized clinical review."
+            )
+        meal_keys = {f"{meal.day}-{meal.slot}" for meal in draft.meals}
+        if any(
+            key not in meal_keys
+            for session in draft.nutrition.prep_sessions
+            for key in session.meal_keys
+        ):
+            problems.append("Batch-prep sessions must refer to actual scheduled meal keys.")
     if draft.programme and draft.programme.training_included:
         sessions = [a for a in draft.actions if a.exercises]
         if not sessions:
@@ -169,8 +200,19 @@ def plan_issues(journey, draft):
             meal_minutes = sum(
                 meal.preparation_minutes for meal in getattr(draft, "meals", []) if meal.day == day
             )
-            minutes = meal_minutes + sum(
-                action.minutes or 0 for action in draft.actions if day in action.days
+            prep_minutes = (
+                sum(
+                    session.minutes
+                    for session in draft.nutrition.prep_sessions
+                    if session.day == day
+                )
+                if draft.nutrition
+                else 0
+            )
+            minutes = (
+                prep_minutes
+                + meal_minutes
+                + sum(action.minutes or 0 for action in draft.actions if day in action.days)
             )
             if minutes > journey.body.daily_minutes:
                 problems.append("The combined daily schedule exceeds the user's time budget.")

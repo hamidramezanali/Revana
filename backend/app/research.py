@@ -25,7 +25,7 @@ def public_url(value: str) -> bool:
         return False
 
 
-def retrieve(intent: ResearchIntent) -> ResearchResult:
+def retrieve(intent: ResearchIntent, *, allowed_domains: list[str] | None = None) -> ResearchResult:
     if not intent.needed:
         return ResearchResult()
     settings = get_settings()
@@ -38,6 +38,9 @@ def retrieve(intent: ResearchIntent) -> ResearchResult:
         return unavailable
     if not settings.research_enabled or not settings.openai_api_key:
         return unavailable
+    search_tool = {"type": "web_search"}
+    if allowed_domains:
+        search_tool["filters"] = {"allowed_domains": allowed_domains}
     try:
         with httpx.Client(timeout=30) as client:
             response = client.post(
@@ -49,9 +52,14 @@ def retrieve(intent: ResearchIntent) -> ResearchResult:
                     "max_output_tokens": 1800,
                     "instructions": instructions(
                         "[stage:researcher] Return concise findings with cited sources and limitations."
+                    )
+                    + (
+                        " For this Bokadirekt search, find individual public provider listing pages under /places/ matching the category and location. Category pages alone are not provider results. Do not claim qualifications, prices or available appointments."
+                        if allowed_domains == ["bokadirekt.se"]
+                        else ""
                     ),
                     "input": query,
-                    "tools": [{"type": "web_search"}],
+                    "tools": [search_tool],
                     "tool_choice": "required",
                     "include": ["web_search_call.action.sources"],
                 },
@@ -76,6 +84,11 @@ def retrieve(intent: ResearchIntent) -> ResearchResult:
                 for citation in content.get("annotations", []):
                     url = citation.get("url", "")
                     if citation.get("type") != "url_citation" or not public_url(url):
+                        continue
+                    host = urlsplit(url).hostname or ""
+                    if allowed_domains and not any(
+                        host == domain or host.endswith("." + domain) for domain in allowed_domains
+                    ):
                         continue
                     if any(source.url == url for source in sources):
                         continue

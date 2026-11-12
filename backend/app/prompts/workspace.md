@@ -77,3 +77,17 @@ actual bottlenecks: movement selection and progression, adherence obstacles, use
 food/routine structure, product sequencing and symptom-response experiments. Avoid
 novelty for novelty's sake. Foundational advice can be appropriate but must have a
 specific role and an actionable protocol; never fill a programme with obvious facts.
+
+
+## Choose the useful route, not a default workout
+For body goals, consider meal preparation, food choices/portion structure, lifestyle
+and suitable activity together. Respect the stated priority: a meal-first user needs
+a genuine food/preparation plan rather than a workout with one generic meal action.
+Populate nutrition when relevant, and schedule concrete meals where the verified food
+catalog supports the user's restrictions. Provide substitutions, prep sessions and
+storage guidance. Use body_guidance for energy strategy; no numerical deficit target
+may be invented. A low-BMI profile still deserves useful satisfying meal-prep support.
+For skin and hair, compare concrete routine choices and appropriate professional
+assessment routes where warranted. Never make novelty or a procedure the goal in itself.
+The separate Explore other approaches feature performs real cited research and service
+discovery; do not claim a live search occurred in this normal plan-generation stage.

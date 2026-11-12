@@ -121,3 +121,18 @@ budgets, proposals and revision checks. Do not restore unlimited-question behavi
 `app/data/foods.json` is a limited attributed public snapshot; never invent missing
 nutrients or treat it as a complete allergen database. Milestones are review points,
 not validated personal predictions. See AGENTIC_COACH.md for current privacy limits.
+
+
+## Nutrition and methods discovery (2026-11-12)
+
+Food-first preferences must drive assessment and planning. Keep recipes, meal prep,
+portion guidance, substitutions and storage first-class alongside appropriate activity.
+Numeric calorie prescriptions remain disabled; ingredient estimates are not daily
+intake targets. Preserve BMI/unsafe-target safeguards and daily prep/activity budgets.
+See GOAL_WORKSPACE.md for exact eligibility and validation limits.
+
+`method_discovery.py` uses controlled generic topic/city queries, primary-domain evidence
+and separately labeled public Bokadirekt listings. Never include answers/photos/metrics
+in web queries, infer practitioner qualifications from listings, pretend searches ran,
+or silently apply researched procedures. Preserve previous review state, accepted plans,
+unique evidence IDs and run cancellation/revision checks. No scraping or booking.

@@ -37,6 +37,18 @@ def library(goals) -> ResearchResult:
         for goal in dict.fromkeys(goals)
         if goal in PAGES
     ]
+    if "body" in goals:
+        sources.append(
+            ResearchSource(
+                id="guidance-food-storage",
+                title="Livsmedelsverket: Storing chilled food",
+                url="https://www.livsmedelsverket.se/livsmedel-och-innehall/tillagning-forvaring-hallbarhet/forvaring-av-kyld-mat/",
+                retrieved_at=datetime(2026, 11, 12, tzinfo=UTC),
+                kind="evidence",
+                applicability="General cooling/chilling and leftovers guidance; a food-specific shelf-life guarantee cannot be inferred.",
+                uncertainty="Development-reviewed public guidance, not a clinical or food-safety validation of generated recipes.",
+            )
+        )
     return ResearchResult(
         status="limited",
         summary="Limited public guidance references are available. Claims outside their stated scope need additional evidence or explicit uncertainty.",

@@ -14,11 +14,12 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app import agent_store as store
-from app import assessment, idea_actions, workflow
+from app import assessment, idea_actions, method_discovery, workflow
 from app.agent_models import (
     BodyContext,
     CreateGoal,
     Decision,
+    DiscoveryRequest,
     Event,
     GoalQuestion,
     GoalRun,
@@ -310,8 +311,34 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
         emit(event)
 
     sink_token = workflow._event_sink.set(publish)
+    previous_workflow = journey.workflow.model_copy(deep=True)
     try:
         workflow.begin(journey)
+        if request.action == "research":
+            report = method_discovery.discover(
+                journey,
+                request.research_topic,
+                request.research_city,
+                request.research_services,
+                publish,
+            )
+            journey.workflow = previous_workflow
+            journey.workspace.method_reports = [*journey.workspace.method_reports[-7:], report]
+            journey.workspace.discovery_request = None
+            journey.workspace.run.status = "complete"
+            journey.workspace.phase = (
+                "needs_input"
+                if journey.workspace.question
+                else "review"
+                if journey.proposal
+                else "ready"
+                if journey.plans
+                else "idle"
+            )
+            journey.workspace.reply = "Research ready. Review the evidence, limitations and any public listings in Explore other approaches."
+            saved = store.save(access, journey, expected)
+            emit({"type": "complete", "journey": saved.model_dump(mode="json")})
+            return
         workflow.research(journey, None)  # Local guidance only; no web search in the critical path.
         if request.photos:
             publish({"type": "stage", "role": "coach", "status": "working"})
@@ -375,6 +402,20 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                     saved = store.save(access, journey, expected)
                     emit({"type": "complete", "journey": saved.model_dump(mode="json")})
                     return
+            relevant_reports = [
+                report
+                for report in journey.workspace.method_reports[-2:]
+                if method_discovery.topic_domains(report.topic).intersection(journey.context.goals)
+            ]
+            context["researched_alternatives"] = [
+                report.model_dump(mode="json") for report in relevant_reports
+            ]
+            source_map = {source.id: source for source in journey.workflow.research.sources}
+            for report in relevant_reports:
+                source_map.update({source.id: source for source in report.evidence})
+            journey.workflow.research.sources = list(source_map.values())
+            if relevant_reports:
+                journey.workflow.research.summary += " Previously retrieved alternatives are supplied with dates and limitations. Reassess suitability against the current profile; listings are not efficacy evidence."
             context["_max_output_tokens"] = 8000
             draft = workflow.plan(
                 journey,
@@ -483,6 +524,40 @@ def run_goal(body: WorkRequest, access: Access):
         raise HTTPException(409, "A run is already working. Stop it before sending another update.")
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         raise HTTPException(409, "Review or discard the photo notes first.")
+    if body.action == "retry" and workspace.discovery_request:
+        pending = workspace.discovery_request
+        body = WorkRequest(
+            revision=body.revision,
+            action="research",
+            research_topic=pending.topic,
+            research_city=pending.city,
+            research_services=pending.services,
+        )
+    if body.action == "research":
+        if (
+            not body.research_topic
+            or body.message
+            or body.question_id
+            or body.photos
+            or body.choices
+            or body.values
+            or body.text_values
+            or body.action_id
+            or body.idea_intent
+            or body.skipped
+        ):
+            raise HTTPException(
+                422, "Research uses a selected topic and optional city, not questionnaire answers."
+            )
+        method_discovery.validate_topic(journey, body.research_topic)
+        workspace.discovery_request = DiscoveryRequest(
+            topic=body.research_topic, city=body.research_city, services=body.research_services
+        )
+        workspace.phase = "running"
+        workspace.run = GoalRun(id=uuid4().hex, status="running", started_at=datetime.now(UTC))
+        journey = store.save(access, journey, body.revision)
+        return stream_run(access, journey, body)
+    workspace.discovery_request = None
     base = idea_actions.base_plan(journey) or workspace.pending_draft
     if body.action == "assess":
         workspace.assessment_complete = False
@@ -556,6 +631,10 @@ def run_goal(body: WorkRequest, access: Access):
     workspace.run = GoalRun(id=uuid4().hex, status="running", started_at=datetime.now(UTC))
     journey = store.save(access, journey, body.revision)
 
+    return stream_run(access, journey, body)
+
+
+def stream_run(access, journey, body):
     async def stream():
         queue = asyncio.Queue()
         loop = asyncio.get_running_loop()

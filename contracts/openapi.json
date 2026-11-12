@@ -298,6 +298,82 @@
         "title": "AgentStatus",
         "type": "object"
       },
+      "AlternativeMethod": {
+        "additionalProperties": false,
+        "properties": {
+          "approach": {
+            "enum": [
+              "nutrition",
+              "activity",
+              "home_routine",
+              "professional"
+            ],
+            "title": "Approach",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "evidence_summary": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Evidence Summary",
+            "type": "string"
+          },
+          "practical_next_step": {
+            "maxLength": 1200,
+            "minLength": 1,
+            "title": "Practical Next Step",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Risks",
+            "type": "array"
+          },
+          "suitability": {
+            "enum": [
+              "consider",
+              "assessment_required",
+              "not_recommended"
+            ],
+            "title": "Suitability",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "approach",
+          "rationale",
+          "suitability",
+          "evidence_summary",
+          "risks",
+          "practical_next_step",
+          "evidence_ids"
+        ],
+        "title": "AlternativeMethod",
+        "type": "object"
+      },
       "AnswerOption": {
         "additionalProperties": false,
         "properties": {
@@ -791,6 +867,55 @@
         "title": "Decision",
         "type": "object"
       },
+      "DiscoveryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "default": "",
+            "enum": [
+              "",
+              "Stockholm",
+              "G\u00f6teborg",
+              "Malm\u00f6",
+              "Uppsala",
+              "V\u00e4ster\u00e5s",
+              "\u00d6rebro",
+              "Link\u00f6ping",
+              "Helsingborg",
+              "J\u00f6nk\u00f6ping",
+              "Lund",
+              "Ume\u00e5",
+              "Lule\u00e5"
+            ],
+            "title": "City",
+            "type": "string"
+          },
+          "services": {
+            "default": true,
+            "title": "Services",
+            "type": "boolean"
+          },
+          "topic": {
+            "enum": [
+              "nutrition",
+              "body_composition",
+              "skin_options",
+              "laser_skin",
+              "pigmentation",
+              "hair_options",
+              "scalp_care",
+              "hair_removal"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "title": "DiscoveryRequest",
+        "type": "object"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -1086,6 +1211,8 @@
               "experience",
               "schedule",
               "nutrition",
+              "approach",
+              "services",
               "health",
               "constraints",
               "routine",
@@ -1209,6 +1336,16 @@
             "title": "Assessment Count",
             "type": "integer"
           },
+          "discovery_request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscoveryRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "idea_edit": {
             "anyOf": [
               {
@@ -1232,6 +1369,14 @@
               "$ref": "#/components/schemas/WorkingMessage"
             },
             "title": "Messages",
+            "type": "array"
+          },
+          "method_reports": {
+            "items": {
+              "$ref": "#/components/schemas/MethodReport"
+            },
+            "maxItems": 8,
+            "title": "Method Reports",
             "type": "array"
           },
           "objective": {
@@ -1637,6 +1782,12 @@
             "title": "Slot",
             "type": "string"
           },
+          "storage": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Storage",
+            "type": "string"
+          },
           "substitution_note": {
             "maxLength": 400,
             "title": "Substitution Note",
@@ -1786,6 +1937,113 @@
         "title": "MealSwap",
         "type": "object"
       },
+      "MethodReport": {
+        "additionalProperties": false,
+        "properties": {
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/AlternativeMethod"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "browse_url": {
+            "title": "Browse Url",
+            "type": "string"
+          },
+          "city": {
+            "default": "",
+            "enum": [
+              "",
+              "Stockholm",
+              "G\u00f6teborg",
+              "Malm\u00f6",
+              "Uppsala",
+              "V\u00e4ster\u00e5s",
+              "\u00d6rebro",
+              "Link\u00f6ping",
+              "Helsingborg",
+              "J\u00f6nk\u00f6ping",
+              "Lund",
+              "Ume\u00e5",
+              "Lule\u00e5"
+            ],
+            "title": "City",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchSource"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchSource"
+            },
+            "title": "Listings",
+            "type": "array"
+          },
+          "services_searched": {
+            "default": false,
+            "title": "Services Searched",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "limited",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "topic": {
+            "enum": [
+              "nutrition",
+              "body_composition",
+              "skin_options",
+              "laser_skin",
+              "pigmentation",
+              "hair_options",
+              "scalp_care",
+              "hair_removal"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic",
+          "created_at",
+          "status",
+          "summary",
+          "browse_url"
+        ],
+        "title": "MethodReport",
+        "type": "object"
+      },
       "Milestone": {
         "additionalProperties": false,
         "properties": {
@@ -1824,6 +2082,79 @@
           "assumptions"
         ],
         "title": "Milestone",
+        "type": "object"
+      },
+      "NutritionPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "energy_explanation": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Energy Explanation",
+            "type": "string"
+          },
+          "energy_strategy": {
+            "enum": [
+              "balanced",
+              "deficit_discussion",
+              "clinician_review"
+            ],
+            "title": "Energy Strategy",
+            "type": "string"
+          },
+          "focus": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Focus",
+            "type": "string"
+          },
+          "meal_pattern": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Meal Pattern",
+            "type": "string"
+          },
+          "portion_approach": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Portion Approach",
+            "type": "string"
+          },
+          "prep_sessions": {
+            "items": {
+              "$ref": "#/components/schemas/PrepSession"
+            },
+            "maxItems": 7,
+            "title": "Prep Sessions",
+            "type": "array"
+          },
+          "priority": {
+            "default": "balanced",
+            "enum": [
+              "meal_first",
+              "balanced",
+              "activity_first"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "substitutions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Substitutions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "focus",
+          "energy_strategy",
+          "energy_explanation",
+          "meal_pattern",
+          "portion_approach"
+        ],
+        "title": "NutritionPlan",
         "type": "object"
       },
       "PhotoNotes": {
@@ -1941,6 +2272,16 @@
             "maxItems": 6,
             "title": "Milestones",
             "type": "array"
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NutritionPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "priority": {
             "default": "",
@@ -2144,6 +2485,61 @@
           "effort"
         ],
         "title": "Preferences",
+        "type": "object"
+      },
+      "PrepSession": {
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "meal_keys": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 28,
+            "title": "Meal Keys",
+            "type": "array"
+          },
+          "minutes": {
+            "maximum": 180.0,
+            "minimum": 0.0,
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "steps": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Steps",
+            "type": "array"
+          },
+          "storage": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Storage",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "minutes",
+          "title",
+          "steps",
+          "storage"
+        ],
+        "title": "PrepSession",
         "type": "object"
       },
       "ProfileEdit": {
@@ -3083,7 +3479,8 @@
               "continue",
               "plan",
               "retry",
-              "assess"
+              "assess",
+              "research"
             ],
             "title": "Action",
             "type": "string"
@@ -3152,6 +3549,52 @@
               }
             ],
             "title": "Question Id"
+          },
+          "research_city": {
+            "default": "",
+            "enum": [
+              "",
+              "Stockholm",
+              "G\u00f6teborg",
+              "Malm\u00f6",
+              "Uppsala",
+              "V\u00e4ster\u00e5s",
+              "\u00d6rebro",
+              "Link\u00f6ping",
+              "Helsingborg",
+              "J\u00f6nk\u00f6ping",
+              "Lund",
+              "Ume\u00e5",
+              "Lule\u00e5"
+            ],
+            "title": "Research City",
+            "type": "string"
+          },
+          "research_services": {
+            "default": true,
+            "title": "Research Services",
+            "type": "boolean"
+          },
+          "research_topic": {
+            "anyOf": [
+              {
+                "enum": [
+                  "nutrition",
+                  "body_composition",
+                  "skin_options",
+                  "laser_skin",
+                  "pigmentation",
+                  "hair_options",
+                  "scalp_care",
+                  "hair_removal"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Research Topic"
           },
           "revision": {
             "minimum": 0.0,

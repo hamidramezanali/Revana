@@ -76,7 +76,18 @@ def body_guidance(journey: Journey) -> dict:
                 estimate = None
         except ValueError:
             pass
+    weight_discussion = bool(
+        bmi is not None
+        and bmi >= 25
+        and not missing
+        and body.pregnancy == "not_applicable"
+        and not reasons
+    )
     return {
+        "weight_management_appropriate_to_discuss": weight_discussion,
+        "energy_strategy": "A modest energy deficit can be discussed with balanced meals; no numerical calorie prescription is authorized."
+        if weight_discussion
+        else "Use balanced, satisfying meals. Resolve missing health context or seek individualized advice before pursuing a deficit.",
         "bmi_screening_only": bmi,
         "constraints": reasons,
         "maintenance_estimate": estimate,

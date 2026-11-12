@@ -158,3 +158,60 @@ def test_roles_reach_actual_provider_instructions_and_context(monkeypatch):
         json.loads(call["input"])["current_request"] == "Synthetic request" for call in captured
     )
     get_settings.cache_clear()
+
+
+def test_domain_filters_apply_to_tool_and_returned_citations(monkeypatch):
+    monkeypatch.setenv("REVANA_OPENAI_API_KEY", "synthetic-key")
+    monkeypatch.setenv("REVANA_RESEARCH_ENABLED", "true")
+    get_settings.cache_clear()
+    captured = []
+    original = httpx.Client
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "output": [
+                    {"type": "web_search_call", "status": "completed"},
+                    {
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": "Public results.",
+                                "annotations": [
+                                    {
+                                        "type": "url_citation",
+                                        "url": "https://www.bokadirekt.se/places/example-123",
+                                        "title": "Listing",
+                                    },
+                                    {
+                                        "type": "url_citation",
+                                        "url": "https://bokadirekt.se.evil.invalid/places/fake",
+                                        "title": "Wrong host",
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            },
+        )
+
+    monkeypatch.setattr(
+        research.httpx,
+        "Client",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = research.retrieve(
+        ResearchIntent(
+            needed=True, query="public laser consultations in Stockholm", kind="service"
+        ),
+        allowed_domains=["bokadirekt.se"],
+    )
+    assert captured[0]["tools"][0]["filters"] == {"allowed_domains": ["bokadirekt.se"]}
+    assert len(result.sources) == 1
+    assert result.sources[0].url == "https://www.bokadirekt.se/places/example-123"
+    get_settings.cache_clear()
