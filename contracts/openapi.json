@@ -2574,6 +2574,7 @@
             "type": "integer"
           },
           "meal_keys": {
+            "description": "Optional exact references to actual meals: '<day>-<slot>', day 0=Monday through 6=Sunday, slot breakfast/lunch/dinner/snack; e.g. '0-lunch'. Never use recipe titles or weekday names. Use [] if the linkage is uncertain.",
             "items": {
               "type": "string"
             },

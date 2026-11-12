@@ -137,3 +137,72 @@ def test_one_continuous_timed_activity_needs_no_interset_rest(workspace):
     draft.actions[0].exercises[0].duration_minutes = None
     draft.actions[0].exercises[0].repetitions = "5 controlled repetitions"
     assert any("rest_seconds" in issue for issue in plan_issues(journey, draft))
+
+
+def test_optional_prep_links_are_not_invented_or_a_whole_plan_failure():
+    from test_agent import example_plan
+
+    from app.agent_models import NutritionPlan, PrepSession
+    from app.coaching_graph import normalize_meal_links
+
+    draft = example_plan()
+    before = draft.actions[0].model_dump()
+    draft.nutrition = NutritionPlan(
+        focus="Lunch prep",
+        energy_strategy="balanced",
+        energy_explanation="Balanced meals",
+        meal_pattern="Meals",
+        portion_approach="Satisfying portions",
+        prep_sessions=[
+            PrepSession(
+                day=0,
+                minutes=10,
+                title="Prepare ingredients",
+                steps=["Prepare your ingredients."],
+                storage="Follow chilled-food guidance.",
+                meal_keys=["monday-lunch", "0-lunch"],
+            )
+        ],
+    )
+    normalize_meal_links(draft)
+    assert draft.nutrition.prep_sessions[0].meal_keys == []
+    assert draft.actions[0].model_dump() == before
+    assert draft.meals == []
+    assert any("could not be verified" in text for text in draft.uncertainties)
+
+
+def test_unmatched_optional_meal_links_do_not_block_reviewed_proposal(workspace, monkeypatch):
+    from app.agent_models import NutritionPlan, PrepSession
+
+    client, _ = workspace
+    j, h, _ = create(client, "Improve food preparation")
+    original = agent_provider.generate
+
+    def generate(task, context, output, **kwargs):
+        result = original(task, context, output, **kwargs)
+        if output is WorkspaceDraft:
+            result.nutrition = NutritionPlan(
+                focus="Prep",
+                energy_strategy="balanced",
+                energy_explanation="Balanced meals",
+                meal_pattern="Meals",
+                portion_approach="Satisfying portions",
+                prep_sessions=[
+                    PrepSession(
+                        day=0,
+                        minutes=10,
+                        title="Prepare ingredients",
+                        steps=["Prepare ingredients."],
+                        storage="Keep chilled.",
+                        meal_keys=["monday-lunch"],
+                    )
+                ],
+            )
+        return result
+
+    monkeypatch.setattr(agent_provider, "generate", generate)
+    j, events = run(client, j, h)
+    assert events[-1]["type"] == "complete", events
+    assert j["proposal"]["nutrition"]["prep_sessions"][0]["meal_keys"] == []
+    assert any("could not be verified" in text for text in j["proposal"]["uncertainties"])
+    assert not j["plans"]

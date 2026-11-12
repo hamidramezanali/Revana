@@ -260,3 +260,11 @@ Validation messages identify the exercise/action and missing field for targeted 
 The planner output allowance is 12,000 tokens for a full weekly artifact, while short
 assessment cards keep their smaller allowance. This is output headroom, not a required
 plan length or a change to the selected model.
+
+
+Optional preparation-to-meal references now describe their exact day-slot format in the
+provider schema/prompt. Application code omits unmatched references and adds a visible
+uncertainty before independent review. It never invents a meal, remaps an ambiguous
+reference or claims preparation coverage for an unlinked meal. Missing optional links
+alone no longer block the whole plan; ingredient, allergy, timing and safety validation
+remain required. Empty linkage shows a preparation-review message, not a false count.

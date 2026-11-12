@@ -433,7 +433,11 @@ class PrepSession(Model):
     title: str = Field(min_length=1, max_length=150)
     steps: list[str] = Field(min_length=1, max_length=12)
     storage: str = Field(min_length=1, max_length=1000)
-    meal_keys: list[str] = Field(default_factory=list, max_length=28)
+    meal_keys: list[str] = Field(
+        default_factory=list,
+        max_length=28,
+        description="Optional exact references to actual meals: '<day>-<slot>', day 0=Monday through 6=Sunday, slot breakfast/lunch/dinner/snack; e.g. '0-lunch'. Never use recipe titles or weekday names. Use [] if the linkage is uncertain.",
+    )
 
 
 class NutritionPlan(Model):

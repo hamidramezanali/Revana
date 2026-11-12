@@ -74,7 +74,9 @@ export function MealPreparation({ plan }: { plan: Plan }) {
                     {session.storage}
                   </p>
                   <small>
-                    Supplies {session.meal_keys.length} scheduled meals
+                    {session.meal_keys.length
+                      ? `Linked to ${session.meal_keys.length} scheduled meals`
+                      : "Review the preparation instructions to choose suitable meals."}
                   </small>
                 </details>
               ))}

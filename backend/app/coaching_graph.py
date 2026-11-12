@@ -64,6 +64,25 @@ def domains_node(state: State):
     }
 
 
+def normalize_meal_links(draft):
+    """Drop unverified optional cross-references; never invent a meal or prep coverage."""
+    if not isinstance(draft, Plan) or not draft.nutrition:
+        return
+    valid = {f"{meal.day}-{meal.slot}" for meal in draft.meals}
+    removed = False
+    for session in draft.nutrition.prep_sessions:
+        checked = list(dict.fromkeys(key for key in session.meal_keys if key in valid))
+        removed |= checked != session.meal_keys
+        session.meal_keys = checked
+    if removed:
+        note = "Some preparation-to-meal links were omitted because they could not be verified. Check which scheduled meals each prep session supplies."
+        if note not in draft.uncertainties:
+            if len(draft.uncertainties) < 8:
+                draft.uncertainties.append(note)
+            else:
+                draft.uncertainties[-1] += " " + note
+
+
 def planner_node(state: State):
     journey = state["journey"]
     resume = state["context"].pop("_resume_draft", None)
@@ -96,6 +115,7 @@ def planner_node(state: State):
         from app.idea_actions import constrain
 
         draft = constrain(draft, state["context"])
+    normalize_meal_links(draft)
     sink = workflow._event_sink.get()
     if sink:
         sink({"type": "draft", "plan": draft.model_dump(mode="json")})
@@ -288,6 +308,7 @@ def correction_node(state: State):
         from app.idea_actions import constrain
 
         draft = constrain(draft, state["context"])
+    normalize_meal_links(draft)
     sink = workflow._event_sink.get()
     if sink:
         sink({"type": "draft", "plan": draft.model_dump(mode="json")})

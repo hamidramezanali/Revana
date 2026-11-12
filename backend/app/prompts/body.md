@@ -34,3 +34,8 @@ Batch-prep minutes count once in prep_sessions; meal.preparation_minutes is addi
 assembly/reheating time, and actions must not duplicate the same batch-prep work.
 The small food catalog may not represent a restriction; say so rather than inventing IDs.
 Never present a body-contouring service, laser or massage as a weight-loss substitute.
+
+Batch-prep meal_keys are OPTIONAL exact cross-references to actual meals in this output:
+"0-lunch" means the meal with day=0 and slot="lunch". Day is 0=Monday through 6=Sunday.
+Use only breakfast/lunch/dinner/snack as slots. Do not use recipe IDs, titles, weekday
+names or link to meals not in meals. Use [] if unsure; keep the prep instructions clear.
