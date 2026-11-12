@@ -1,0 +1,340 @@
+.body-goals-editor {
+  border: 1px solid #42464c;
+  border-radius: 14px;
+  padding: 20px;
+  background: linear-gradient(145deg, #272c32, #22262c);
+  margin-bottom: 20px;
+}
+.body-goals-editor h2 {
+  font-size: 23px;
+  line-height: 1.25;
+  margin: 6px 0 10px;
+  color: #f4f3eb;
+}
+.body-goals-editor p {
+  color: #c2c8ce;
+  line-height: 1.6;
+  font-size: 14px;
+}
+.body-direction,
+.body-area-detail {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+  min-width: 0;
+}
+.body-direction legend,
+.body-area-detail legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e7dc;
+  margin-bottom: 10px;
+}
+.body-direction {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.body-direction button,
+.body-area-list button,
+.body-side button,
+.body-priority {
+  border: 1px solid #51585c;
+  background: #252a30;
+  border-radius: 8px;
+  color: #d4d9db;
+  padding: 9px 11px;
+  font-size: 13px;
+  min-height: 42px;
+  cursor: pointer;
+}
+.body-goals-editor button[aria-pressed="true"] {
+  background: #3b4935;
+  border-color: #a9bc8e;
+  color: #e5efcd;
+}
+.body-map-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(190px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.body-map-panel {
+  border: 1px solid #3e454c;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 35%, #343e40, #1c2228 75%);
+  padding: 14px 12px 8px;
+  position: relative;
+}
+.body-side {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.body-side button {
+  min-height: 38px;
+  padding: 7px 20px;
+}
+.body-map {
+  display: block;
+  width: 100%;
+  height: 360px;
+  margin: 12px auto 0;
+  overflow: visible;
+}
+.body-neutral {
+  fill: #5e6b70;
+  stroke: #929e9e;
+  stroke-width: 1;
+}
+.body-region {
+  fill: #718185;
+  stroke: #b2bdb8;
+  stroke-width: 1.2;
+  cursor: pointer;
+  transition: fill 0.15s;
+}
+.body-region:hover,
+.body-region:focus-visible {
+  fill: #a6b4a0;
+  stroke: #f3f2d5;
+  stroke-width: 2.8;
+  outline: none;
+}
+.body-region.selected {
+  fill: #acbd8b;
+  stroke: #e1edc5;
+  stroke-width: 1.4;
+}
+.body-region.editing {
+  fill: #c9dca8;
+  stroke: #fcffe9;
+  stroke-width: 2;
+}
+.body-map-caption {
+  text-align: center;
+  font-size: 11px !important;
+  margin: 0 !important;
+  color: #aab6b9 !important;
+}
+.body-subheading {
+  font-weight: 600;
+  color: #edf0e7 !important;
+  margin: 0 0 10px !important;
+}
+.body-area-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.body-area-list button {
+  font-size: 12px;
+  padding: 7px 10px;
+}
+.body-map-help {
+  font-size: 12px !important;
+  margin: 10px 0 !important;
+}
+.body-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.body-selected > div {
+  display: flex;
+  border: 1px solid #4b525a;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #262b30;
+}
+.body-selected > div.active {
+  border-color: #afc093;
+}
+.body-selected button {
+  border: 0;
+  color: #ecf0e5;
+  background: transparent;
+  cursor: pointer;
+}
+.body-selected button:first-child {
+  flex: 1;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.body-selected small {
+  display: block;
+  color: #b7c2b0;
+  font-weight: 400;
+  font-size: 12px;
+  margin-top: 3px;
+}
+.body-selected .body-remove {
+  width: 42px;
+  font-size: 20px;
+  color: #c9beb8;
+}
+.body-area-detail {
+  background: #1c2228;
+  border: 1px solid #51594c;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 14px;
+}
+.body-area-detail legend {
+  padding: 0 5px;
+}
+.body-area-detail select,
+.body-area-detail textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #5a6265;
+  background: #272d33;
+  color: #f0f0e9;
+  border-radius: 7px;
+  padding: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+.body-area-detail label {
+  display: block;
+  font-size: 12px;
+  color: #c0c9c8;
+  margin: 14px 0 10px;
+}
+.body-area-detail textarea {
+  display: block;
+  margin-top: 7px;
+  min-height: 76px;
+  resize: vertical;
+}
+.body-priority {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+}
+.body-reality {
+  padding: 12px;
+  border-left: 3px solid #adbd91;
+  background: #30382f;
+  font-size: 12px !important;
+  border-radius: 0 7px 7px 0;
+}
+.body-reality strong {
+  display: block;
+  color: #e3ecd1;
+}
+.body-goals-editor footer {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 18px;
+}
+.body-goals-editor footer small {
+  flex-basis: 100%;
+  color: #aeb8ba;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.body-goals-summary {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #4b5547;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+  background: #293028;
+}
+.body-goals-summary small,
+.body-goals-summary strong {
+  display: block;
+}
+.body-goals-summary small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #bbc7a9;
+  margin-bottom: 5px;
+}
+.body-goals-summary strong {
+  color: #e9efd9;
+}
+.body-goals-summary p {
+  font-size: 12px;
+  color: #c6cdbf;
+  line-height: 1.6;
+  margin: 5px 0 0;
+}
+.body-map-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid #42484d;
+  background: #2c342b;
+  color: #d9e7bf;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+.body-map-entry span {
+  font-size: 11px;
+  color: #c0cbb5;
+}
+.body-goals-editor button:focus-visible,
+.body-goals-editor select:focus-visible,
+.body-goals-editor textarea:focus-visible,
+.body-map-entry:focus-visible {
+  outline: 2px solid #d2e8a7;
+  outline-offset: 3px;
+}
+.body-goals-editor button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (max-width: 640px) {
+  .body-goals-editor {
+    padding: 16px;
+  }
+  .body-map-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .body-map {
+    height: 340px;
+  }
+  .body-map-panel {
+    padding: 12px;
+  }
+  .body-map-caption {
+    margin-top: -3px !important;
+  }
+  .body-area-list button {
+    min-height: 44px;
+  }
+  .body-direction button {
+    flex: 1 1 42%;
+  }
+  .body-goals-editor footer > button {
+    flex: 1 1 100%;
+    min-height: 44px;
+  }
+  .body-goals-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .body-goals-editor h2 {
+    font-size: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .body-region {
+    transition: none;
+  }
+}

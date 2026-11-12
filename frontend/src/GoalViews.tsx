@@ -10,6 +10,7 @@ import { BodyEditor, ProgressPanel, Milestones } from "./CareWorkspace";
 import { WeeklyProgramme } from "./WeeklyProgramme";
 import { MealPreparation } from "./MealPreparation";
 import { MethodDiscovery, type Topic, type City } from "./MethodDiscovery";
+import { BodyGoals, BodyGoalsSummary } from "./BodyGoals";
 import { CareProfile } from "./CareProfile";
 export type View = "overview" | "plan" | "progress" | "profile";
 type Props = {
@@ -32,6 +33,7 @@ type Props = {
   onAssess: () => void;
   onOpenAction: (id: string) => void;
   onRebalance: () => void;
+  onBodyContinue: () => void;
   onResearch: (topic: Topic, city: City, services: boolean) => void;
 };
 export function GoalArtifact({
@@ -55,6 +57,7 @@ export function GoalArtifact({
   onOpenAction,
   onResearch,
   onRebalance,
+  onBodyContinue,
 }: Props) {
   const accepted = j?.plans.at(-1)?.plan;
   const sourcePlan = draft || j?.proposal || accepted;
@@ -157,6 +160,15 @@ export function GoalArtifact({
             </div>
             {view === "overview" && (
               <>
+                {j.context.goals.includes("body") && (
+                  <BodyGoals
+                    journey={j}
+                    busy={busy}
+                    onMutate={onMutate}
+                    onContinue={onBodyContinue}
+                  />
+                )}
+
                 <section className="workspace-card">
                   <h2>The outcome</h2>
                   <p>{workspace?.objective || j.context.description}</p>
@@ -223,6 +235,13 @@ export function GoalArtifact({
             )}
             {view === "plan" && (
               <>
+                {j.context.goals.includes("body") && (
+                  <BodyGoalsSummary
+                    goals={j.body_goals}
+                    onEdit={() => onView("overview")}
+                  />
+                )}
+
                 {!plan?.programme && (
                   <section className="programme-upgrade">
                     <strong>Build a complete weekly programme</strong>

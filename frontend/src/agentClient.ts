@@ -6,14 +6,14 @@ export const savedToken = () => localStorage.getItem(tokenKey);
 
 export const forgetToken = () => localStorage.removeItem(tokenKey);
 
-export async function agentRequest<T>(
+async function apiRequest<T>(
   path: string,
   body?: unknown,
   method?: string,
 ): Promise<T> {
   const token = savedToken();
 
-  const response = await fetch(`/v1/agent/${path}`, {
+  const response = await fetch(`/v1/${path}`, {
     method: method ?? (body === undefined ? "GET" : "POST"),
 
     headers: {
@@ -42,6 +42,21 @@ export async function agentRequest<T>(
   }
 
   return response.status === 204 ? (undefined as T) : response.json();
+}
+
+export function agentRequest<T>(
+  path: string,
+  body?: unknown,
+  method?: string,
+): Promise<T> {
+  return apiRequest<T>(`agent/${path}`, body, method);
+}
+export function workspaceRequest<T>(
+  path: string,
+  body?: unknown,
+  method?: string,
+): Promise<T> {
+  return apiRequest<T>(`workspace/${path}`, body, method);
 }
 
 export async function startJourney(

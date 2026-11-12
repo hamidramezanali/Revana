@@ -536,6 +536,15 @@ export default function GoalWorkspace() {
         onError={setError}
         onIdea={(action, intent) => void ideaAction(action, intent)}
         expandedId={expandedId}
+        onBodyContinue={() => {
+          setMobileAgent(true);
+          if (current.current?.plans.length) {
+            setText(
+              "Use my saved body goals and main priority to propose a coordinated food and activity plan. Reuse what you know, clarify only what changes the plan, and preserve my health constraints.",
+            );
+            composer.current?.focus();
+          }
+        }}
         onRebalance={() => {
           if (current.current) {
             setMobileAgent(true);
@@ -584,6 +593,24 @@ export default function GoalWorkspace() {
           </div>
           <span>{working ? `${elapsed}s` : "Goal → plan → progress"}</span>
         </header>
+        {journey?.context.goals.includes("body") && (
+          <button
+            className="body-map-entry"
+            disabled={blocked}
+            onClick={() => {
+              setView("overview");
+              setMobileAgent(false);
+            }}
+          >
+            ◎ Body goals{" "}
+            <span>
+              {journey.body_goals.areas.length
+                ? `${journey.body_goals.areas.length} areas selected`
+                : "Choose areas on the body map"}{" "}
+              →
+            </span>
+          </button>
+        )}
         <div className="agent-transcript">
           <p className="agent-intro">
             {journey
