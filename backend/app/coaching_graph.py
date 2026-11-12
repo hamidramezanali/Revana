@@ -188,8 +188,14 @@ def plan_issues(journey, draft):
                     exercise.sets and exercise.repetitions.strip()
                 ):
                     problems.append("Every exercise needs sets and repetitions or a duration.")
-                if exercise.sets and exercise.rest_seconds is None:
-                    problems.append("Provide rest intervals for resistance exercises.")
+                if (
+                    exercise.sets
+                    and (exercise.sets > 1 or not exercise.duration_minutes)
+                    and exercise.rest_seconds is None
+                ):
+                    problems.append(
+                        f"Provide rest intervals: exercise '{exercise.name}' in action '{action.id}' needs rest_seconds for its sets. Use an explicit supported interval (or zero only if no rest is intended); do not omit it."
+                    )
             if (
                 action.minutes is not None
                 and sum(e.duration_minutes or 0 for e in action.exercises) > action.minutes

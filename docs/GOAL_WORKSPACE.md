@@ -252,3 +252,11 @@ boundaries, not token-level continuation or a background job.
 Stage-specific timeout messages distinguish building a plan from checking it. Saved
 answers are retained in both cases. No change to the selected model or health safeguards.
 See [Vercel service duration configuration](https://vercel.com/kb/guide/vercel-services-fluid-compute).
+
+
+A single continuous timed activity (one set) does not require an inter-set rest value.
+Repeated sets and repetition-based resistance exercises still require explicit rest.
+Validation messages identify the exercise/action and missing field for targeted repair.
+The planner output allowance is 12,000 tokens for a full weekly artifact, while short
+assessment cards keep their smaller allowance. This is output headroom, not a required
+plan length or a change to the selected model.

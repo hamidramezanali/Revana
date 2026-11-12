@@ -98,3 +98,42 @@ def test_role_budgets_respect_whole_run_deadline(monkeypatch):
     finally:
         workflow._deadline.reset(token)
         get_settings.cache_clear()
+
+
+def test_one_continuous_timed_activity_needs_no_interset_rest(workspace):
+    from test_agent import example_plan
+
+    from app.agent_models import Exercise, WeeklyProgramme
+    from app.coaching_graph import plan_issues
+
+    client, _ = workspace
+    _, _, token = create(client, "Improve activity habits")
+    journey = agent_store.read(token)
+    draft = example_plan()
+    draft.programme = WeeklyProgramme(
+        weeks=4,
+        outcome="Comfortable activity",
+        deadline_assessment="Review tolerability.",
+        schedule_notes="Rest as needed.",
+        success_signals=["Comfort"],
+        review_rule="Review next week.",
+        training_included=True,
+    )
+    draft.actions[0].minutes = 10
+    draft.actions[0].exercises = [
+        Exercise(
+            name="Comfortable continuous walk",
+            sets=1,
+            duration_minutes=10,
+            instructions="Choose a comfortable route.",
+            easier_alternative="Shorten if needed.",
+            progression="Advance only if comfortable.",
+        )
+    ]
+    assert not plan_issues(journey, draft)
+    draft.actions[0].exercises[0].sets = 2
+    assert any("rest_seconds" in issue for issue in plan_issues(journey, draft))
+    draft.actions[0].exercises[0].sets = 1
+    draft.actions[0].exercises[0].duration_minutes = None
+    draft.actions[0].exercises[0].repetitions = "5 controlled repetitions"
+    assert any("rest_seconds" in issue for issue in plan_issues(journey, draft))
