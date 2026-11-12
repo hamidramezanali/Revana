@@ -1418,6 +1418,16 @@
             "title": "Id",
             "type": "string"
           },
+          "performance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunPerformance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "started_at": {
             "format": "date-time",
             "title": "Started At",
@@ -3016,6 +3026,71 @@
         "title": "ProgressionStep",
         "type": "object"
       },
+      "ProviderTiming": {
+        "additionalProperties": false,
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "elapsed_ms": {
+            "minimum": 0.0,
+            "title": "Elapsed Ms",
+            "type": "number"
+          },
+          "input_chars": {
+            "minimum": 0.0,
+            "title": "Input Chars",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_chars": {
+            "minimum": 0.0,
+            "title": "Output Chars",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "role": {
+            "enum": [
+              "coach",
+              "planner",
+              "reviewer",
+              "researcher"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "elapsed_ms",
+          "input_chars",
+          "output_chars",
+          "completed"
+        ],
+        "title": "ProviderTiming",
+        "type": "object"
+      },
       "Question": {
         "additionalProperties": false,
         "properties": {
@@ -3384,6 +3459,46 @@
           "revision"
         ],
         "title": "RevisionRequest",
+        "type": "object"
+      },
+      "RunPerformance": {
+        "additionalProperties": false,
+        "properties": {
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderTiming"
+            },
+            "title": "Calls",
+            "type": "array"
+          },
+          "context_ms": {
+            "minimum": 0.0,
+            "title": "Context Ms",
+            "type": "number"
+          },
+          "storage_ms": {
+            "minimum": 0.0,
+            "title": "Storage Ms",
+            "type": "number"
+          },
+          "storage_operations": {
+            "minimum": 0.0,
+            "title": "Storage Operations",
+            "type": "integer"
+          },
+          "total_ms": {
+            "minimum": 0.0,
+            "title": "Total Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "total_ms",
+          "storage_ms",
+          "storage_operations",
+          "context_ms"
+        ],
+        "title": "RunPerformance",
         "type": "object"
       },
       "RunStep": {

@@ -148,3 +148,16 @@ All model stages receive these preferences through workflow.context_for. Do not 
 fat percentage, metabolism, physiology or calorie needs from a silhouette, promise
 regional fat loss or silently replace an accepted plan. Measurements/progress trends
 and silhouette variants are later scope. See GOAL_WORKSPACE.md.
+
+
+## Performance boundaries (2026-11-12)
+
+Read docs/PERFORMANCE.md for current measurements and caveats. Keep provider-only compact
+formats separate from persisted/API plans: unique recipes expand losslessly; selected
+edits and corrections merge in application code before full independent review. Never
+trim clinical reports, fixed meal quantities/schedules or photo/answer provenance merely
+to shrink prompts. Numeric diagnostics must not contain prompts, keys, answers, provider
+text or private reasoning. Do not trade validation or cancellation/CAS for latency.
+Use scripts/benchmark_workspace.py --live deliberately with synthetic data only; compare
+successful operations and record provider variability instead of claiming an SLA from
+one run. The model and fail-safe timeouts remain unchanged.

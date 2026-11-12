@@ -306,3 +306,15 @@ continuation at 360/390px and desktop. No page overflow or browser errors in che
 views. These verify wiring and UI, not live-model recommendation quality for this new
 feature. Shape variants, body measurements/trend comparisons and outcome visualization
 are later releases; no visual prediction is implemented.
+
+
+## Latency optimization and run timing (2026-11-12)
+
+Single-idea edits now request one Action; full-plan corrections request a typed patch,
+not a second complete plan. Initial weekly plans use unique recipes plus a schedule on
+the provider wire, expanded into the unchanged public plan contract. Provider contexts
+remove redundant plan copies while retaining health reports, question provenance,
+fixed food quantities/schedules, feedback and independent whole-plan review. Stage
+completion writes are coalesced with existing checkpoints, preserving lease/CAS checks.
+The agent's collapsed Last run panel shows numeric stage/storage/context timings.
+See [performance methodology, limits and reproduction](PERFORMANCE.md).

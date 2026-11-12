@@ -194,6 +194,7 @@ def review(journey: Journey, context: dict, draft) -> ReviewResult:
         "draft": draft.model_dump(mode="json"),
         "actions_to_check": [a.model_dump() for a in actions.values()],
         "research_context": journey.workflow.research.model_dump(mode="json"),
+        "_max_output_tokens": min(5000, 1800 + 150 * len(actions)),
     }
     journey.workflow.stages.append("reviewer")
     result = stage(

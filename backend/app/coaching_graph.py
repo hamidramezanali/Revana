@@ -83,6 +83,55 @@ def normalize_meal_links(draft):
                 draft.uncertainties[-1] += " " + note
 
 
+def generate_draft(state, context, task):
+    if state["output"].__name__ == "WorkspaceDraft" and context.get("selected_idea"):
+        from app.agent_models import WorkspaceDraft
+        from app.planning_wire import IdeaRefinement
+
+        edit = context["selected_idea"]
+        result = workflow.stage(
+            "planner",
+            "[selected_idea] Follow the specialized single-action task. Return only the selected action under its original ID.",
+            {**context, "_max_output_tokens": 4500},
+            IdeaRefinement,
+        )
+        if result.action.id != edit["action_id"]:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                502, "The agent returned a different idea. Your saved plan is unchanged; retry."
+            )
+        base = dict(edit["base"])
+        base["actions"] = [
+            result.action.model_dump(mode="json") if a["id"] == edit["action_id"] else a
+            for a in base["actions"]
+        ]
+        return WorkspaceDraft.model_validate(
+            {
+                **base,
+                "reply": result.reply,
+                "facts": result.facts,
+                "conflicts": result.conflicts,
+                "clarification": None,
+            }
+        )
+    if (
+        state["output"].__name__ == "WorkspaceDraft"
+        and context.get("previous_draft")
+        and context.get("reviewer_correction")
+    ):
+        from app.planning_wire import PlanRepair, apply_repair
+
+        patch = workflow.stage(
+            "planner",
+            "[plan_repair] Return only the changes required by reviewer_correction as PlanRepair.",
+            {**context, "_max_output_tokens": 7000},
+            PlanRepair,
+        )
+        return apply_repair(context["previous_draft"], patch)
+    return workflow.stage("planner", task, context, state["output"])
+
+
 def planner_node(state: State):
     journey = state["journey"]
     resume = state["context"].pop("_resume_draft", None)
@@ -90,7 +139,7 @@ def planner_node(state: State):
         draft = state["output"].model_validate(resume)
     else:
         journey.workflow.stages.append("planner")
-        draft = workflow.stage("planner", state["task"], state["context"], state["output"])
+        draft = generate_draft(state, state["context"], state["task"])
     if isinstance(draft, SuggestionBatch):
         from uuid import uuid4
 
@@ -283,7 +332,7 @@ def correction_node(state: State):
         },
     }
     # Separate node; never recursively restart the workflow.
-    draft = workflow.stage("planner", updated["task"], updated["context"], state["output"])
+    draft = generate_draft(state, updated["context"], updated["task"])
     if isinstance(draft, SuggestionBatch):
         from uuid import uuid4
 
@@ -318,6 +367,23 @@ def correction_node(state: State):
 def needs_correction(state: State):
     ids = {action.id for action in state["draft"].actions}
     result = state["result"]
+    selected = state["context"].get("selected_idea")
+    if selected and (
+        any(
+            c.action_id != selected["action_id"] and c.status != "compatible"
+            for c in result.action_checks
+        )
+        or (
+            not result.approved
+            and any(
+                c.action_id == selected["action_id"] and c.status == "compatible"
+                for c in result.action_checks
+            )
+        )
+    ):
+        # A single-action patch cannot repair frozen neighbours. Preserve the review;
+        # never spend another planner/reviewer cycle pretending it can.
+        return "finish"
     rejected = not result.approved or any(
         check.action_id in ids and check.status != "compatible" for check in result.action_checks
     )

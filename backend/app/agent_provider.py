@@ -2,11 +2,13 @@
 
 import json
 from importlib.resources import files
+from time import perf_counter
 
 import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
+from app import performance
 from app.config import get_settings
 
 POLICY = files("app").joinpath("prompts/coach.md").read_text(encoding="utf-8")
@@ -19,10 +21,15 @@ def instructions(task: str) -> str:
         if role not in {"coach", "planner", "reviewer", "researcher"}:
             raise ValueError("Unknown workflow stage")
         root = files("app").joinpath("prompts")
+        prompt_name = role
+        if role == "planner" and task.lstrip().startswith("[selected_idea]"):
+            prompt_name = "refinement"
+        elif role == "planner" and task.lstrip().startswith("[plan_repair]"):
+            prompt_name = "repair"
         return (
             root.joinpath("common.md").read_text(encoding="utf-8")
             + "\n"
-            + root.joinpath(f"{role}.md").read_text(encoding="utf-8")
+            + root.joinpath(f"{prompt_name}.md").read_text(encoding="utf-8")
             + "\n"
             + task
         )
@@ -58,8 +65,21 @@ def generate[T: BaseModel](
     context = dict(context)
     timeout = context.pop("_stage_timeout", 45)
     output_limit = min(16000, max(512, int(context.pop("_max_output_tokens", 8000))))
+    from app.agent_models import WorkspaceDraft
+    from app.planning_wire import WeeklyPlanDraft, compact_context, expand_weekly
+
+    role = task.split("]", 1)[0].removeprefix("[stage:")
+    wire_output = (
+        WeeklyPlanDraft if output is WorkspaceDraft and "goal_workspace" in context else output
+    )
+    context = compact_context(context, role)
+    wire_instructions = instructions(task)
+    if wire_output is WeeklyPlanDraft:
+        wire_instructions += "\nOutput each distinct meal recipe once in recipes, then reference its exact recipe_key from meal_schedule for every scheduled day/slot. Do not repeat identical recipe instructions for each day. Return recipes=[] and meal_schedule=[] when meals are not relevant. All other plan details and safety requirements still apply."
+    if role == "reviewer":
+        wire_instructions += "\nReview the complete draft (recipes plus meal_schedule describe all meals), and any additional_actions_to_check. Return concise findings: public_summary up to three sentences, action reasons one sentence, issues only where something needs change. Never repeat the plan."
     try:
-        model_input: str | list = json.dumps(context, ensure_ascii=False)
+        model_input: str | list = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     except (TypeError, ValueError):
         raise HTTPException(
             502, "The coach could not prepare this request. Your saved journey is unchanged; retry."
@@ -77,6 +97,10 @@ def generate[T: BaseModel](
                 ],
             }
         ]
+    started = perf_counter()
+    body = {}
+    parts = []
+    ok = False
     try:
         with httpx.Client(timeout=timeout) as client:
             response = client.post(
@@ -86,14 +110,14 @@ def generate[T: BaseModel](
                     "model": settings.openai_model,
                     "store": False,
                     "max_output_tokens": output_limit,
-                    "instructions": instructions(task),
+                    "instructions": wire_instructions,
                     "input": model_input,
                     "text": {
                         "format": {
                             "type": "json_schema",
-                            "name": output.__name__,
+                            "name": wire_output.__name__,
                             "strict": True,
-                            "schema": strict_schema(output.model_json_schema()),
+                            "schema": strict_schema(wire_output.model_json_schema()),
                         }
                     },
                 },
@@ -109,7 +133,10 @@ def generate[T: BaseModel](
             for content in item.get("content", [])
             if content.get("type") == "output_text"
         ]
-        return output.model_validate_json("".join(parts))
+        parsed = wire_output.model_validate_json("".join(parts))
+        result = expand_weekly(parsed) if wire_output is WeeklyPlanDraft else parsed
+        ok = True
+        return result
     except httpx.HTTPStatusError as error:
         status = error.response.status_code
         if status == 429:
@@ -146,3 +173,13 @@ def generate[T: BaseModel](
             502,
             "The agent could not complete this request. Your saved journey is unchanged; retry.",
         ) from None
+
+    finally:
+        performance.provider(
+            role,
+            started,
+            len(model_input) if isinstance(model_input, str) else len(json.dumps(model_input)),
+            sum(len(part) for part in parts),
+            (body.get("usage", {}) or {}) if isinstance(body, dict) else {},
+            ok,
+        )

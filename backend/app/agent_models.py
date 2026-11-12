@@ -655,7 +655,26 @@ class RunStep(Model):
     status: Literal["working", "done", "failed"]
 
 
+class ProviderTiming(Model):
+    role: Literal["coach", "planner", "reviewer", "researcher"]
+    elapsed_ms: float = Field(ge=0)
+    input_chars: int = Field(ge=0)
+    output_chars: int = Field(ge=0)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    completed: bool
+
+
+class RunPerformance(Model):
+    total_ms: float = Field(ge=0)
+    storage_ms: float = Field(ge=0)
+    storage_operations: int = Field(ge=0)
+    context_ms: float = Field(ge=0)
+    calls: list[ProviderTiming] = Field(default_factory=list)
+
+
 class GoalRun(Model):
+    performance: RunPerformance | None = None
     id: str
     status: Literal["running", "complete", "cancelled", "failed"]
     started_at: datetime

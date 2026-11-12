@@ -42,7 +42,7 @@ are unavailable, leave meals empty and explain what is missing. Do not invent fo
 When meals are not relevant, return meals=[]. Breakfast/lunch/dinner plus optional
 snacks are a structure, not a calorie prescription. Do not force dieting or calorie
 counting on people who do not want it. Gram quantities are starting portions, not a
-medically individualized intake. Keep initial habit count and the combined effort limit.
+medically individualized intake. Keep the combined effort limit; there is no arbitrary habit-count ceiling.
 
 
 ## Full weekly programmes

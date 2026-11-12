@@ -10,6 +10,7 @@ from app import agent_provider, agent_store
 from app.agent_models import ActionCheck, ReviewResult, WorkspaceDraft
 from app.config import get_settings
 from app.main import create_app
+from app.planning_wire import IdeaRefinement, PlanRepair
 
 
 @pytest.fixture
@@ -22,6 +23,16 @@ def workspace(monkeypatch, tmp_path):
 
     def generate(task, context, output, **kwargs):
         calls.append((task, context))
+        if output is PlanRepair:
+            return PlanRepair(changes="Synthetic repair", reply="Adjusted the requested part.")
+        if output is IdeaRefinement:
+            from app.agent_models import Action
+
+            edit = context["selected_idea"]
+            action = next(a for a in edit["base"]["actions"] if a["id"] == edit["action_id"])
+            return IdeaRefinement(
+                action=Action.model_validate(action), reply="Refined the selected idea."
+            )
         if output is WorkspaceDraft:
             return WorkspaceDraft(
                 reply="Start with an achievable meal structure and movement you enjoy.",
@@ -374,12 +385,9 @@ def test_details_unlock_only_selected_idea_and_preserve_surrounding_plan(workspa
 
     def refine(task, context, output, **kwargs):
         value = original(task, context, output, **kwargs)
-        if output is WorkspaceDraft:
-            value.summary = "Attempted unrelated metadata change"
-            value.actions[0].title = "Attempted replacement of original idea"
-            value.actions[
-                0
-            ].detail = "1. Choose a flat route near home.\n2. Walk at a comfortable pace for ten minutes after lunch.\n3. Shorten the route if uncomfortable."
+        if output is IdeaRefinement:
+            value.action.title = "Attempted replacement of original idea"
+            value.action.detail = "1. Choose a flat route near home.\n2. Walk at a comfortable pace for ten minutes after lunch.\n3. Shorten the route if uncomfortable."
         return value
 
     monkeypatch.setattr(agent_provider, "generate", refine)
@@ -461,10 +469,10 @@ def test_selected_improvement_requires_message_and_respects_combined_budget(work
 
     def overbudget(task, context, output, **kwargs):
         result = original(task, context, output, **kwargs)
-        if output is WorkspaceDraft:
+        if output is IdeaRefinement:
             assert context["selected_idea"]["intent"] == "improve"
             assert "Make this longer" in context["current_request"]["message"]
-            result.actions[0].minutes = 30
+            result.action.minutes = 30
         return result
 
     monkeypatch.setattr(agent_provider, "generate", overbudget)

@@ -22,7 +22,7 @@ to highlighted starting points rather than naming an option that may be withheld
 Check body_guidance and progress_review explicitly. Missing information never permits
 invented measurements or calorie targets. Do not approve numerical nutrition unless
 verified by application tools. Check source applicability for the particular claim,
-not just the publisher's reputation. Three initial habits maximum, shared time/budget,
+not just the publisher's reputation. No arbitrary habit-count ceiling; shared time/budget,
 valid weekday schedules and honest milestone assumptions are required. Not attempted
 must not be interpreted as an ineffective intervention. Worsening needs reassessment.
 
@@ -57,3 +57,9 @@ measurements and answers. The existing six-card ceiling still applies across the
 assessment. Do not ask every body area as another questionnaire. Prioritize the selected
 main area, keep food preparation first-class and preserve whole-body balance. Do not
 recommend restrictive loss for a low/normal-BMI or otherwise contraindicated profile.
+
+For selected_idea refinements, assess requested usefulness primarily for that changed
+action. Surrounding items are fixed and already reviewed; do not require stylistic or
+unrequested breadth changes elsewhere. Still check the complete merged plan against
+current health, ingredient, safety and combined resource constraints. New material
+risks in unchanged items must still be flagged, never inherited as safe automatically.

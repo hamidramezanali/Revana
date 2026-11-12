@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app import agent_store as store
-from app import assessment, idea_actions, method_discovery, workflow
+from app import assessment, idea_actions, method_discovery, performance, workflow
 from app.agent_models import (
     BodyContext,
     BodyGoalsEdit,
@@ -34,6 +34,7 @@ from app.agent_models import (
     Plan,
     PlanVersion,
     RevisionRequest,
+    RunPerformance,
     RunStep,
     SessionCreated,
     WorkingMessage,
@@ -290,6 +291,10 @@ class InterruptedRun(Exception):
 def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
     run_id = journey.workspace.run.id
     expected = journey.revision
+    timing_token = performance.start()
+
+    def finish_timing(target):
+        target.workspace.run.performance = RunPerformance.model_validate(performance.snapshot())
 
     def publish(event):
         nonlocal expected
@@ -306,15 +311,21 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
         if event["type"] == "stage":
             label = LABELS.get(event["role"], "Updating your goal")
             if event["status"] == "working":
+                if run.steps and run.steps[-1].status == "working":
+                    run.steps[-1].status = "done"
                 run.steps.append(RunStep(id=uuid4().hex, label=label, status="working"))
             elif run.steps:
                 run.steps[-1].status = "done"
             if event["role"] == "planner" and event["status"] == "working":
                 fresh.workspace.assessment_complete = journey.workspace.assessment_complete
-            fresh = store.save(access, fresh, expected)
-            expected = fresh.revision
+            # Completion is streamed immediately and persisted with the next checkpoint,
+            # stage start or final CAS save. Still read/check the current lease on every event.
+            if event["status"] == "working":
+                fresh = store.save(access, fresh, expected)
+                expected = fresh.revision
             journey.workspace.run = fresh.workspace.run.model_copy(deep=True)
         elif event["type"] == "draft":
+            fresh.workspace.run = journey.workspace.run.model_copy(deep=True)
             # Unchecked artifact only: never a proposal or an accepted plan.
             checkpoint = WorkspaceDraft.model_validate(event["plan"])
             fresh.workspace.review_draft = checkpoint
@@ -350,6 +361,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                 else "idle"
             )
             journey.workspace.reply = "Research ready. Review the evidence, limitations and any public listings in Explore other approaches."
+            finish_timing(journey)
             saved = store.save(access, journey, expected)
             emit({"type": "complete", "journey": saved.model_dump(mode="json")})
             return
@@ -413,6 +425,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                 question = assessment.next_question(journey, context)
                 if question:
                     journey.workspace.run.status = "complete"
+                    finish_timing(journey)
                     saved = store.save(access, journey, expected)
                     emit({"type": "complete", "journey": saved.model_dump(mode="json")})
                     return
@@ -489,6 +502,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
         journey.workspace.run.status = "complete"
         journey.workspace.pending_draft = None
         journey.workspace.review_draft = None
+        finish_timing(journey)
         saved = store.save(access, journey, expected)
         emit({"type": "complete", "journey": saved.model_dump(mode="json")})
     except InterruptedRun:
@@ -521,6 +535,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
             fresh.workspace.phase = "error"
             if fresh.workspace.run.steps and fresh.workspace.run.steps[-1].status == "working":
                 fresh.workspace.run.steps[-1].status = "failed"
+            finish_timing(fresh)
             saved = store.save(access, fresh, fresh.revision)
             emit(
                 {
@@ -531,6 +546,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
             )
     finally:
         workflow._event_sink.reset(sink_token)
+        performance.reset(timing_token)
 
 
 @router.post("/run", operation_id="runGoalWorkspace")

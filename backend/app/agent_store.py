@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from app import postgres_store
 from app.agent_models import Journey
 from app.config import get_settings
+from app.performance import timed
 
 
 @contextmanager
@@ -55,6 +56,7 @@ def create(journey: Journey) -> str:
     return token
 
 
+@timed("storage")
 def read(token: str) -> Journey:
     with connection() as db:
         row = db.execute("SELECT body FROM journeys WHERE key = ?", (key(token),)).fetchone()
@@ -63,6 +65,7 @@ def read(token: str) -> Journey:
     return Journey.model_validate_json(row[0])
 
 
+@timed("storage")
 def save(token: str, journey: Journey, expected: int) -> Journey:
     journey.revision = expected + 1
     with connection() as db:

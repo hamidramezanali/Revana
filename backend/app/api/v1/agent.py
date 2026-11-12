@@ -47,6 +47,7 @@ from app.agent_models import (
 )
 from app.config import get_settings
 from app.errors import ErrorResponse
+from app.performance import timed
 from app.photo_inputs import sanitized_photos
 from app.plan_revision import build_revision, current_preferences
 from app.suggestions import board_for, conversation_context, generate_batch
@@ -77,8 +78,25 @@ def load(access: str, revision: int) -> Journey:
     return journey
 
 
+@timed("context")
 def coaching_context(journey: Journey) -> dict:
-    context = journey.model_dump(mode="json")
+    context = journey.model_dump(
+        mode="json",
+        exclude={
+            "workspace",
+            "workflow",
+            "plans",
+            "progress",
+            "completions",
+            "plan_feedback",
+            "suggestion_board",
+        },
+    )
+    # Serialize only the current artifact, rather than serializing all history then slicing.
+    context["plans"] = [journey.plans[-1].model_dump(mode="json")] if journey.plans else []
+    context["progress"] = [p.model_dump(mode="json") for p in journey.progress[-30:]]
+    context["completions"] = [p.model_dump(mode="json") for p in journey.completions[-30:]]
+    context["plan_feedback"] = [p.model_dump(mode="json") for p in journey.plan_feedback[-5:]]
     # Do not prime the model with unselected suggestions from the previous question.
     context.pop("decision", None)
     # Only the accepted current plan and recent observations are needed for this turn.
@@ -90,7 +108,7 @@ def coaching_context(journey: Journey) -> dict:
         event.pop("question_snapshot", None)
         if event.get("photo_notes") and not event["photo_notes"]["confirmed"]:
             event.pop("photo_notes")
-    board = context.pop("suggestion_board", None)
+    board = journey.suggestion_board.model_dump(mode="json") if journey.suggestion_board else None
     if board:
         context["action_exploration"] = {
             "kept": board["kept"],
