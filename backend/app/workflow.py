@@ -78,7 +78,8 @@ def context_for(journey: Journey, context: dict) -> dict:
 
 
 def stage(role: str, task: str, context: dict, output):
-    remaining = (_deadline.get() - monotonic()) if _deadline.get() is not None else 45
+    stage_limit = {"planner": 120, "reviewer": 60}.get(role, 45)
+    remaining = (_deadline.get() - monotonic()) if _deadline.get() is not None else stage_limit
     if remaining < 2:
         raise HTTPException(
             502, "The response took too long. Your saved choices remain available; retry."
@@ -87,7 +88,7 @@ def stage(role: str, task: str, context: dict, output):
     if sink:
         sink({"type": "stage", "role": role, "status": "working"})
     result = provider.generate(
-        f"[stage:{role}] {task}", {**context, "_stage_timeout": min(45, remaining)}, output
+        f"[stage:{role}] {task}", {**context, "_stage_timeout": min(stage_limit, remaining)}, output
     )
     if sink:
         sink({"type": "stage", "role": role, "status": "done"})

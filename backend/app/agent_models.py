@@ -745,6 +745,13 @@ class DiscoveryRequest(Model):
     services: bool = True
 
 
+class WorkspaceDraft(Plan):
+    reply: str = Field(min_length=1, max_length=1800)
+    facts: list[FactCandidate] = Field(max_length=12)
+    conflicts: list[str] = Field(max_length=6)
+    clarification: GoalQuestion | None = None
+
+
 class GoalWorkspace(Model):
     title: str = Field(max_length=120)
     objective: str = Field(max_length=2000)
@@ -757,6 +764,7 @@ class GoalWorkspace(Model):
     messages: list[WorkingMessage] = Field(default_factory=list)
     run: GoalRun | None = None
     pending_draft: Plan | None = None
+    review_draft: WorkspaceDraft | None = None
     idea_feedback: list[IdeaFeedback] = Field(default_factory=list, max_length=100)
     idea_edit: IdeaEdit | None = None
     assessment_complete: bool = False
@@ -765,13 +773,6 @@ class GoalWorkspace(Model):
     timeline_note: str = ""
     method_reports: list[MethodReport] = Field(default_factory=list, max_length=8)
     discovery_request: DiscoveryRequest | None = None
-
-
-class WorkspaceDraft(Plan):
-    reply: str = Field(min_length=1, max_length=1800)
-    facts: list[FactCandidate] = Field(max_length=12)
-    conflicts: list[str] = Field(max_length=6)
-    clarification: GoalQuestion | None = None
 
 
 class AssessmentDecision(Model):

@@ -39,7 +39,8 @@ Journey. Heartbeats keep the connection active. Run IDs and optimistic revisions
 cancelled or superseded work from applying. Cancel cannot undo an already dispatched
 provider request or its cost. Disconnection cancels application of later output; it
 does not create background jobs. A run left running after process termination is
-marked failed by state recovery after 180 seconds. Retry is explicit and does not
+marked failed by state recovery after the configured workflow budget plus 30 seconds
+(300 seconds with current defaults). Retry is explicit and does not
 append the same user update again. There are no automatic billable retries.
 
 Durability is the existing SQLite/Postgres Journey JSON; no separate transcript
@@ -227,3 +228,27 @@ Implementation references:
 Next: broader de-identified recommendation evaluations, food/allergen catalog coverage,
 more locations/locales and practitioner qualification verification. Account sign-in,
 billing, voice and service booking remain deferred.
+
+
+## Planning timeout recovery (2026-11-12)
+
+Detailed planning now has a 120-second provider budget; independent review has 60
+seconds and short coaching questions retain 45 seconds. Every call is clipped to the
+remaining whole-run budget (default 270 seconds). Vercel's backend service explicitly
+allows 300 seconds, leaving time to save failure state. Operators may lower the workflow
+budget with REVANA_WORKFLOW_TIMEOUT_SECONDS, but cannot exceed 270 seconds. These are
+ceilings, not expected response times; no automatic billable retries were added.
+
+The completed assessment handoff is persisted before the planner starts. Each complete,
+unreviewed WorkspaceDraft is saved as workspace.review_draft, separately from proposals
+and accepted history. Explicit Retry reuses this artifact and runs the independent
+review and deterministic constraints again; an incomplete/timed-out planner request has
+no artifact and is explicitly regenerated. A failed correction retains the last complete
+draft. A new message/assessment/idea request clears the retry artifact. Unchecked drafts
+cannot be accepted, and successful review clears the artifact when saving the proposal.
+Existing revision/cancellation checks govern all checkpoint writes. Recovery is at stage
+boundaries, not token-level continuation or a background job.
+
+Stage-specific timeout messages distinguish building a plan from checking it. Saved
+answers are retained in both cases. No change to the selected model or health safeguards.
+See [Vercel service duration configuration](https://vercel.com/kb/guide/vercel-services-fluid-compute).

@@ -3,7 +3,12 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "functions": {
+        "**/*.py": {
+          "maxDuration": 300
+        }
+      }
     },
     "frontend": {
       "root": "frontend",

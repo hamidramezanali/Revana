@@ -57,7 +57,7 @@ def generate[T: BaseModel](
         raise HTTPException(503, "Configure the backend OpenAI key and model to use the agent.")
     context = dict(context)
     timeout = context.pop("_stage_timeout", 45)
-    output_limit = min(8000, max(512, int(context.pop("_max_output_tokens", 8000))))
+    output_limit = min(16000, max(512, int(context.pop("_max_output_tokens", 8000))))
     try:
         model_input: str | list = json.dumps(context, ensure_ascii=False)
     except (TypeError, ValueError):
@@ -130,8 +130,16 @@ def generate[T: BaseModel](
             )
         raise HTTPException(502, message) from None
     except httpx.TimeoutException:
+        activity = (
+            "Building the detailed plan"
+            if task.startswith("[stage:planner]")
+            else "Checking the plan"
+            if task.startswith("[stage:reviewer]")
+            else "The coach"
+        )
         raise HTTPException(
-            502, "The coach took too long. Your saved journey is unchanged; retry."
+            502,
+            f"{activity} took too long. Your saved answers and accepted plan are safe. Retry this work to continue.",
         ) from None
     except (httpx.HTTPError, ValidationError, ValueError, KeyError, TypeError):
         raise HTTPException(

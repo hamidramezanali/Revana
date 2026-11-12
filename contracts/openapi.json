@@ -1113,6 +1113,73 @@
         "title": "Exercise",
         "type": "object"
       },
+      "FactCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": [
+              "goal",
+              "allergy",
+              "limitation",
+              "preference",
+              "concern",
+              "routine",
+              "measurement",
+              "observation",
+              "health_context"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "reported",
+              "hypothesis",
+              "unknown",
+              "needs_review"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
+          },
+          "value": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "value",
+          "source_id",
+          "quote",
+          "status",
+          "supersedes_id"
+        ],
+        "title": "FactCandidate",
+        "type": "object"
+      },
       "FitOptions": {
         "additionalProperties": false,
         "properties": {
@@ -1427,6 +1494,16 @@
             "default": "",
             "title": "Reply",
             "type": "string"
+          },
+          "review_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "run": {
             "anyOf": [
@@ -3696,6 +3773,167 @@
           "text"
         ],
         "title": "WorkingMessage",
+        "type": "object"
+      },
+      "WorkspaceDraft": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "minItems": 1,
+            "title": "Actions",
+            "type": "array"
+          },
+          "changes": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Changes",
+            "type": "string"
+          },
+          "clarification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalQuestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "deferred": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Deferred",
+            "type": "array"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/FactCandidate"
+            },
+            "maxItems": 12,
+            "title": "Facts",
+            "type": "array"
+          },
+          "hypotheses": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Hypotheses",
+            "type": "array"
+          },
+          "meals": {
+            "items": {
+              "$ref": "#/components/schemas/Meal"
+            },
+            "maxItems": 28,
+            "title": "Meals",
+            "type": "array"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/Milestone"
+            },
+            "maxItems": 6,
+            "title": "Milestones",
+            "type": "array"
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NutritionPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Priority",
+            "type": "string"
+          },
+          "programme": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeeklyProgramme"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply": {
+            "maxLength": 1800,
+            "minLength": 1,
+            "title": "Reply",
+            "type": "string"
+          },
+          "reported": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Reported",
+            "type": "array"
+          },
+          "review_days": {
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Review Days",
+            "type": "integer"
+          },
+          "safety_notes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Safety Notes",
+            "type": "array"
+          },
+          "summary": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "uncertainties": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "summary",
+          "reported",
+          "hypotheses",
+          "uncertainties",
+          "safety_notes",
+          "actions",
+          "review_days",
+          "changes",
+          "reply",
+          "facts",
+          "conflicts"
+        ],
+        "title": "WorkspaceDraft",
         "type": "object"
       }
     },

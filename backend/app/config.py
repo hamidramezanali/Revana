@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-6.1-terra"
     research_enabled: bool = True
     research_model: str = ""
-    workflow_timeout_seconds: float = Field(default=90, ge=10, le=180)
+    workflow_timeout_seconds: float = Field(default=270, ge=10, le=270)
     database_url: SecretStr | None = Field(
         default=None,
         validation_alias=AliasChoices("REVANA_DATABASE_URL", "POSTGRES_URL", "DATABASE_URL"),

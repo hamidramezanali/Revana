@@ -66,8 +66,12 @@ def domains_node(state: State):
 
 def planner_node(state: State):
     journey = state["journey"]
-    journey.workflow.stages.append("planner")
-    draft = workflow.stage("planner", state["task"], state["context"], state["output"])
+    resume = state["context"].pop("_resume_draft", None)
+    if resume is not None:
+        draft = state["output"].model_validate(resume)
+    else:
+        journey.workflow.stages.append("planner")
+        draft = workflow.stage("planner", state["task"], state["context"], state["output"])
     if isinstance(draft, SuggestionBatch):
         from uuid import uuid4
 

@@ -40,6 +40,7 @@ from app.agent_models import (
     WorkspaceDraft,
 )
 from app.api.v1.agent import Access, coaching_context, load, security
+from app.config import get_settings
 from app.photo_inputs import sanitized_photos
 
 router = APIRouter(prefix="/workspace", tags=["goal-workspace"])
@@ -276,7 +277,9 @@ def prepare(journey: Journey, request: WorkRequest) -> None:
         )
     if request.action != "retry" and not request.action_id:
         journey.proposal = None
-    workspace.pending_draft = None
+    if request.action != "retry":
+        workspace.review_draft = None
+        workspace.pending_draft = None
 
 
 class InterruptedRun(Exception):
@@ -305,9 +308,19 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                 run.steps.append(RunStep(id=uuid4().hex, label=label, status="working"))
             elif run.steps:
                 run.steps[-1].status = "done"
+            if event["role"] == "planner" and event["status"] == "working":
+                fresh.workspace.assessment_complete = journey.workspace.assessment_complete
             fresh = store.save(access, fresh, expected)
             expected = fresh.revision
             journey.workspace.run = fresh.workspace.run.model_copy(deep=True)
+        elif event["type"] == "draft":
+            # Unchecked artifact only: never a proposal or an accepted plan.
+            checkpoint = WorkspaceDraft.model_validate(event["plan"])
+            fresh.workspace.review_draft = checkpoint
+            fresh.workspace.assessment_complete = journey.workspace.assessment_complete
+            fresh = store.save(access, fresh, expected)
+            expected = fresh.revision
+            journey.workspace.review_draft = checkpoint.model_copy(deep=True)
         emit(event)
 
     sink_token = workflow._event_sink.set(publish)
@@ -416,7 +429,9 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
             journey.workflow.research.sources = list(source_map.values())
             if relevant_reports:
                 journey.workflow.research.summary += " Previously retrieved alternatives are supplied with dates and limitations. Reassess suitability against the current profile; listings are not efficacy evidence."
-            context["_max_output_tokens"] = 8000
+            context["_max_output_tokens"] = 12000
+            if request.action == "retry" and journey.workspace.review_draft:
+                context["_resume_draft"] = journey.workspace.review_draft.model_dump(mode="json")
             draft = workflow.plan(
                 journey,
                 files("app").joinpath("prompts/workspace.md").read_text(encoding="utf-8"),
@@ -472,6 +487,7 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
             journey.workspace.messages = journey.workspace.messages[-6:]
         journey.workspace.run.status = "complete"
         journey.workspace.pending_draft = None
+        journey.workspace.review_draft = None
         saved = store.save(access, journey, expected)
         emit({"type": "complete", "journey": saved.model_dump(mode="json")})
     except InterruptedRun:
@@ -782,7 +798,8 @@ def get_state(access: Access):
     if (
         workspace.run
         and workspace.run.status == "running"
-        and (datetime.now(UTC) - workspace.run.started_at).total_seconds() > 180
+        and (datetime.now(UTC) - workspace.run.started_at).total_seconds()
+        > get_settings().workflow_timeout_seconds + 30
     ):
         workspace.run.status = "failed"
         workspace.run.error = "This run was interrupted. Your goal is saved; retry when ready."

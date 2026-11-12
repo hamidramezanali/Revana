@@ -1,3 +1,6 @@
+> Timeout/recovery update: current role budgets and durable workspace draft retry supersede
+> the historical operations limits below. See [Goal workspace](GOAL_WORKSPACE.md#planning-timeout-recovery-2026-11-12).
+
 # Staged conversational coach
 
 Implemented locally on 2026-11-09. No merge or deployment is implied.

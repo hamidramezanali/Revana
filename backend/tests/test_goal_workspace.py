@@ -198,9 +198,16 @@ def test_failure_and_abandoned_run_are_recoverable(workspace, monkeypatch):
 
     saved = agent_store.read(token)
     saved.workspace.run = GoalRun(
-        id="abandoned", status="running", started_at=datetime.now(UTC) - timedelta(seconds=200)
+        id="abandoned", status="running", started_at=datetime.now(UTC) - timedelta(seconds=330)
     )
     saved.workspace.phase = "running"
+    saved.workspace.run.started_at = datetime.now(UTC) - timedelta(seconds=200)
+    saved = agent_store.save(token, saved, saved.revision)
+    assert (
+        client.get("/v1/workspace/state", headers=h).json()["workspace"]["run"]["status"]
+        == "running"
+    )
+    saved.workspace.run.started_at = datetime.now(UTC) - timedelta(seconds=330)
     agent_store.save(token, saved, saved.revision)
     restored = client.get("/v1/workspace/state", headers=h).json()
     assert restored["workspace"]["run"]["status"] == "failed"

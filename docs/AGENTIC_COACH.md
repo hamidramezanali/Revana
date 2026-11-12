@@ -11,8 +11,9 @@ question coach) and planning (profile -> safety -> progress -> relevant domain m
 planner -> reviewer -> optional single correction -> final review). FastAPI and the
 existing SQLite/Postgres store remain. Questions and proposals are persisted at turn
 boundaries with existing bearer ownership and compare-and-swap revisions. A failed
-planning request leaves the accepted plan unchanged. Mid-node recovery replays that
-request; this is not an independently checkpointed background worker.
+planning request leaves the accepted plan unchanged. The workspace now saves completed unchecked drafts for explicit review retry; interrupted
+model generation must still be repeated. This is not an independently checkpointed
+background worker. See GOAL_WORKSPACE.md for stage budgets and recovery boundaries.
 
 No LangSmith tracing or additional transcript/checkpoint store is enabled. Graph calls
 explicitly disable external tracing. Six initial questions across all domains and
