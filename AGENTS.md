@@ -10,6 +10,13 @@ is the primary UI; `backend/app/goal_workspace.py` owns streamed work execution.
 Keep accepted plans visible during revisions. Persist a goal immediately, avoid repeated
 intake questions, expose real execution status and preserve cancellation/CAS guarantees.
 The earlier warm-layout and staged-flow descriptions below are historical context.
+Initial planning now uses `assessment.py` and prompts/assessment.md, with explicit goal/
+timeline capture, adaptive focused questions (at most six answered cards) and an early
+build option. There is NO three-habit limit. Weekly programmes must include actual
+scheduled sessions and criteria-based progression when training is relevant. Keep
+collapsed cards compact while preserving complete detail behind Show more. Boundaries
+on time, budget, unsupported clinical claims and unsafe weight targets still apply.
+
 
 ## Product goal
 

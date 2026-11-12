@@ -45,7 +45,7 @@
             "type": "array"
           },
           "detail": {
-            "maxLength": 1000,
+            "maxLength": 8000,
             "minLength": 1,
             "title": "Detail",
             "type": "string"
@@ -60,7 +60,7 @@
             "items": {
               "$ref": "#/components/schemas/Exercise"
             },
-            "maxItems": 8,
+            "maxItems": 12,
             "title": "Exercises",
             "type": "array"
           },
@@ -101,6 +101,14 @@
             "minLength": 1,
             "title": "Observation",
             "type": "string"
+          },
+          "progression": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressionStep"
+            },
+            "maxItems": 12,
+            "title": "Progression",
+            "type": "array"
           },
           "time_of_day": {
             "default": "flexible",
@@ -913,8 +921,16 @@
             "title": "Easier Alternative",
             "type": "string"
           },
+          "form_cues": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Form Cues",
+            "type": "array"
+          },
           "instructions": {
-            "maxLength": 500,
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Instructions",
             "type": "string"
@@ -923,6 +939,12 @@
             "maxLength": 100,
             "minLength": 1,
             "title": "Name",
+            "type": "string"
+          },
+          "progression": {
+            "default": "",
+            "maxLength": 1200,
+            "title": "Progression",
             "type": "string"
           },
           "repetitions": {
@@ -1060,6 +1082,11 @@
             "enum": [
               "baseline",
               "goal",
+              "timeline",
+              "experience",
+              "schedule",
+              "nutrition",
+              "health",
               "constraints",
               "routine",
               "products",
@@ -1090,6 +1117,18 @@
             "minLength": 1,
             "title": "Text",
             "type": "string"
+          },
+          "text_fields": {
+            "items": {
+              "enum": [
+                "goal_outcome",
+                "target_date"
+              ],
+              "type": "string"
+            },
+            "maxItems": 2,
+            "title": "Text Fields",
+            "type": "array"
           },
           "why": {
             "maxLength": 300,
@@ -1158,6 +1197,18 @@
             "title": "Answered Keys",
             "type": "array"
           },
+          "assessment_complete": {
+            "default": false,
+            "title": "Assessment Complete",
+            "type": "boolean"
+          },
+          "assessment_count": {
+            "default": 0,
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Assessment Count",
+            "type": "integer"
+          },
           "idea_edit": {
             "anyOf": [
               {
@@ -1186,6 +1237,11 @@
           "objective": {
             "maxLength": 2000,
             "title": "Objective",
+            "type": "string"
+          },
+          "outcome": {
+            "default": "",
+            "title": "Outcome",
             "type": "string"
           },
           "pending_draft": {
@@ -1236,6 +1292,11 @@
                 "type": "null"
               }
             ]
+          },
+          "timeline_note": {
+            "default": "",
+            "title": "Timeline Note",
+            "type": "string"
           },
           "title": {
             "maxLength": 120,
@@ -1887,6 +1948,16 @@
             "title": "Priority",
             "type": "string"
           },
+          "programme": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeeklyProgramme"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "reported": {
             "items": {
               "type": "string"
@@ -2361,6 +2432,43 @@
           "observed_on"
         ],
         "title": "ProgressRequest",
+        "type": "object"
+      },
+      "ProgressionStep": {
+        "additionalProperties": false,
+        "properties": {
+          "advance_when": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Advance When",
+            "type": "string"
+          },
+          "if_difficult": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "If Difficult",
+            "type": "string"
+          },
+          "instruction": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Instruction",
+            "type": "string"
+          },
+          "week": {
+            "maximum": 52.0,
+            "minimum": 1.0,
+            "title": "Week",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "week",
+          "instruction",
+          "advance_when",
+          "if_difficult"
+        ],
+        "title": "ProgressionStep",
         "type": "object"
       },
       "Question": {
@@ -2907,6 +3015,65 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WeeklyProgramme": {
+        "additionalProperties": false,
+        "properties": {
+          "deadline_assessment": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Deadline Assessment",
+            "type": "string"
+          },
+          "outcome": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Outcome",
+            "type": "string"
+          },
+          "review_rule": {
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Review Rule",
+            "type": "string"
+          },
+          "schedule_notes": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Schedule Notes",
+            "type": "string"
+          },
+          "success_signals": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Success Signals",
+            "type": "array"
+          },
+          "training_included": {
+            "title": "Training Included",
+            "type": "boolean"
+          },
+          "weeks": {
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Weeks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weeks",
+          "outcome",
+          "deadline_assessment",
+          "schedule_notes",
+          "success_signals",
+          "review_rule",
+          "training_included"
+        ],
+        "title": "WeeklyProgramme",
+        "type": "object"
+      },
       "WorkRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2915,7 +3082,8 @@
             "enum": [
               "continue",
               "plan",
-              "retry"
+              "retry",
+              "assess"
             ],
             "title": "Action",
             "type": "string"
@@ -2994,6 +3162,13 @@
             "default": false,
             "title": "Skipped",
             "type": "boolean"
+          },
+          "text_values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Text Values",
+            "type": "object"
           },
           "values": {
             "additionalProperties": {

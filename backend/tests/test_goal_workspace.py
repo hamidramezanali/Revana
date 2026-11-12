@@ -85,7 +85,9 @@ def create(client, text="I want to lose weight"):
 
 def run(client, j, headers, **payload):
     r = client.post(
-        "/v1/workspace/run", headers=headers, json={"revision": j["revision"], **payload}
+        "/v1/workspace/run",
+        headers=headers,
+        json={"revision": j["revision"], "action": "plan", **payload},
     )
     assert r.status_code == 200, r.text
     events = [json.loads(line[6:]) for line in r.text.splitlines() if line.startswith("data: ")]
@@ -139,7 +141,7 @@ def test_skip_not_repeated_and_measurements_not_invented(workspace):
 def test_provided_baseline_and_bad_input(workspace):
     client, calls = workspace
     j, _h, _ = create(client, "I am 175 cm and 86 kg, age 34. I want to lose weight.")
-    assert j["workspace"]["question"] is None
+    assert j["workspace"]["question"]["key"] == "timeline"
     assert j["body"]["age"] == 34
     assert calls == []
     other, oh, _ = create(client)

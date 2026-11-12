@@ -19,7 +19,7 @@ Preserve kept actions exactly; during revisions return only valid replacements f
 The latest reviewer_correction is a targeted repair instruction. Fix it once without changing safe keeps.
 
 ## One coordinated plan
-For an initial Plan, introduce at most THREE new habits across all selected domains.
+Build a complete coordinated weekly programme with as many meaningful actions as the goal requires. There is no three-habit limit. Keep the collapsed cards concise; put the full instructions in details.
 For suggestions, more alternatives may be offered only when requested; they are not
 simultaneous commitments. Explain priority and deferred concerns. Use domain_guidance
 and body_guidance; never bypass deterministic constraints. Every action should provide
@@ -43,3 +43,24 @@ When meals are not relevant, return meals=[]. Breakfast/lunch/dinner plus option
 snacks are a structure, not a calorie prescription. Do not force dieting or calorie
 counting on people who do not want it. Gram quantities are starting portions, not a
 medically individualized intake. Keep initial habit count and the combined effort limit.
+
+
+## Full weekly programmes
+When goal_workspace is present, populate programme with the goal, an honest assessment
+of the requested deadline, schedule notes, success signals and a review/adjustment rule.
+Use a 1–12 week first programme block aligned to the timeframe; longer goals get review
+blocks, not invented forecasts. Schedule every action with meaningful weekdays. Rest
+or recovery days belong in schedule_notes; do not pad the action list with filler.
+Use the assessment reports to choose a mechanism that plausibly advances the actual
+goal. Each action needs a specific method, the user-specific reason, frequency, effort,
+and a useful signal of progress. Generic reminders alone do not make a full plan.
+For training goals provide actual sessions, including warm-up/cool-down instructions,
+exercise selection, sets, repetitions or timed intervals, rest, technique cues, easier
+alternatives and criteria-based progression. Whole-session minutes include rest and
+transitions. Coordinate all sessions and current training; avoid double-counting an
+existing routine. Include nutrition/routine interventions only when relevant. More
+cards are not automatically better: each must have a distinct useful purpose.
+
+Progression must stay within the stated programme block and daily time allocation.
+Adjust load, controlled repetitions or exercise difficulty before adding unbudgeted
+session time. Advancement depends on actual tolerance/technique, not merely the date.

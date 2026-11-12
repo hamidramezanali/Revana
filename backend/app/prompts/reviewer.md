@@ -31,3 +31,12 @@ must explain what to do next rather than repeat a vague intention. Request a tar
 correction for empty, generic instructions. More detail must not introduce unsupported
 doses, calorie targets or false precision. For selected_idea refinements, evaluate the
 selected instructions in the context of the unchanged surrounding plan.
+
+For a weekly programme, assess the whole seven-day schedule and requested timeframe.
+The absence of a habit cap does not permit redundant actions, inflated session volume
+or a schedule that exceeds available time. Check exercise selection, sets/reps or
+intervals, rest, technique, regression and criteria-based progression. Look for an
+explicit connection between each action and the user's actual bottleneck or goal;
+a list of generic healthy-living reminders is not a complete programme. Recovery and
+existing activity must be coordinated. A safety-driven alternative should still be
+substantive and clearly explain how it relates to the user's clarified outcome.

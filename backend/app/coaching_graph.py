@@ -104,8 +104,6 @@ def plan_issues(journey, draft):
         problems.append(
             "Use only verified food IDs from food_catalog; nutrition is unavailable for unknown ingredients."
         )
-    if isinstance(draft, Plan) and not journey.plans and len(draft.actions) > 3:
-        problems.append("Start with at most three coordinated new habits; defer the rest.")
     if isinstance(draft, Plan):
         import re
 
@@ -133,6 +131,35 @@ def plan_issues(journey, draft):
             )
     if not isinstance(draft, Plan):
         return problems
+    if draft.programme and draft.programme.training_included:
+        sessions = [a for a in draft.actions if a.exercises]
+        if not sessions:
+            problems.append(
+                "A training programme needs actual exercises, not generic activity intentions."
+            )
+        for action in sessions:
+            if any(step.week > draft.programme.weeks for step in action.progression):
+                problems.append("Keep progression steps within this programme block.")
+            if not action.days or action.minutes is None:
+                problems.append(
+                    "Schedule each session on real weekdays with a whole-session time estimate."
+                )
+            if not action.progression and not all(e.progression for e in action.exercises):
+                problems.append(
+                    "Provide criteria-based progression and an easier fallback for the training sessions."
+                )
+            for exercise in action.exercises:
+                if not exercise.duration_minutes and not (
+                    exercise.sets and exercise.repetitions.strip()
+                ):
+                    problems.append("Every exercise needs sets and repetitions or a duration.")
+                if exercise.sets and exercise.rest_seconds is None:
+                    problems.append("Provide rest intervals for resistance exercises.")
+            if (
+                action.minutes is not None
+                and sum(e.duration_minutes or 0 for e in action.exercises) > action.minutes
+            ):
+                problems.append("Exercise durations exceed the declared whole-session time.")
     if journey.body.daily_minutes is not None:
         if any(action.minutes is None for action in draft.actions):
             problems.append(

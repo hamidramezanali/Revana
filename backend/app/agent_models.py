@@ -275,15 +275,24 @@ class Exercise(Model):
     repetitions: str = Field(default="", max_length=80)
     duration_minutes: int | None = Field(default=None, ge=1, le=180)
     rest_seconds: int | None = Field(default=None, ge=0, le=600)
-    instructions: str = Field(min_length=1, max_length=500)
+    instructions: str = Field(min_length=1, max_length=2000)
+    form_cues: list[str] = Field(default_factory=list, max_length=6)
+    progression: str = Field(default="", max_length=1200)
     easier_alternative: str = Field(min_length=1, max_length=300)
+
+
+class ProgressionStep(Model):
+    week: int = Field(ge=1, le=52)
+    instruction: str = Field(min_length=1, max_length=2000)
+    advance_when: str = Field(min_length=1, max_length=1000)
+    if_difficult: str = Field(min_length=1, max_length=1000)
 
 
 class Action(Model):
     id: str = Field(min_length=1, max_length=80)
     category: str = Field(min_length=1, max_length=80)
     title: str = Field(min_length=1, max_length=150)
-    detail: str = Field(min_length=1, max_length=1000)
+    detail: str = Field(min_length=1, max_length=8000)
     why: str = Field(min_length=1, max_length=1000)
     timing: str = Field(min_length=1, max_length=300)
     cost: str = Field(min_length=1, max_length=200)
@@ -293,10 +302,14 @@ class Action(Model):
     monthly_cost_sek: float | None = Field(default=None, ge=0, le=100000)
     days: list[int] = Field(default_factory=lambda: list(range(7)), max_length=7)
     time_of_day: Literal["morning", "midday", "evening", "flexible"] = "flexible"
-    exercises: list[Exercise] = Field(default_factory=list, max_length=8)
+    exercises: list[Exercise] = Field(default_factory=list, max_length=12)
+    progression: list[ProgressionStep] = Field(default_factory=list, max_length=12)
 
     @model_validator(mode="after")
     def valid_days(self):
+        weeks = [step.week for step in self.progression]
+        if weeks != sorted(set(weeks)):
+            raise ValueError("Use distinct progression weeks in chronological order.")
         if any(day not in range(7) for day in self.days) or len(set(self.days)) != len(self.days):
             raise ValueError("Use distinct weekday numbers from zero to six.")
         return self
@@ -413,7 +426,18 @@ class MealSwap(RevisionRequest):
     source_slot: Literal["breakfast", "lunch", "dinner", "snack"]
 
 
+class WeeklyProgramme(Model):
+    weeks: int = Field(ge=1, le=12)
+    outcome: str = Field(min_length=1, max_length=1000)
+    deadline_assessment: str = Field(min_length=1, max_length=2000)
+    schedule_notes: str = Field(min_length=1, max_length=2000)
+    success_signals: list[str] = Field(min_length=1, max_length=8)
+    review_rule: str = Field(min_length=1, max_length=1500)
+    training_included: bool
+
+
 class Plan(Model):
+    programme: WeeklyProgramme | None = None
     summary: str = Field(min_length=1, max_length=2000)
     priority: str = Field(default="", max_length=400)
     deferred: list[str] = Field(default_factory=list, max_length=6)
@@ -570,7 +594,20 @@ class Event(Model):
 
 class GoalQuestion(Model):
     id: str = Field(default_factory=lambda: uuid4().hex)
-    key: Literal["baseline", "goal", "constraints", "routine", "products", "progress", "other"]
+    key: Literal[
+        "baseline",
+        "goal",
+        "timeline",
+        "experience",
+        "schedule",
+        "nutrition",
+        "health",
+        "constraints",
+        "routine",
+        "products",
+        "progress",
+        "other",
+    ]
     text: str = Field(min_length=1, max_length=300)
     why: str = Field(max_length=300)
     choices: list[str] = Field(default_factory=list, max_length=6)
@@ -579,6 +616,9 @@ class GoalQuestion(Model):
     ] = Field(default_factory=list, max_length=3)
     multiple: bool = False
     photo_mode: Literal["none", "products", "skin", "hair"] = "none"
+    text_fields: list[Literal["goal_outcome", "target_date"]] = Field(
+        default_factory=list, max_length=2
+    )
 
 
 class RunStep(Model):
@@ -630,6 +670,10 @@ class GoalWorkspace(Model):
     pending_draft: Plan | None = None
     idea_feedback: list[IdeaFeedback] = Field(default_factory=list, max_length=100)
     idea_edit: IdeaEdit | None = None
+    assessment_complete: bool = False
+    assessment_count: int = Field(default=0, ge=0, le=6)
+    outcome: str = ""
+    timeline_note: str = ""
 
 
 class WorkspaceDraft(Plan):
@@ -637,6 +681,13 @@ class WorkspaceDraft(Plan):
     facts: list[FactCandidate] = Field(max_length=12)
     conflicts: list[str] = Field(max_length=6)
     clarification: GoalQuestion | None = None
+
+
+class AssessmentDecision(Model):
+    reply: str = Field(min_length=1, max_length=800)
+    question: GoalQuestion | None
+    facts: list[FactCandidate] = Field(max_length=12)
+    conflicts: list[str] = Field(max_length=6)
 
 
 class CreateGoal(Model):
@@ -654,9 +705,10 @@ class WorkRequest(RevisionRequest):
     skipped: bool = False
     photos: list[str] = Field(default_factory=list, max_length=3)
     photo_consent: bool = False
-    action: Literal["continue", "plan", "retry"] = "continue"
+    action: Literal["continue", "plan", "retry", "assess"] = "continue"
     action_id: str | None = Field(default=None, max_length=80)
     idea_intent: Literal["details", "improve"] | None = None
+    text_values: dict[str, str] = Field(default_factory=dict)
 
 
 class Journey(Model):

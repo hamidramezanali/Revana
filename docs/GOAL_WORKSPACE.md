@@ -1,3 +1,6 @@
+> Updated 2026-11-12: the assessment and weekly-programme sections below supersede
+> the earlier draft-first and limited-habit behaviour.
+
 # Goal workspace — current product and implementation
 
 This supersedes the staged focus → assessment → safety → plan UI described in older
@@ -98,3 +101,48 @@ API: POST `/v1/workspace/idea-choice` records keep/remove/clear; `/run` accepts
 another question answer or photo payload. Retry retains the selected edit context.
 Regression tests cover immediate decisions, persistence, revision conflicts, one-idea
 isolation, exclusion/acceptance, rejection of empty plans, and combined effort checks.
+
+
+## Adaptive assessment and full weekly programmes (2026-11-12)
+
+The initial plan is now preceded by a bounded assessment. Known measurements are reused;
+missing weight baselines and outcome/timeframe cards appear immediately without a model
+roundtrip. A concrete date, 4/8/12-week horizon, no fixed deadline, or an explicit skip is
+saved in the goal. Outcome refinements take priority over the opening request. Dates
+are validated and the target date reaches deterministic rapid-loss checks and the model.
+The date is a desired review horizon, never a guaranteed weight/skin/hair outcome.
+
+A separate short coach request asks one decision-changing question at a time. It can
+ask about training/equipment, actual schedule, limitations or relevant food/routine
+patterns; skin/hair questions should distinguish triggers, timing and product use.
+Choices, numeric fields, optional text and relevant visual questions remain supported.
+Known, answered or skipped categories are not repeated. Stop when enough is known, at
+six answered question cards, or when the user chooses Build weekly plan now. The planner
+runs only once assessment finishes, followed by the independent reviewer and at most one
+repair. Existing accepted plans remain accessible; Plan my week starts a fresh assessment
+using their saved context. Targeted idea refinements continue to bypass full intake.
+
+The three-habit cap is removed from both prompts and deterministic validation. The model
+chooses the useful scope; this does not mandate an arbitrary number of cards. One session
+can contain several exercises and recur on multiple days. WeeklyProgramme records the
+programme block, goal, timeline assessment, schedule/recovery notes, observable progress
+signals and review rules. Action weekdays and meal days drive the seven-day schedule.
+Exercise prescriptions include sets/repetitions or duration, rest, detailed technique,
+form cues and easier alternatives. Exercise or action progression is criteria-based;
+weekly steps include an instruction, advancement criterion and fallback. Training plans
+missing prescriptions, rest or progression are rejected for correction; the combined
+daily time and financial constraints remain enforced. Existing plans migrate with null
+programme, empty progression and empty cue defaults; no stored history is overwritten.
+
+Collapsed items show compact titles, time/cost/effort badges and the existing idea
+controls. Show more reveals all saved instructions, exercise details and progression.
+The instruction allowance is raised from 1,000 to 8,000 characters per idea, with larger
+technique and progression fields. More detail requests an extensive, isolated refinement
+using these fields; it still preserves other items and requires proposal approval. Large
+plans can take longer to generate; real stage events, cancellation and retry remain in use.
+A richer output schema alone is not evidence of clinically validated recommendations.
+
+Regression coverage includes adaptive assessment transitions, date persistence and bad
+inputs, finish/skip behaviour, the six-question bound, programmes beyond three actions,
+exercise quality checks, larger details and all earlier idea-choice/cancellation flows.
+Use synthetic goals for live validation; do not load real saved profiles into smoke tests.

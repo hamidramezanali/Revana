@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app import agent_store as store
-from app import idea_actions, workflow
+from app import assessment, idea_actions, workflow
 from app.agent_models import (
     BodyContext,
     CreateGoal,
@@ -53,7 +53,7 @@ LABELS = {
 
 def domains(text: str) -> list[str]:
     rules = {
-        "body": r"weight|weigh|\bkg\b|kilo|slim|fitness|exercise|nutrition|meal|vikt|träning",
+        "body": r"weight|weigh|\bkg\b|kilo|slim|fitness|exercise|nutrition|meal|strength|muscle|workout|training|vikt|träning",
         "skin": r"skin|face|acne|redness|skincare|\bhud",
         "hair": r"hair|scalp|hår",
     }
@@ -77,6 +77,13 @@ def extract_measurements(journey: Journey, text: str) -> None:
     )
     if age:
         values["age"] = int(age[1] or age[2])
+    available = re.search(
+        r"\b(?:have|available|spend|manage|allow|time budget|total time)[^\d]{0,20}(\d{1,3})\s*(?:minutes?|mins?)\s*(?:per|a|each|/)\s*day\b",
+        text,
+        re.IGNORECASE,
+    )
+    if available:
+        values["daily_minutes"] = int(available[1])
     try:
         journey.body = BodyContext.model_validate(values)
     except ValueError:
@@ -91,6 +98,8 @@ def ensure_workspace(journey: Journey) -> GoalWorkspace:
             phase="ready" if journey.plans else "idle",
             reply="Your saved work is here. Tell me what you want to change or build next.",
         )
+    if journey.plans and not journey.workspace.outcome and journey.workspace.assessment_count == 0:
+        journey.workspace.assessment_complete = True  # Legacy accepted plans remain usable.
     return journey.workspace
 
 
@@ -147,9 +156,11 @@ def create_goal(
         title=message[:80],
         objective=message,
         messages=[WorkingMessage(role="user", text=message)],
-        reply="I’ll turn this goal into a practical plan, check what fits, and show the work as it happens.",
+        outcome=message,
+        reply="First I’ll establish the outcome, timeframe and the few details that change your programme. Then I’ll build and review the weekly plan.",
     )
     extract_measurements(journey, message)
+    assessment.observe_timeline(journey, message)
     if not focus:
         journey.workspace.question = GoalQuestion(
             key="goal",
@@ -158,14 +169,10 @@ def create_goal(
             choices=["Skin", "Hair", "Weight and body habits"],
         )
     else:
-        journey.workspace.question = baseline(journey)
+        journey.workspace.question = baseline(journey) or assessment.timeline_question(journey)
     if journey.workspace.question:
         journey.workspace.phase = "needs_input"
-        journey.workspace.reply = (
-            "I’ll build a practical weight-management plan around your starting point, preferences and constraints."
-            if focus == ["body"]
-            else "Let’s establish the one detail that changes the next step."
-        )
+        journey.workspace.reply = "I’ll use your outcome and timeframe to build a specific weekly programme. First, let’s fill the details that change the plan."
     return SessionCreated(token=store.create(journey), journey=journey)
 
 
@@ -180,6 +187,7 @@ def prepare(journey: Journey, request: WorkRequest) -> None:
         or request.values
         or request.choices
         or request.photos
+        or request.text_values
     ):
         raise HTTPException(422, "Skip without adding an answer, or send your answer.")
     if request.choices and (
@@ -213,11 +221,19 @@ def prepare(journey: Journey, request: WorkRequest) -> None:
         or any(len(photo) > 1_200_000 for photo in request.photos)
     ):
         raise HTTPException(422, "Photos need a relevant question, consent and supported size.")
+    if request.text_values and (not request.question_id or not question):
+        raise HTTPException(422, "Answer the current goal/date question.")
+    text_lines = assessment.apply_text(journey, request, question)
     if request.question_id and question:
+        workspace.assessment_count = min(6, workspace.assessment_count + 1)
+        if request.skipped and question.key == "timeline":
+            workspace.timeline_note = (
+                "Timeline skipped; review progress without a deadline promise."
+            )
         if question.key not in workspace.answered_keys:
             workspace.answered_keys.append(question.key)
         workspace.question = None
-    message = request.message.strip()
+    message = "; ".join([request.message.strip(), *text_lines]).strip("; ")
     if request.choices:
         message = "; ".join([message, *request.choices]).strip("; ")
     if request.values:
@@ -233,6 +249,7 @@ def prepare(journey: Journey, request: WorkRequest) -> None:
         ).strip("; ")
     if message:
         extract_measurements(journey, message)
+        assessment.observe_timeline(journey, message)
         explicit_domains = domains(message)
         if question and question.key == "goal" and explicit_domains:
             journey.context.goals = explicit_domains
@@ -330,6 +347,10 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                     message.model_dump() for message in journey.workspace.messages[-6:]
                 ],
                 "answered_clarifications": journey.workspace.answered_keys,
+                "outcome": journey.workspace.outcome or journey.workspace.objective,
+                "target_date": journey.context.target_date,
+                "timeline_note": journey.workspace.timeline_note,
+                "planning_date": assessment.local_today(journey).isoformat(),
             }
             context["current_request"] = {
                 "message": next(
@@ -347,7 +368,14 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
             ]
             if journey.workspace.idea_edit:
                 context["selected_idea"] = journey.workspace.idea_edit.model_dump(mode="json")
-            context["_max_output_tokens"] = 4500
+            if not journey.workspace.assessment_complete and not journey.workspace.idea_edit:
+                question = assessment.next_question(journey, context)
+                if question:
+                    journey.workspace.run.status = "complete"
+                    saved = store.save(access, journey, expected)
+                    emit({"type": "complete", "journey": saved.model_dump(mode="json")})
+                    return
+            context["_max_output_tokens"] = 8000
             draft = workflow.plan(
                 journey,
                 files("app").joinpath("prompts/workspace.md").read_text(encoding="utf-8"),
@@ -455,7 +483,16 @@ def run_goal(body: WorkRequest, access: Access):
         raise HTTPException(409, "A run is already working. Stop it before sending another update.")
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         raise HTTPException(409, "Review or discard the photo notes first.")
-    base = idea_actions.base_plan(journey)
+    base = idea_actions.base_plan(journey) or workspace.pending_draft
+    if body.action == "assess":
+        workspace.assessment_complete = False
+        workspace.assessment_count = 0
+        workspace.answered_keys = []
+        workspace.outcome = workspace.outcome or workspace.objective
+    elif body.action == "plan":
+        workspace.assessment_complete = True
+        if not workspace.timeline_note and not journey.context.target_date:
+            workspace.timeline_note = "User chose to build now; timeframe is unspecified."
     if body.action_id:
         if (
             not body.idea_intent
@@ -463,6 +500,7 @@ def run_goal(body: WorkRequest, access: Access):
             or body.photos
             or body.values
             or body.choices
+            or body.text_values
             or body.skipped
         ):
             raise HTTPException(
@@ -489,11 +527,17 @@ def run_goal(body: WorkRequest, access: Access):
     prepare(journey, body)
     if body.action != "retry":
         workspace.pending_draft = base.model_copy(deep=True) if base else None
-    missing = baseline(journey) if body.action != "retry" and not body.action_id else None
+    missing = (
+        (baseline(journey) or assessment.timeline_question(journey))
+        if body.action not in {"retry", "plan"}
+        and not body.action_id
+        and not workspace.assessment_complete
+        else None
+    )
     if missing and not body.photos:
         workspace.question = missing
         workspace.phase = "needs_input"
-        workspace.reply = "Let’s check the starting measurements before setting a weight target. You can start without them; I’ll keep the plan non-restrictive."
+        workspace.reply = "A few focused answers will make this programme specific to your goal. You can skip a question or build with what is known."
         saved = store.save(access, journey, body.revision)
 
         async def immediate():
@@ -621,6 +665,7 @@ def accept_plan(body: RevisionRequest, access: Access):
     workflow.consolidate_memory(journey)
     workspace.pending_draft = None
     workspace.idea_edit = None
+    workspace.assessment_complete = True
     workspace.phase = "ready"
     workspace.question = None
     workspace.messages = []
