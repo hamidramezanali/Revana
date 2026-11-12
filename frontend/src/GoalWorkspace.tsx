@@ -247,7 +247,9 @@ export default function GoalWorkspace() {
                           ? "Building your working plan"
                           : event.role === "reviewer"
                             ? "Checking safety, fit and effort"
-                            : "Understanding your update",
+                            : event.role === "researcher"
+                              ? "Researching evidence and public listings"
+                              : "Understanding your update",
                       status: "working",
                     },
                   ]
@@ -534,6 +536,26 @@ export default function GoalWorkspace() {
         onError={setError}
         onIdea={(action, intent) => void ideaAction(action, intent)}
         expandedId={expandedId}
+        onRebalance={() => {
+          if (current.current) {
+            setMobileAgent(true);
+            void run(current.current, {
+              action: "assess",
+              message:
+                "I want to rebalance this programme around practical meal preparation, food choices and suitable activity. Ask the missing nutrition, dietary preference and cooking questions before proposing the update. Keep my health constraints and timeline.",
+            });
+          }
+        }}
+        onResearch={(topic, city, services) => {
+          if (current.current) {
+            void run(current.current, {
+              action: "research",
+              research_topic: topic,
+              research_city: city,
+              research_services: services,
+            });
+          }
+        }}
         onAssess={() => {
           if (current.current) {
             setMobileAgent(true);

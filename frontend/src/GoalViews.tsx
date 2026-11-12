@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
 import type {
   ApiJourney as Journey,
   ApiPlan as Plan,
   ApiRunStep,
-  ApiMeal,
   ApiAction,
 } from "./api.generated";
 import { agentRequest } from "./agentClient";
 import { ActionCard, type IdeaIntent } from "./ActionCard";
 import { BodyEditor, ProgressPanel, Milestones } from "./CareWorkspace";
 import { WeeklyProgramme } from "./WeeklyProgramme";
+import { MealPreparation } from "./MealPreparation";
+import { MethodDiscovery, type Topic, type City } from "./MethodDiscovery";
 import { CareProfile } from "./CareProfile";
 export type View = "overview" | "plan" | "progress" | "profile";
 type Props = {
@@ -31,53 +31,9 @@ type Props = {
   expandedId?: string;
   onAssess: () => void;
   onOpenAction: (id: string) => void;
+  onRebalance: () => void;
+  onResearch: (topic: Topic, city: City, services: boolean) => void;
 };
-function MealIdeas({ meals }: { meals: ApiMeal[] }) {
-  const [foods, setFoods] = useState<Array<{ id: number; name: string }>>([]);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void agentRequest<{ foods: Array<{ id: number; name: string }> }>(
-      "food-catalog",
-    )
-      .then((r) => {
-        if (active) setFoods(r.foods);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  return (
-    <section className="workspace-card">
-      <h2>Meal ideas</h2>
-      {failed && (
-        <p className="muted">
-          Ingredient names could not load. Please retry before following these
-          recipes.
-        </p>
-      )}
-      {meals.map((m, i) => (
-        <details key={i}>
-          <summary>{m.title}</summary>
-          <p>{m.instructions}</p>
-          <ul>
-            {m.ingredients.map((v, k) => (
-              <li key={k}>
-                {foods.find((f) => f.id === v.food_id)?.name ||
-                  "Ingredient name unavailable"}{" "}
-                · {v.grams} g
-              </li>
-            ))}
-          </ul>
-          <p className="muted">{m.substitution_note}</p>
-        </details>
-      ))}
-    </section>
-  );
-}
 export function GoalArtifact({
   journey: j,
   draft,
@@ -97,6 +53,8 @@ export function GoalArtifact({
   expandedId,
   onAssess,
   onOpenAction,
+  onResearch,
+  onRebalance,
 }: Props) {
   const accepted = j?.plans.at(-1)?.plan;
   const sourcePlan = draft || j?.proposal || accepted;
@@ -307,6 +265,31 @@ export function GoalArtifact({
                   </section>
                 ) : (
                   <>
+                    {j.context.goals.includes("body") && (
+                      <section className="nutrition-rebalance">
+                        <div>
+                          <strong>
+                            {plan.nutrition
+                              ? "Fine-tune food & preparation"
+                              : "Make meal prep part of your plan"}
+                          </strong>
+                          <p>
+                            Review food preferences, cooking constraints and the
+                            balance between meals and activity.
+                          </p>
+                        </div>
+                        <button
+                          className="subtle-button"
+                          disabled={busy}
+                          onClick={onRebalance}
+                        >
+                          {plan.nutrition
+                            ? "Update food preferences"
+                            : "Add meal-prep planning"}{" "}
+                          →
+                        </button>
+                      </section>
+                    )}
                     <section className="workspace-card plan-intro">
                       <p className="eyebrow">
                         {j.proposal
@@ -380,6 +363,9 @@ export function GoalArtifact({
                           Ask for new ideas →
                         </button>
                       </section>
+                    )}
+                    {(plan.nutrition || plan.meals.length > 0) && (
+                      <MealPreparation plan={plan} />
                     )}
                     <div className="plan-actions">
                       {([true, false] as const).map((kept) => {
@@ -482,7 +468,13 @@ export function GoalArtifact({
                           ))}
                       </details>
                     )}
-                    {plan.meals.length > 0 && <MealIdeas meals={plan.meals} />}{" "}
+                    <MethodDiscovery
+                      journey={j}
+                      busy={busy}
+                      onSearch={onResearch}
+                      onDiscuss={onExample}
+                    />
+
                     {accepted && !j.proposal && !draft && (
                       <Milestones journey={j} />
                     )}

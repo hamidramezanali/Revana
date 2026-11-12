@@ -26,9 +26,12 @@ export function WeeklyProgramme({
   if (!programme) return null;
   const actions = plan.actions.filter((a) => a.days.includes(day));
   const meals = plan.meals.filter((m) => m.day === day);
+  const prepSessions =
+    plan.nutrition?.prep_sessions.filter((s) => s.day === day) || [];
   const minutes =
     actions.reduce((sum, a) => sum + (a.minutes || 0), 0) +
-    meals.reduce((sum, m) => sum + m.preparation_minutes, 0);
+    meals.reduce((sum, m) => sum + m.preparation_minutes, 0) +
+    prepSessions.reduce((sum, s) => sum + s.minutes, 0);
   return (
     <section className="weekly-programme">
       <header>
@@ -67,7 +70,9 @@ export function WeeklyProgramme({
             {name.slice(0, 3)}
             <i
               className={
-                plan.actions.some((a) => a.days.includes(index))
+                plan.actions.some((a) => a.days.includes(index)) ||
+                plan.meals.some((m) => m.day === index) ||
+                plan.nutrition?.prep_sessions.some((s) => s.day === index)
                   ? "scheduled"
                   : ""
               }
@@ -82,7 +87,7 @@ export function WeeklyProgramme({
             {minutes > 0 ? `${minutes} min planned` : "Recovery / flexible"}
           </span>
         </h3>
-        {!actions.length && !meals.length && (
+        {!actions.length && !meals.length && !prepSessions.length && (
           <p className="muted">
             No scheduled actions. Follow the recovery or maintenance guidance
             above.
@@ -100,6 +105,20 @@ export function WeeklyProgramme({
             </span>
             <span>↗</span>
           </button>
+        ))}
+        {prepSessions.map((session, i) => (
+          <details className="scheduled-prep" key={i}>
+            <summary>
+              <strong>{session.title}</strong>
+              <small>{session.minutes} min batch prep</small>
+            </summary>
+            <ol>
+              {session.steps.map((s, k) => (
+                <li key={k}>{s}</li>
+              ))}
+            </ol>
+            <p>{session.storage}</p>
+          </details>
         ))}
         {meals.map((m, i) => (
           <div className="scheduled-meal" key={i}>

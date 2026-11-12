@@ -213,7 +213,10 @@ estimates, restricted energy advice, source IDs/domain filtering, query minimiza
 report persistence, cancellation and unchanged accepted plans. A deliberate live
 synthetic research run returned four primary citations, five public listings and two
 interpreted alternatives in about 22 seconds; this is an exploratory integration check,
-not a clinical quality evaluation or guarantee of marketplace coverage.
+not a clinical quality evaluation or guarantee of marketplace coverage. A live synthetic
+food-first assessment asked about meal-preparation obstacles before workouts. Synthetic
+browser checks at 360/390px and 1280px covered recipe details, research persistence and
+the editable research-to-agent handoff, with no page horizontal overflow in checked views.
 
 Implementation references:
 - [OpenAI web search](https://developers.openai.com/api/docs/guides/tools-web-search)

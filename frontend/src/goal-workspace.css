@@ -1299,3 +1299,233 @@ button:disabled {
   line-height: 1.45;
   padding: 2px 0;
 }
+.goal-app .meal-preparation,
+.goal-app .method-discovery {
+  padding: 18px;
+  background: #25282e;
+  border: 1px solid #3b444d;
+  border-radius: 7px;
+  margin: 0 0 18px;
+}
+.meal-preparation > p,
+.method-discovery > header > p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.goal-app .meal-preparation h3,
+.goal-app .method-discovery h3 {
+  font-size: 14px;
+  margin: 15px 0 9px;
+}
+.meal-preparation details,
+.method-option {
+  border-top: 1px solid #3b444d;
+  padding: 12px 0;
+}
+.meal-preparation details p,
+.method-discovery p,
+.method-discovery li {
+  font-size: 13px;
+  line-height: 1.65;
+}
+.meal-preparation ol,
+.meal-preparation ul,
+.method-discovery ul {
+  padding-left: 20px;
+  list-style: disc;
+}
+.meal-preparation ol {
+  list-style: decimal;
+}
+.prep-sessions summary,
+.meal-cards summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.prep-sessions summary span,
+.meal-cards summary > small {
+  font-size: 10px;
+  color: #a5acb8;
+}
+.meal-cards summary > span {
+  display: grid;
+  gap: 3px;
+}
+.meal-cards summary small {
+  font-size: 10px;
+  text-transform: capitalize;
+  color: #a5acb8;
+}
+.meal-cards summary strong {
+  font-size: 13px;
+}
+.meal-preparation .week-days {
+  margin: 16px 0 8px;
+}
+.meal-estimate {
+  background: #303b2c;
+  color: #d9e8cd;
+  padding: 8px 10px;
+  border-radius: 5px;
+}
+.meal-preparation details > small {
+  display: block;
+  color: #a5acb8;
+  font-size: 10px;
+}
+.discovery-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+.discovery-controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #a5acb8;
+}
+.discovery-controls select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+}
+.discovery-consent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d4dbe4;
+  margin: 12px 0;
+}
+.discovery-consent input {
+  accent-color: #c6ddaa;
+}
+.method-discovery .discovery-privacy {
+  font-size: 10px;
+  color: #a5acb8;
+  line-height: 1.6;
+}
+.method-report {
+  border-top: 1px solid #3b444d;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+.method-report-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #c6ddaa;
+}
+.method-report-heading small {
+  font-size: 10px;
+  color: #a5acb8;
+}
+.method-option > summary {
+  display: grid;
+  gap: 5px;
+}
+.method-option > summary strong {
+  font-size: 14px;
+  color: #e3e5e9;
+}
+.method-option > summary span {
+  font-size: 10px;
+  color: #b8c5ae;
+}
+.method-source-links {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.method-source-links a,
+.method-browse {
+  color: #c6ddaa;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.method-listings {
+  border-top: 1px solid #3b444d;
+  margin-top: 16px;
+  padding-top: 4px;
+}
+.method-listings > a:not(.method-browse) {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #414b55;
+  border-radius: 5px;
+  color: #e3e5e9;
+  text-decoration: none;
+  margin: 10px 0;
+}
+.method-listings > a small {
+  font-size: 10px;
+  color: #a5acb8;
+}
+.method-listings > a strong {
+  font-size: 13px;
+}
+.method-limitations {
+  margin: 18px 0;
+}
+.method-option button {
+  margin-top: 8px;
+}
+.scheduled-prep {
+  border-top: 1px solid #3b444d;
+  padding: 12px 0;
+}
+.scheduled-prep > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.scheduled-prep > summary strong {
+  font-size: 13px;
+}
+.scheduled-prep small {
+  font-size: 10px;
+  color: #a5acb8;
+}
+.scheduled-prep p,
+.scheduled-prep li {
+  font-size: 13px;
+}
+.scheduled-prep ol {
+  list-style: decimal;
+  padding-left: 20px;
+}
+@media (max-width: 760px) {
+  .goal-app .meal-preparation,
+  .goal-app .method-discovery {
+    padding: 14px;
+  }
+  .discovery-controls {
+    grid-template-columns: 1fr;
+  }
+  .discovery-controls select {
+    font-size: 16px;
+  }
+  .method-option > summary strong {
+    font-size: 13px;
+  }
+}
+.goal-app .nutrition-rebalance {
+  padding: 14px;
+  border: 1px solid #45533d;
+  background: #293126;
+  border-radius: 6px;
+  margin-bottom: 18px;
+}
+.nutrition-rebalance strong {
+  font-size: 14px;
+}
+.nutrition-rebalance p {
+  font-size: 12px;
+  color: #bcc8b3;
+  margin: 6px 0 12px;
+}
