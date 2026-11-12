@@ -927,3 +927,89 @@ button:disabled {
   font-size: 14px;
   margin: 0;
 }
+.goal-app .idea-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.goal-app .idea-controls button {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 5px 8px;
+  min-height: 30px;
+}
+.goal-app .idea-controls .remove-idea {
+  color: #e5bdb4;
+}
+.goal-app .idea-next-step {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #d6dce4;
+  margin: 12px 0;
+}
+.goal-app .idea-steps {
+  padding-left: 22px;
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+.idea-attachment {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #49515e;
+  background: #2c3530;
+  border-radius: 7px 7px 0 0;
+}
+.idea-attachment > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.idea-attachment small {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: #c6ddaa;
+}
+.idea-attachment strong {
+  font-size: 13px;
+}
+.idea-attachment span {
+  font-size: 11px;
+  color: #bfc8bd;
+}
+.idea-attachment button {
+  margin-left: auto;
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  color: #d7dfd3;
+  font-size: 20px;
+  min-width: 30px;
+}
+.removed-ideas {
+  margin: 18px 0;
+  padding: 15px;
+  border: 1px dashed #49515e;
+  border-radius: 6px;
+}
+.removed-ideas p {
+  font-size: 12px;
+  color: #a5acb8;
+}
+.removed-ideas > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  margin: 10px 0;
+}
+.removed-ideas button {
+  margin-left: auto;
+  background: #30343c;
+  color: #e3e5e9;
+  border: 1px solid #49515e;
+  padding: 4px 9px;
+}
+.goal-app .idea-steps{list-style:decimal}.goal-app .idea-steps li::marker{color:#c6ddaa;font-weight:600}

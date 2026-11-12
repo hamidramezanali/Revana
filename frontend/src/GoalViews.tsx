@@ -4,9 +4,10 @@ import type {
   ApiPlan as Plan,
   ApiRunStep,
   ApiMeal,
+  ApiAction,
 } from "./api.generated";
 import { agentRequest } from "./agentClient";
-import { ActionCard } from "./ActionCard";
+import { ActionCard, type IdeaIntent } from "./ActionCard";
 import { BodyEditor, ProgressPanel, Milestones } from "./CareWorkspace";
 import { CareProfile } from "./CareProfile";
 export type View = "overview" | "plan" | "progress" | "profile";
@@ -25,6 +26,8 @@ type Props = {
   onAccept: () => void;
   onDelete: () => void;
   onError: (s: string) => void;
+  onIdea: (a: ApiAction, intent: IdeaIntent) => void;
+  expandedId?: string;
 };
 function MealIdeas({ meals }: { meals: ApiMeal[] }) {
   const [foods, setFoods] = useState<Array<{ id: number; name: string }>>([]);
@@ -87,11 +90,35 @@ export function GoalArtifact({
   onAccept,
   onDelete,
   onError,
+  onIdea,
+  expandedId,
 }: Props) {
   const accepted = j?.plans.at(-1)?.plan;
-  const plan = j?.proposal || draft || accepted;
+  const sourcePlan = draft || j?.proposal || accepted;
+  const removedTitles = new Set(
+    j?.workspace?.idea_feedback
+      .filter((f) => f.choice === "remove")
+      .map((f) => f.action.title.toLowerCase().trim()),
+  );
+  const plan = sourcePlan
+    ? {
+        ...sourcePlan,
+        actions: sourcePlan.actions.filter(
+          (a) => !removedTitles.has(a.title.toLowerCase().trim()),
+        ),
+      }
+    : undefined;
   const workspace = j?.workspace;
-  const keptIds = new Set(j?.action_preferences.filter(p=>p.plan_version===j.plans.at(-1)?.version && p.choice==="keep").map(p=>p.action_id));
+  const keptIds = new Set(
+    j?.action_preferences
+      .filter(
+        (p) =>
+          p.plan_version === j.plans.at(-1)?.version && p.choice === "keep",
+      )
+      .map((p) => p.action_id),
+  );
+  for (const f of j?.workspace?.idea_feedback || [])
+    if (f.choice === "keep") keptIds.add(f.action.id);
   return (
     <main className="goal-artifact">
       <nav className="artifact-tabs" aria-label="Workspace views">
@@ -259,8 +286,16 @@ export function GoalArtifact({
                             ? "WORK IN PROGRESS · CHECKING"
                             : "ACCEPTED PLAN"}
                       </p>
-                      <h2>{plan.priority || "Your working plan"}</h2>
-                      <p>{plan.summary}</p>
+                      <h2>
+                        {plan.actions.length !== sourcePlan?.actions.length
+                          ? "Your remaining ideas"
+                          : plan.priority || "Your working plan"}
+                      </h2>
+                      <p>
+                        {plan.actions.length !== sourcePlan?.actions.length
+                          ? "Removed ideas are excluded. Continue with the ideas you chose, or ask your agent for alternatives."
+                          : plan.summary}
+                      </p>
                       {j.proposal && (
                         <>
                           <p className="muted">
@@ -272,7 +307,12 @@ export function GoalArtifact({
                           <div className="plan-review-controls">
                             <button
                               className="accent-button"
-                              disabled={busy}
+                              disabled={
+                                busy ||
+                                !plan.actions.length ||
+                                !j.workflow.review?.approved ||
+                                j.workflow.status !== "ready"
+                              }
                               onClick={onAccept}
                             >
                               Accept plan & profile
@@ -293,53 +333,126 @@ export function GoalArtifact({
                         </p>
                       )}
                     </section>
+                    {!plan.actions.length && (
+                      <section className="workspace-card">
+                        <h2>No active ideas</h2>
+                        <p>
+                          You removed all these suggestions. Ask the agent for
+                          different ideas.
+                        </p>
+                        <button
+                          className="subtle-button"
+                          onClick={() =>
+                            onExample(
+                              "Suggest different, more practical ideas for my goal. Do not repeat the removed ideas.",
+                            )
+                          }
+                        >
+                          Ask for new ideas →
+                        </button>
+                      </section>
+                    )}
                     <div className="plan-actions">
-                      {([true,false] as const).map(kept => {
-                        const group = plan.actions.filter(a=>keptIds.has(a.id)===kept);
-                        if(!group.length)return null;
-                        return <section className="habit-group" key={String(kept)} aria-label={kept?"Kept habits":"Plan actions"}>
-                        {!!keptIds.size && <h2>{kept?"Kept habits":"Other actions"}</h2>}
-                        {group.map((a) => (
-                        <ActionCard
-                          key={a.id}
-                          action={a}
-                          busy={busy}
-                          badge={
-                            !draft &&
-                            j.workflow.review?.action_checks.find(
-                              (c) => c.action_id === a.id,
-                            )?.status !== "compatible"
-                              ? "Needs review"
-                              : undefined
-                          }
-                          choice={
-                            j.action_preferences
-                              .filter(
-                                (p) =>
-                                  p.action_id === a.id &&
-                                  p.plan_version === j.plans.at(-1)?.version,
-                              )
-                              .at(-1)?.choice
-                          }
-                          onChoice={
-                            !j.proposal && !draft
-                              ? (choice) =>
-                                  void onMutate(() =>
-                                    agentRequest<Journey>(
-                                      "action-preferences",
-                                      {
-                                        revision: j.revision,
-                                        action_id: a.id,
-                                        choice,
-                                      },
-                                    ),
+                      {([true, false] as const).map((kept) => {
+                        const group = plan.actions.filter(
+                          (a) => keptIds.has(a.id) === kept,
+                        );
+                        if (!group.length) return null;
+                        return (
+                          <section
+                            className="habit-group"
+                            key={String(kept)}
+                            aria-label={kept ? "Kept habits" : "Plan actions"}
+                          >
+                            {!!keptIds.size && (
+                              <h2>{kept ? "Kept habits" : "Other actions"}</h2>
+                            )}
+                            {group.map((a) => (
+                              <ActionCard
+                                key={a.id}
+                                action={a}
+                                busy={busy}
+                                onIdea={
+                                  !draft
+                                    ? (intent) => onIdea(a, intent)
+                                    : undefined
+                                }
+                                expanded={expandedId === a.id}
+                                badge={
+                                  !draft &&
+                                  j.workflow.review?.action_checks.find(
+                                    (c) => c.action_id === a.id,
+                                  )?.status !== "compatible"
+                                    ? "Needs review"
+                                    : undefined
+                                }
+                                choice={
+                                  j.workspace?.idea_feedback.some(
+                                    (f) =>
+                                      f.choice === "keep" &&
+                                      f.action.id === a.id,
                                   )
-                              : undefined
-                          }
-                        />
-                      ))}</section>;
+                                    ? "keep"
+                                    : j.action_preferences
+                                        .filter(
+                                          (p) =>
+                                            p.action_id === a.id &&
+                                            p.plan_version ===
+                                              j.plans.at(-1)?.version,
+                                        )
+                                        .at(-1)?.choice
+                                }
+                                onChoice={
+                                  !j.proposal && !draft
+                                    ? (choice) =>
+                                        void onMutate(() =>
+                                          agentRequest<Journey>(
+                                            "action-preferences",
+                                            {
+                                              revision: j.revision,
+                                              action_id: a.id,
+                                              choice,
+                                            },
+                                          ),
+                                        )
+                                    : undefined
+                                }
+                              />
+                            ))}
+                          </section>
+                        );
                       })}
                     </div>
+                    {!!j.workspace?.idea_feedback.some(
+                      (f) => f.choice === "remove",
+                    ) && (
+                      <details className="removed-ideas">
+                        <summary>Removed ideas</summary>
+                        <p>
+                          Excluded from your active suggestions and future agent
+                          context. Saved plan history is preserved.
+                        </p>
+                        {j.workspace.idea_feedback
+                          .filter((f) => f.choice === "remove")
+                          .map((f) => (
+                            <div key={f.action.id}>
+                              <span>{f.action.title}</span>
+                              <button
+                                type="button"
+                                disabled={
+                                  busy ||
+                                  !sourcePlan?.actions.some(
+                                    (a) => a.id === f.action.id,
+                                  )
+                                }
+                                onClick={() => onIdea(f.action, "clear")}
+                              >
+                                Restore
+                              </button>
+                            </div>
+                          ))}
+                      </details>
+                    )}
                     {plan.meals.length > 0 && <MealIdeas meals={plan.meals} />}{" "}
                     {accepted && !j.proposal && !draft && (
                       <Milestones journey={j} />

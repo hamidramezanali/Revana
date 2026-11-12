@@ -4,11 +4,13 @@ import type {
   ApiPlan as Plan,
   ApiSessionCreated,
   ApiRunStep,
+  ApiAction,
 } from "./api.generated";
 import { agentRequest, savedToken, forgetToken } from "./agentClient";
 import { PhotoAnswer } from "./PhotoAnswer";
 import { PhotoReview } from "./PhotoReview";
 import { AppDialog } from "./ProfileSettings";
+import type { IdeaIntent } from "./ActionCard";
 import { GoalArtifact, type View } from "./GoalViews";
 
 type GoalRef = { token: string; title: string };
@@ -78,6 +80,9 @@ export default function GoalWorkspace() {
   const [mobileAgent, setMobileAgent] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<ApiAction | null>(null);
+  const [expandedId, setExpandedId] = useState<string>();
+  const composer = useRef<HTMLTextAreaElement>(null);
   const current = useRef<Journey | null>(null);
   const controller = useRef<AbortController | null>(null);
   const nonce = useRef(0);
@@ -161,6 +166,8 @@ export default function GoalWorkspace() {
     setSteps([]);
     setText("");
     setDrawer(false);
+    setSelectedIdea(null);
+    setExpandedId(undefined);
     setView("overview");
     setMobileAgent(true);
     if (!token) {
@@ -315,23 +322,30 @@ export default function GoalWorkspace() {
       }
       return;
     }
-    const payload = skip
-      ? { question_id: j.workspace?.question?.id, skipped: true }
-      : {
+    const payload = selectedIdea
+      ? {
           message: text.trim(),
-          question_id: j.workspace?.question?.id,
-          choices,
-          values: Object.fromEntries(
-            Object.entries(values)
-              .filter(([, v]) => v.trim())
-              .map(([k, v]) => [k, Number(v)]),
-          ),
-          photos,
-          photo_consent: photoConsent,
-        };
+          action_id: selectedIdea.id,
+          idea_intent: "improve",
+        }
+      : skip
+        ? { question_id: j.workspace?.question?.id, skipped: true }
+        : {
+            message: text.trim(),
+            question_id: j.workspace?.question?.id,
+            choices,
+            values: Object.fromEntries(
+              Object.entries(values)
+                .filter(([, v]) => v.trim())
+                .map(([k, v]) => [k, Number(v)]),
+            ),
+            photos,
+            photo_consent: photoConsent,
+          };
     setText("");
     setPhotos([]);
     setPhotoConsent(false);
+    setSelectedIdea(null);
     await run(j, payload);
   }
   async function mutate(fn: () => Promise<Journey>) {
@@ -345,6 +359,29 @@ export default function GoalWorkspace() {
       setBusy(false);
     }
   }
+  async function ideaAction(action: ApiAction, intent: IdeaIntent) {
+    const j = current.current;
+    if (!j || blocked) return;
+    if (intent === "improve") {
+      setSelectedIdea(action);
+      setMobileAgent(true);
+      setError("");
+      requestAnimationFrame(() => composer.current?.focus());
+      return;
+    }
+    if (intent === "details") {
+      setExpandedId(action.id);
+      await run(j, { action_id: action.id, idea_intent: "details" });
+      return;
+    }
+    await mutate(() =>
+      request<Journey>("idea-choice", {
+        revision: j.revision,
+        action_id: action.id,
+        choice: intent,
+      }),
+    );
+  }
   function openPlan() {
     setView("plan");
     setMobileAgent(false);
@@ -356,11 +393,14 @@ export default function GoalWorkspace() {
     !loading &&
     (!journey
       ? !!text.trim() && consent
-      : !!text.trim() ||
-        choices.length > 0 ||
-        Object.values(values).some((v) => v.trim()) ||
-        photos.length > 0) &&
-    (!photos.length || photoConsent);
+      : selectedIdea
+        ? !!text.trim()
+        : !!text.trim() ||
+          choices.length > 0 ||
+          Object.values(values).some((v) => v.trim()) ||
+          photos.length > 0) &&
+    (!photos.length || photoConsent) &&
+    (!selectedIdea || !!text.trim());
   return (
     <div className={`goal-app ${mobileAgent ? "show-agent" : "show-artifact"}`}>
       <header className="goal-topbar">
@@ -468,6 +508,8 @@ export default function GoalWorkspace() {
         }
         onDelete={() => setDeleting(true)}
         onError={setError}
+        onIdea={(action, intent) => void ideaAction(action, intent)}
+        expandedId={expandedId}
       />
       <section className="goal-agent" aria-label="Goal agent">
         <header className="agent-panel-heading">
@@ -573,7 +615,26 @@ export default function GoalWorkspace() {
             void submit();
           }}
         >
-          {question && !pendingPhoto && (
+          {selectedIdea && (
+            <div className="idea-attachment">
+              <div>
+                <small>IMPROVE THIS IDEA</small>
+                <strong>{selectedIdea.title}</strong>
+                <span>
+                  Only this idea will change. Add what you want improved.
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={blocked}
+                aria-label="Detach idea"
+                onClick={() => setSelectedIdea(null)}
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {question && !pendingPhoto && !selectedIdea && (
             <div className="inline-question">
               <p className="question-label">{question.text}</p>
               <p>{question.why}</p>
@@ -650,16 +711,19 @@ export default function GoalWorkspace() {
             {journey ? "Message your goal agent" : "Describe your goal"}
           </label>
           <textarea
+            ref={composer}
             id="agent-message"
             rows={3}
             maxLength={2000}
             disabled={blocked || !!pendingPhoto || loading}
             placeholder={
-              journey
-                ? question
-                  ? "Add context (optional)…"
-                  : "Ask for a change or share an update…"
-                : "I want to…"
+              selectedIdea
+                ? "What should change? More practical, different timing, easier to follow…"
+                : journey
+                  ? question
+                    ? "Add context (optional)…"
+                    : "Ask for a change or share an update…"
+                  : "I want to…"
             }
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -693,7 +757,7 @@ export default function GoalWorkspace() {
               </button>
             ) : (
               <div>
-                {question && (
+                {question && !selectedIdea && (
                   <button
                     className="skip-button"
                     disabled={blocked || loading}

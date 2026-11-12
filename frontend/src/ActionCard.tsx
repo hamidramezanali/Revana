@@ -1,6 +1,8 @@
-import type { ApiAction, ApiActionPreferenceRequest } from "./api.generated"
+import type { ApiAction, ApiActionPreferenceRequest } from "./api.generated";
 
-export type ActionChoice = ApiActionPreferenceRequest["choice"]
+export type IdeaIntent = "keep" | "clear" | "details" | "improve" | "remove";
+
+export type ActionChoice = ApiActionPreferenceRequest["choice"];
 
 export function ActionCard({
   action,
@@ -10,21 +12,32 @@ export function ActionCard({
   completed = false,
   onComplete,
   badge,
+  onIdea,
+  expanded = false,
 }: {
-  action: ApiAction
+  action: ApiAction;
 
-  choice?: "keep" | "not_for_me"
+  choice?: "keep" | "not_for_me";
 
-  busy?: boolean
+  busy?: boolean;
 
-  onChoice?: (choice: ActionChoice) => void
+  onChoice?: (choice: ActionChoice) => void;
 
-  completed?: boolean
+  completed?: boolean;
 
-  onComplete?: () => void
+  onComplete?: () => void;
 
-  badge?: string
+  badge?: string;
+  onIdea?: (intent: IdeaIntent) => void;
+  expanded?: boolean;
 }) {
+  const steps = action.detail
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const preview =
+    steps[0]?.replace(/^\d+[.)]\s*/, "").split(/(?<=[.!?])\s/)[0] || "";
+
   return (
     <article className={`focus-action${choice ? ` preference-${choice}` : ""}`}>
       <div className="focus-action-heading">
@@ -50,7 +63,55 @@ export function ActionCard({
         {badge && <span className="focus-action-tag">{badge}</span>}
         {completed && <span className="focus-action-tag">Completed</span>}
       </div>
-      {onChoice && (
+      {preview && onIdea && (
+        <p className="idea-next-step">
+          {preview.length > 180 ? preview.slice(0, 177) + "…" : preview}
+        </p>
+      )}
+      {onIdea && (
+        <div
+          className="focus-action-choices idea-controls"
+          role="group"
+          aria-label={`Improve idea: ${action.title}`}
+        >
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={choice === "keep"}
+            className={choice === "keep" ? "selected keep" : ""}
+            aria-label={`Keep as is: ${action.title}`}
+            onClick={() => onIdea(choice === "keep" ? "clear" : "keep")}
+          >
+            {choice === "keep" ? "Kept as is" : "Keep as is"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            aria-label={`More detail: ${action.title}`}
+            onClick={() => onIdea("details")}
+          >
+            More detail
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            aria-label={`Improve in chat: ${action.title}`}
+            onClick={() => onIdea("improve")}
+          >
+            Improve in chat
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className="remove-idea"
+            aria-label={`Remove idea: ${action.title}`}
+            onClick={() => onIdea("remove")}
+          >
+            Remove
+          </button>
+        </div>
+      )}
+      {!onIdea && onChoice && (
         <div
           className="focus-action-choices"
           role="group"
@@ -80,9 +141,17 @@ export function ActionCard({
           </button>
         </div>
       )}
-      <details className="focus-action-details">
+      <details className="focus-action-details" open={expanded || undefined}>
         <summary>View details</summary>
-        <p>{action.detail}</p>
+        {steps.length > 1 ? (
+          <ol className="idea-steps">
+            {steps.map((step, i) => (
+              <li key={i}>{step.replace(/^(?:\d+[.)]|[-•])\s*/, "")}</li>
+            ))}
+          </ol>
+        ) : (
+          <p>{action.detail}</p>
+        )}
         {!!action.exercises?.length && (
           <section className="exercise-list">
             <h4>Your session</h4>
@@ -118,5 +187,5 @@ export function ActionCard({
         </p>
       </details>
     </article>
-  )
+  );
 }
