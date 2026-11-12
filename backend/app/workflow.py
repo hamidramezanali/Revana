@@ -67,6 +67,12 @@ def context_for(journey: Journey, context: dict) -> dict:
     return {
         **context,
         "body_context": journey.body.model_dump(mode="json"),
+        "body_goals": {
+            "source": "user_selected_preferences",
+            **journey.body_goals.model_dump(mode="json"),
+        }
+        if "body" in journey.context.goals
+        else None,
         "body_guidance": body_guidance(journey),
         "progress_review": progress_context(journey),
         "reported_profile": [

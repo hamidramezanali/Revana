@@ -613,6 +613,74 @@
         "title": "BodyEdit",
         "type": "object"
       },
+      "BodyGoals": {
+        "additionalProperties": false,
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/RegionalBodyGoal"
+            },
+            "maxItems": 9,
+            "title": "Areas",
+            "type": "array"
+          },
+          "direction": {
+            "default": "unsure",
+            "enum": [
+              "reduce_fat",
+              "build_muscle",
+              "recomposition",
+              "maintain",
+              "unsure"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "priority_area": {
+            "anyOf": [
+              {
+                "enum": [
+                  "waist",
+                  "abdomen",
+                  "chest",
+                  "shoulders",
+                  "arms",
+                  "back",
+                  "glutes",
+                  "thighs",
+                  "calves"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority Area"
+          }
+        },
+        "title": "BodyGoals",
+        "type": "object"
+      },
+      "BodyGoalsEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "body_goals": {
+            "$ref": "#/components/schemas/BodyGoals"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "body_goals"
+        ],
+        "title": "BodyGoalsEdit",
+        "type": "object"
+      },
       "CheckInRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1658,6 +1726,9 @@
           },
           "body": {
             "$ref": "#/components/schemas/BodyContext"
+          },
+          "body_goals": {
+            "$ref": "#/components/schemas/BodyGoals"
           },
           "checkin_count": {
             "default": 0,
@@ -3065,6 +3136,50 @@
           "why"
         ],
         "title": "Question",
+        "type": "object"
+      },
+      "RegionalBodyGoal": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "enum": [
+              "waist",
+              "abdomen",
+              "chest",
+              "shoulders",
+              "arms",
+              "back",
+              "glutes",
+              "thighs",
+              "calves"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "intention": {
+            "default": "unsure",
+            "enum": [
+              "reduce_size",
+              "build_muscle",
+              "strength",
+              "definition",
+              "other",
+              "unsure"
+            ],
+            "title": "Intention",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "area"
+        ],
+        "title": "RegionalBodyGoal",
         "type": "object"
       },
       "ResearchIntent": {
@@ -6895,6 +7010,52 @@
           }
         ],
         "summary": "Accept Plan",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/body-goals": {
+      "post": {
+        "operationId": "updateWorkspaceBodyGoals",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BodyGoalsEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Body Goals",
         "tags": [
           "goal-workspace"
         ]

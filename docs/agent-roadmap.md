@@ -1,3 +1,8 @@
+> Visual body goals (2026-11-12): the first release implements a mobile front/back map,
+> regional intentions, overall direction and main priority, saved in the existing goal
+> and passed to assessment/planning/review. See [current behavior](GOAL_WORKSPACE.md#visual-body-goals--first-release-2026-11-12).
+> Next: optional measurements/trends and evaluated shape variants; no future-body predictions.
+
 > 2026-11-12 checkpoint: meal-first assessment, recipes/batch prep and optional cited
 > alternatives with public Bokadirekt listings are implemented. See
 > [current behavior and validation](GOAL_WORKSPACE.md#food-first-planning-and-researched-alternatives-2026-11-12).

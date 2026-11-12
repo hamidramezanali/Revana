@@ -810,7 +810,44 @@ class WorkRequest(RevisionRequest):
     research_services: bool = True
 
 
+BodyArea = Literal[
+    "waist", "abdomen", "chest", "shoulders", "arms", "back", "glutes", "thighs", "calves"
+]
+
+
+class RegionalBodyGoal(Model):
+    area: BodyArea
+    intention: Literal[
+        "reduce_size", "build_muscle", "strength", "definition", "other", "unsure"
+    ] = "unsure"
+    note: str = Field(default="", max_length=300)
+
+
+class BodyGoals(Model):
+    direction: Literal["reduce_fat", "build_muscle", "recomposition", "maintain", "unsure"] = (
+        "unsure"
+    )
+    areas: list[RegionalBodyGoal] = Field(default_factory=list, max_length=9)
+    priority_area: BodyArea | None = None
+
+    @model_validator(mode="after")
+    def valid_areas(self):
+        areas = [goal.area for goal in self.areas]
+        if len(areas) != len(set(areas)):
+            raise ValueError("Select each body area once.")
+        if self.priority_area and self.priority_area not in areas:
+            raise ValueError("Priority must be a selected body area.")
+        if any(goal.intention == "other" and not goal.note.strip() for goal in self.areas):
+            raise ValueError("Describe the intended change when choosing other.")
+        return self
+
+
+class BodyGoalsEdit(RevisionRequest):
+    body_goals: BodyGoals
+
+
 class Journey(Model):
+    body_goals: BodyGoals = Field(default_factory=BodyGoals)
     revision: int = 0
     context: Context
     preferences: Preferences | None = None

@@ -136,3 +136,15 @@ and separately labeled public Bokadirekt listings. Never include answers/photos/
 in web queries, infer practitioner qualifications from listings, pretend searches ran,
 or silently apply researched procedures. Preserve previous review state, accepted plans,
 unique evidence IDs and run cancellation/revision checks. No scraping or booking.
+
+
+## Visual body goals (2026-11-12)
+
+Journey.body_goals stores explicit regional preferences, never measurements or clinical
+inferences. Saving uses bearer ownership/revision checks, no model call, preserves
+accepted history/assessment answers and invalidates older proposals/retry artifacts.
+Keep the optional map keyboard-accessible with text alternatives and mobile controls.
+All model stages receive these preferences through workflow.context_for. Do not infer
+fat percentage, metabolism, physiology or calorie needs from a silhouette, promise
+regional fat loss or silently replace an accepted plan. Measurements/progress trends
+and silhouette variants are later scope. See GOAL_WORKSPACE.md.

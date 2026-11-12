@@ -17,6 +17,7 @@ from app import agent_store as store
 from app import assessment, idea_actions, method_discovery, workflow
 from app.agent_models import (
     BodyContext,
+    BodyGoalsEdit,
     CreateGoal,
     Decision,
     DiscoveryRequest,
@@ -55,7 +56,7 @@ LABELS = {
 
 def domains(text: str) -> list[str]:
     rules = {
-        "body": r"weight|weigh|\bkg\b|kilo|slim|fitness|exercise|nutrition|meal|strength|muscle|workout|training|vikt|träning",
+        "body": r"weight|weigh|\bkg\b|\bbody\b|composition|waist|abdomen|glutes|thighs|calves|kilo|slim|fitness|exercise|nutrition|meal|strength|muscle|workout|training|vikt|träning",
         "skin": r"skin|face|acne|redness|skincare|\bhud",
         "hair": r"hair|scalp|hår",
     }
@@ -819,4 +820,31 @@ def idea_choice(body: IdeaChoiceRequest, access: Access):
         raise HTTPException(409, "Stop the agent before changing idea choices.")
     _, action = idea_actions.find_action(journey, body.action_id)
     idea_actions.choose(journey, action, body.choice)
+    return store.save(access, journey, body.revision)
+
+
+@router.post("/body-goals", response_model=Journey, operation_id="updateWorkspaceBodyGoals")
+def update_body_goals(body: BodyGoalsEdit, access: Access):
+    journey = load(access, body.revision)
+    workspace = ensure_workspace(journey)
+    if "body" not in journey.context.goals:
+        raise HTTPException(422, "Body goals are available for weight and body-habit goals.")
+    if workspace.run and workspace.run.status == "running":
+        raise HTTPException(409, "Stop the current run before changing body goals.")
+    if journey.body_goals == body.body_goals:
+        return journey
+    journey.body_goals = body.body_goals.model_copy(deep=True)
+    journey.proposal = None
+    workspace.pending_draft = None
+    workspace.review_draft = None
+    workspace.discovery_request = None
+    workspace.idea_edit = None
+    workspace.run = None
+    workspace.phase = "needs_input" if workspace.question else "ready" if journey.plans else "idle"
+    if journey.plans:
+        workflow.quarantine(
+            journey,
+            "Your body goals changed. Ask the agent to propose an updated plan; your accepted plan is preserved.",
+        )
+    workspace.reply = "Body goals saved as your preferences. Continue with your agent to use them in a reviewed plan. Selecting an area does not predict where fat will be lost."
     return store.save(access, journey, body.revision)
