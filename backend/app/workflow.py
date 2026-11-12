@@ -91,8 +91,6 @@ def stage(role: str, task: str, context: dict, output):
     )
     if sink:
         sink({"type": "stage", "role": role, "status": "done"})
-        if role == "planner" and hasattr(result, "actions"):
-            sink({"type": "draft", "plan": result.model_dump(mode="json")})
     return result
 
 

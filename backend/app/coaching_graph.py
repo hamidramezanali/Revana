@@ -88,6 +88,13 @@ def planner_node(state: State):
         draft.actions = frozen + [
             a for a in draft.actions if a.id not in ids and a.title.casefold() not in titles
         ]
+    if "goal_workspace" in state["context"]:
+        from app.idea_actions import constrain
+
+        draft = constrain(draft, state["context"])
+    sink = workflow._event_sink.get()
+    if sink:
+        sink({"type": "draft", "plan": draft.model_dump(mode="json")})
     return {"draft": draft}
 
 
@@ -198,6 +205,13 @@ def correction_node(state: State):
         draft.actions = frozen + [
             a for a in draft.actions if a.id not in ids and a.title.casefold() not in titles
         ]
+    if "goal_workspace" in state["context"]:
+        from app.idea_actions import constrain
+
+        draft = constrain(draft, state["context"])
+    sink = workflow._event_sink.get()
+    if sink:
+        sink({"type": "draft", "plan": draft.model_dump(mode="json")})
     return {"draft": draft}
 
 

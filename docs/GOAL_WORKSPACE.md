@@ -68,3 +68,33 @@ run recovery. Existing backend regressions remain required. Test the live model 
 synthetic goals and inspect mobile layouts before release. The app remains an approved
 temporary public test; authentication, billing, broad evidence coverage, professional
 service discovery/booking and voice remain separate roadmap items.
+
+## Per-idea controls (2026-11-12)
+
+Every draft and accepted suggestion has compact Keep as is, More detail, Improve in
+chat and Remove controls. A short next-step preview makes instructions visible without
+opening the full card. Detailed procedures render as numbered steps.
+
+Keep records an explicit immutable preference immediately, including on the first
+unaccepted draft. More detail explicitly unlocks that one idea and requests concrete
+instructions for its existing approach. Improve in chat attaches its identity to the
+composer; nothing is sent until the user writes and submits a requested change.
+The server resolves the idea from the revision-checked current plan, not client-supplied
+suggestion text. Initial and correction outputs are merged into that plan in application
+code before review: other actions, meals and milestones remain unchanged. All resulting
+plan refinements remain proposals requiring acceptance.
+
+Remove persists an exclusion without a model call, hides the idea from the active
+workspace and supplies the removed snapshot to later planning. Exact repeated titles
+are filtered in application code; semantic paraphrases still depend on model adherence
+and require future quality evaluation. Removed items are recoverable in a collapsed
+section while present in the current plan. Accepted history and historical progress are
+preserved. Acceptance excludes removed draft actions and rejects an empty selection.
+The historical accepted-plan API still stores the original plan; removal is a workspace
+exclusion, not erasure of historical records. No preference implies completion.
+
+API: POST `/v1/workspace/idea-choice` records keep/remove/clear; `/run` accepts
+`action_id` with `idea_intent=details|improve`. Those fields cannot be combined with
+another question answer or photo payload. Retry retains the selected edit context.
+Regression tests cover immediate decisions, persistence, revision conflicts, one-idea
+isolation, exclusion/acceptance, rejection of empty plans, and combined effort checks.

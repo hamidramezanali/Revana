@@ -25,3 +25,9 @@ verified by application tools. Check source applicability for the particular cla
 not just the publisher's reputation. Three initial habits maximum, shared time/budget,
 valid weekday schedules and honest milestone assumptions are required. Not attempted
 must not be interpreted as an ineffective intervention. Worsening needs reassessment.
+
+For goal_workspace plans, check practical usability as well as safety: the action
+must explain what to do next rather than repeat a vague intention. Request a targeted
+correction for empty, generic instructions. More detail must not introduce unsupported
+doses, calorie targets or false precision. For selected_idea refinements, evaluate the
+selected instructions in the context of the unchanged surrounding plan.

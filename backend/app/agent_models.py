@@ -600,6 +600,22 @@ class WorkingMessage(Model):
     text: str = Field(max_length=4000)
 
 
+class IdeaFeedback(Model):
+    action: Action
+    choice: Literal["keep", "remove"]
+
+
+class IdeaEdit(Model):
+    base: Plan
+    action_id: str
+    intent: Literal["details", "improve"]
+
+
+class IdeaChoiceRequest(RevisionRequest):
+    action_id: str = Field(min_length=1, max_length=80)
+    choice: Literal["keep", "remove", "clear"]
+
+
 class GoalWorkspace(Model):
     title: str = Field(max_length=120)
     objective: str = Field(max_length=2000)
@@ -612,6 +628,8 @@ class GoalWorkspace(Model):
     messages: list[WorkingMessage] = Field(default_factory=list)
     run: GoalRun | None = None
     pending_draft: Plan | None = None
+    idea_feedback: list[IdeaFeedback] = Field(default_factory=list, max_length=100)
+    idea_edit: IdeaEdit | None = None
 
 
 class WorkspaceDraft(Plan):
@@ -637,6 +655,8 @@ class WorkRequest(RevisionRequest):
     photos: list[str] = Field(default_factory=list, max_length=3)
     photo_consent: bool = False
     action: Literal["continue", "plan", "retry"] = "continue"
+    action_id: str | None = Field(default=None, max_length=80)
+    idea_intent: Literal["details", "improve"] | None = None
 
 
 class Journey(Model):

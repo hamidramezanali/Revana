@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app import agent_store as store
-from app import workflow
+from app import idea_actions, workflow
 from app.agent_models import (
     BodyContext,
     CreateGoal,
@@ -23,6 +23,8 @@ from app.agent_models import (
     GoalQuestion,
     GoalRun,
     GoalWorkspace,
+    IdeaChoiceRequest,
+    IdeaEdit,
     Journey,
     PhotoNotes,
     PhotoNotesRequest,
@@ -254,7 +256,7 @@ def prepare(journey: Journey, request: WorkRequest) -> None:
                 created_at=datetime.now(UTC),
             )
         )
-    if request.action != "retry":
+    if request.action != "retry" and not request.action_id:
         journey.proposal = None
     workspace.pending_draft = None
 
@@ -336,20 +338,15 @@ def execute(access: str, journey: Journey, request: WorkRequest, emit) -> None:
                 )
             }
             context.pop("coach_conversation", None)
-            from app.plan_revision import current_preferences
-
-            kept_ids = {
-                pref.action_id for pref in current_preferences(journey) if pref.choice == "keep"
-            }
-            context["workspace_kept_actions"] = (
-                [
-                    action.model_dump(mode="json")
-                    for action in journey.plans[-1].plan.actions
-                    if action.id in kept_ids
-                ]
-                if journey.plans
-                else []
-            )
+            base = journey.workspace.pending_draft or idea_actions.base_plan(journey)
+            context["workspace_kept_actions"] = [
+                a.model_dump(mode="json") for a in idea_actions.kept(journey, base)
+            ]
+            context["removed_ideas"] = [
+                a.model_dump(mode="json") for a in idea_actions.removed(journey)
+            ]
+            if journey.workspace.idea_edit:
+                context["selected_idea"] = journey.workspace.idea_edit.model_dump(mode="json")
             context["_max_output_tokens"] = 4500
             draft = workflow.plan(
                 journey,
@@ -458,8 +455,41 @@ def run_goal(body: WorkRequest, access: Access):
         raise HTTPException(409, "A run is already working. Stop it before sending another update.")
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         raise HTTPException(409, "Review or discard the photo notes first.")
+    base = idea_actions.base_plan(journey)
+    if body.action_id:
+        if (
+            not body.idea_intent
+            or body.question_id
+            or body.photos
+            or body.values
+            or body.choices
+            or body.skipped
+        ):
+            raise HTTPException(
+                422, "Refine one selected idea with a message, without answering another question."
+            )
+        base, selected = idea_actions.find_action(journey, body.action_id)
+        if idea_actions.is_removed(journey, selected):
+            raise HTTPException(409, "Restore this idea before refining it.")
+        if body.idea_intent == "improve" and not body.message.strip():
+            raise HTTPException(422, "Tell the agent what to improve about this idea.")
+        workspace.idea_edit = IdeaEdit(
+            base=base.model_copy(deep=True), action_id=selected.id, intent=body.idea_intent
+        )
+        idea_actions.choose(journey, selected, "clear")
+        if not body.message.strip():
+            body.message = (
+                "I like this idea. Keep its core approach and give me precise step-by-step instructions: "
+                + selected.title
+            )
+    elif body.idea_intent:
+        raise HTTPException(422, "Select an idea to refine.")
+    elif body.action != "retry":
+        workspace.idea_edit = None
     prepare(journey, body)
-    missing = baseline(journey) if body.action != "retry" else None
+    if body.action != "retry":
+        workspace.pending_draft = base.model_copy(deep=True) if base else None
+    missing = baseline(journey) if body.action != "retry" and not body.action_id else None
     if missing and not body.photos:
         workspace.question = missing
         workspace.phase = "needs_input"
@@ -558,6 +588,21 @@ def accept_plan(body: RevisionRequest, access: Access):
         raise HTTPException(409, "The draft needs a new safety review before acceptance.")
     if any(event.photo_notes and not event.photo_notes.confirmed for event in journey.events):
         raise HTTPException(409, "Review photo observations before accepting.")
+    remaining = [a for a in journey.proposal.actions if not idea_actions.is_removed(journey, a)]
+    if not remaining:
+        raise HTTPException(
+            409, "All ideas were removed. Ask the agent for new suggestions before accepting."
+        )
+    if len(remaining) != len(journey.proposal.actions):
+        journey.proposal = Plan.model_validate(
+            {
+                **journey.proposal.model_dump(mode="json"),
+                "actions": [a.model_dump(mode="json") for a in remaining],
+                "summary": "Your selected actions.",
+                "priority": "Start with the actions you chose.",
+                "changes": "Removed ideas excluded at your request.",
+            }
+        )
     workflow.require_usable_plan(journey, journey.proposal)
     journey.profile_confirmed_revision = journey.profile_revision
     for fact in journey.profile:
@@ -574,6 +619,8 @@ def accept_plan(body: RevisionRequest, access: Access):
     )
     journey.proposal = None
     workflow.consolidate_memory(journey)
+    workspace.pending_draft = None
+    workspace.idea_edit = None
     workspace.phase = "ready"
     workspace.question = None
     workspace.messages = []
@@ -621,3 +668,14 @@ def get_state(access: Access):
         except HTTPException:
             journey = store.read(access)
     return journey
+
+
+@router.post("/idea-choice", response_model=Journey, operation_id="chooseWorkspaceIdea")
+def idea_choice(body: IdeaChoiceRequest, access: Access):
+    journey = load(access, body.revision)
+    workspace = ensure_workspace(journey)
+    if workspace.run and workspace.run.status == "running":
+        raise HTTPException(409, "Stop the agent before changing idea choices.")
+    _, action = idea_actions.find_action(journey, body.action_id)
+    idea_actions.choose(journey, action, body.choice)
+    return store.save(access, journey, body.revision)

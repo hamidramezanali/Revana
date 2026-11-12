@@ -305,3 +305,162 @@ def test_disconnect_after_started_cancels_before_late_output(workspace):
     saved = agent_store.read(token)
     assert saved.workspace.run.status == "cancelled"
     assert saved.proposal is None
+
+
+def two_idea_draft(client):
+    from app.agent_models import ActionCheck
+
+    j, h, token = create(
+        client, "I want a practical weight-management routine. I am 175 cm and 86 kg."
+    )
+    j, _ = run(client, j, h, action="plan")
+    saved = agent_store.read(token)
+    other = saved.proposal.actions[0].model_copy(deep=True)
+    other.id = "meal"
+    other.title = "Prepare tomorrow's lunch"
+    other.detail = "Pack an existing meal in a container tonight."
+    saved.proposal.actions.append(other)
+    saved.workflow.review.action_checks.append(
+        ActionCheck(action_id="meal", status="compatible", reason="Synthetic", source_ids=[])
+    )
+    saved = agent_store.save(token, saved, saved.revision)
+    return saved.model_dump(mode="json"), h, token
+
+
+def test_idea_choices_on_draft_are_immediate_durable_and_revision_checked(workspace):
+    client, calls = workspace
+    j, h, _ = two_idea_draft(client)
+    count = len(calls)
+    result = client.post(
+        "/v1/workspace/idea-choice",
+        headers=h,
+        json={"revision": j["revision"], "action_id": "walk", "choice": "keep"},
+    )
+    assert result.status_code == 200, result.text
+    chosen = result.json()
+    assert chosen["workspace"]["idea_feedback"][0]["choice"] == "keep"
+    assert len(calls) == count
+    assert (
+        client.get("/v1/workspace/state", headers=h).json()["workspace"]["idea_feedback"]
+        == chosen["workspace"]["idea_feedback"]
+    )
+    stale = client.post(
+        "/v1/workspace/idea-choice",
+        headers=h,
+        json={"revision": j["revision"], "action_id": "meal", "choice": "remove"},
+    )
+    assert stale.status_code == 409
+
+
+def test_details_unlock_only_selected_idea_and_preserve_surrounding_plan(workspace, monkeypatch):
+    client, _ = workspace
+    j, h, _ = two_idea_draft(client)
+    j = client.post(
+        "/v1/workspace/idea-choice",
+        headers=h,
+        json={"revision": j["revision"], "action_id": "walk", "choice": "keep"},
+    ).json()
+    base = j["proposal"]
+    original = agent_provider.generate
+
+    def refine(task, context, output, **kwargs):
+        value = original(task, context, output, **kwargs)
+        if output is WorkspaceDraft:
+            value.summary = "Attempted unrelated metadata change"
+            value.actions[0].title = "Attempted replacement of original idea"
+            value.actions[
+                0
+            ].detail = "1. Choose a flat route near home.\n2. Walk at a comfortable pace for ten minutes after lunch.\n3. Shorten the route if uncomfortable."
+        return value
+
+    monkeypatch.setattr(agent_provider, "generate", refine)
+    j, events = run(client, j, h, action_id="walk", idea_intent="details")
+    assert events[-1]["type"] == "complete", events
+    result = j["proposal"]
+    assert result["actions"][0]["title"] == base["actions"][0]["title"]
+    assert result["actions"][0]["detail"].startswith("1. Choose")
+    assert result["actions"][1] == base["actions"][1]
+    assert result["summary"] == base["summary"]
+    assert result["meals"] == base["meals"]
+    assert not j["workspace"]["idea_feedback"]
+    streamed = next(e["plan"] for e in events if e["type"] == "draft")
+    assert streamed["actions"][1] == base["actions"][1]
+
+
+def test_remove_can_reject_every_idea_without_destroying_history(workspace):
+    client, calls = workspace
+    j, h, _ = two_idea_draft(client)
+    original = j["proposal"]
+    j = client.post("/v1/workspace/accept", headers=h, json={"revision": j["revision"]}).json()
+    count = len(calls)
+    for action_id in ("walk", "meal"):
+        r = client.post(
+            "/v1/workspace/idea-choice",
+            headers=h,
+            json={"revision": j["revision"], "action_id": action_id, "choice": "remove"},
+        )
+        assert r.status_code == 200, r.text
+        j = r.json()
+    assert len(calls) == count
+    assert j["plans"][-1]["plan"] == original
+    assert len(j["workspace"]["idea_feedback"]) == 2
+    # A subsequent model response must not silently resurrect the removed idea.
+    updated, events = run(client, j, h, message="Give me different ideas")
+    assert events[-1]["type"] == "error"
+    assert updated["proposal"] is None
+    assert updated["plans"][-1]["plan"] == original
+
+
+def test_accept_excludes_removed_draft_and_empty_accept_is_rejected(workspace):
+    client, _ = workspace
+    j, h, _ = two_idea_draft(client)
+    j = client.post(
+        "/v1/workspace/idea-choice",
+        headers=h,
+        json={"revision": j["revision"], "action_id": "meal", "choice": "remove"},
+    ).json()
+    accepted = client.post("/v1/workspace/accept", headers=h, json={"revision": j["revision"]})
+    assert accepted.status_code == 200, accepted.text
+    assert [a["id"] for a in accepted.json()["plans"][-1]["plan"]["actions"]] == ["walk"]
+    j, h, _ = two_idea_draft(client)
+    for action_id in ("walk", "meal"):
+        j = client.post(
+            "/v1/workspace/idea-choice",
+            headers=h,
+            json={"revision": j["revision"], "action_id": action_id, "choice": "remove"},
+        ).json()
+    assert (
+        client.post("/v1/workspace/accept", headers=h, json={"revision": j["revision"]}).status_code
+        == 409
+    )
+
+
+def test_selected_improvement_requires_message_and_respects_combined_budget(workspace, monkeypatch):
+    client, _ = workspace
+    j, h, token = two_idea_draft(client)
+    rejected = client.post(
+        "/v1/workspace/run",
+        headers=h,
+        json={"revision": j["revision"], "action_id": "walk", "idea_intent": "improve"},
+    )
+    assert rejected.status_code == 422
+    saved = agent_store.read(token)
+    saved.body.daily_minutes = 20
+    saved = agent_store.save(token, saved, saved.revision)
+    j = saved.model_dump(mode="json")
+    original = agent_provider.generate
+
+    def overbudget(task, context, output, **kwargs):
+        result = original(task, context, output, **kwargs)
+        if output is WorkspaceDraft:
+            assert context["selected_idea"]["intent"] == "improve"
+            assert "Make this longer" in context["current_request"]["message"]
+            result.actions[0].minutes = 30
+        return result
+
+    monkeypatch.setattr(agent_provider, "generate", overbudget)
+    result, events = run(
+        client, j, h, action_id="walk", idea_intent="improve", message="Make this longer"
+    )
+    assert events[-1]["type"] == "error"
+    assert result["proposal"] == j["proposal"]

@@ -1158,6 +1158,24 @@
             "title": "Answered Keys",
             "type": "array"
           },
+          "idea_edit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdeaEdit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "idea_feedback": {
+            "items": {
+              "$ref": "#/components/schemas/IdeaFeedback"
+            },
+            "maxItems": 100,
+            "title": "Idea Feedback",
+            "type": "array"
+          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/WorkingMessage"
@@ -1257,6 +1275,87 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "IdeaChoiceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Action Id",
+            "type": "string"
+          },
+          "choice": {
+            "enum": [
+              "keep",
+              "remove",
+              "clear"
+            ],
+            "title": "Choice",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "action_id",
+          "choice"
+        ],
+        "title": "IdeaChoiceRequest",
+        "type": "object"
+      },
+      "IdeaEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "intent": {
+            "enum": [
+              "details",
+              "improve"
+            ],
+            "title": "Intent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "action_id",
+          "intent"
+        ],
+        "title": "IdeaEdit",
+        "type": "object"
+      },
+      "IdeaFeedback": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "choice": {
+            "enum": [
+              "keep",
+              "remove"
+            ],
+            "title": "Choice",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "choice"
+        ],
+        "title": "IdeaFeedback",
         "type": "object"
       },
       "Journey": {
@@ -2821,6 +2920,18 @@
             "title": "Action",
             "type": "string"
           },
+          "action_id": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
           "choices": {
             "items": {
               "type": "string"
@@ -2828,6 +2939,21 @@
             "maxItems": 6,
             "title": "Choices",
             "type": "array"
+          },
+          "idea_intent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "details",
+                  "improve"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idea Intent"
           },
           "message": {
             "default": "",
@@ -6004,6 +6130,52 @@
           }
         ],
         "summary": "Create Goal",
+        "tags": [
+          "goal-workspace"
+        ]
+      }
+    },
+    "/v1/workspace/idea-choice": {
+      "post": {
+        "operationId": "chooseWorkspaceIdea",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdeaChoiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Idea Choice",
         "tags": [
           "goal-workspace"
         ]
